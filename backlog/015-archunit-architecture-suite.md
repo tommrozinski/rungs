@@ -48,6 +48,8 @@ since it is stated as final.
 - Each rule is proven to actually fire: a deliberate violation fails the suite
   (verified during development, not committed).
 - The suite runs as part of `mvn verify`, not a separate opt-in profile.
+- AC-A bans both Jackson 3 (`tools.jackson`, the default in Spring Boot 4) and
+  Jackson 2 (`com.fasterxml.jackson`) packages in `domain`.
 - Rule failures name the offending class and the constraint in the message.
 - AC-F covers `double`, `float`, and their boxed types in fields, parameters,
   return types, and local variables where detectable.

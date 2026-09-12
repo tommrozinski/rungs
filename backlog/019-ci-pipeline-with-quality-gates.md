@@ -39,7 +39,7 @@ before this story is spec'd.
 - The ArchUnit suite failing fails the pipeline.
 - Golden-file drift fails the build rather than silently regenerating fixtures.
 - The coverage report is published as a build artifact.
-- The pipeline runs on Java 21 and installs no Node.js or other frontend
+- The pipeline runs on Java 25 and installs no Node.js or other frontend
   toolchain.
 - A failing pipeline blocks merge.
 - Build is reproducible — no network-dependent or wall-clock-dependent tests.

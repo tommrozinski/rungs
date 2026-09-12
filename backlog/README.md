@@ -13,7 +13,7 @@ changes the status in the story file itself.
 
 | ID | Title | Status | Summary |
 | --- | --- | --- | --- |
-| [001](001-project-scaffold-and-package-layout.md) | Project scaffold and package layout | proposed | Single-module Maven / Java 21 / Spring Boot + Thymeleaf skeleton; no frontend toolchain. |
+| [001](001-project-scaffold-and-package-layout.md) | Project scaffold and package layout | approved | Single-module Maven / Java 25 / Spring Boot 4.1 + Thymeleaf skeleton; no frontend toolchain. |
 | [002](002-money-value-type.md) | Money value type | proposed | Whole-cent `Money` backed by `long`, owning rounding, parsing, and display format. |
 | [003](003-financial-snapshot-domain-model.md) | Financial snapshot domain model | proposed | Immutable `FinancialSnapshot`, `Debt`, `Mortgage`, `HouseholdFlags` with value equality. |
 | [004](004-stage-evaluation-framework.md) | Stage evaluation framework and progression rules | proposed | `StageEvaluator` contract and the ladder logic that picks the current stage. |
@@ -32,6 +32,7 @@ changes the status in the story file itself.
 | [017](017-observability-actuator-and-metrics.md) | Observability: health probes and metrics | proposed | Actuator probes and Micrometer metrics including a stage-verdict counter. |
 | [018](018-structured-logging-with-redaction.md) | Structured logging with money redaction | proposed | JSON logs with correlation IDs and provably no figures or CSV row content. |
 | [019](019-ci-pipeline-with-quality-gates.md) | CI pipeline with coverage and architecture gates | proposed | A thin wrapper around `mvn verify` that gates coverage, architecture, fixtures. |
+| [037](037-container-image.md) | Container image | proposed | Multi-stage Dockerfile, non-root, read-only filesystem, built and run with Podman. |
 
 ## CSV snapshot import/export — increment 3.5a
 

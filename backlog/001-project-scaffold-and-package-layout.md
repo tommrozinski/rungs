@@ -1,15 +1,15 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Project scaffold and package layout
 
-Stand up the Java 21 / Spring Boot 3.x application skeleton with the
+Stand up the Java 25 / Spring Boot 4.1 application skeleton with the
 ports-and-adapters package structure the rest of the backlog builds on.
 
 ## Description
 
-The PRD fixes the target stack (Java 21, Spring Boot 3.x, ports-and-adapters)
+The PRD fixes the target stack (Java 25, Spring Boot 4.1, ports-and-adapters)
 and prescribes a package layout in section 8. Every subsequent story lands code
 into that structure, so it needs to exist first.
 
@@ -34,9 +34,13 @@ trademarked names of the published framework must not appear.
 
 ## Acceptance Criteria
 
-- A Maven build produces a runnable Spring Boot application on Java 21.
+- A Maven build produces a runnable Spring Boot 4.1.1 application on Java 25.
+  (Originally Java 21 / Boot 3.x; changed 2026-09-12 because Boot 3.5's open-source
+  support ended 2026-06-30.)
+- The Maven Wrapper is committed, so a JDK is the only prerequisite.
 - The package tree `domain/{model,stage,projection,port}`, `application`, and
-  `adapter/{in.web.api,in.web.view,out.ai}` exists under a single root package.
+  `adapter/{in.web.api,in.web.view,out.ai}` exists under the root package
+  `com.rungs.readiness`.
   `in.web.api` holds REST controllers; `in.web.view` holds Thymeleaf view
   controllers. Both call application services in-process, and neither depends on
   the other (design spec section 7).
@@ -62,8 +66,9 @@ S
 
 ## Open Questions
 
-- What is the root package namespace (`com.<yourns>.readiness` — what is
-  `<yourns>`)?
+- ~~What is the root package namespace?~~ **Resolved.** `com.rungs.readiness`
+  (Maven `groupId` `com.rungs`). The reverse-domain convention does not require
+  owning the domain for an application that is never published as a library.
 - ~~Trademark risk on the project name.~~ **Resolved.** The project was
   originally named `Gazelle`, which borrowed vocabulary ("gazelle intensity")
   from the same published framework the PRD is careful not to name. It is now
