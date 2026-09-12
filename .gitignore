@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Maven
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
