@@ -1,5 +1,9 @@
 package com.rungs.readiness.application;
 
+import com.rungs.readiness.application.validation.DebtTypeName;
+import com.rungs.readiness.application.validation.MoneyAmount;
+import com.rungs.readiness.application.validation.Percentage;
+
 /**
  * One debt as submitted, before normalization. Money and rates are raw decimal strings so blank values can become
  * zero; the id is never submitted, it is assigned by position.
@@ -10,5 +14,10 @@ package com.rungs.readiness.application;
  * @param annualInterestRate the annual percentage as a decimal string ({@code "7.25"}); blank means zero
  * @param minimumPayment the required monthly payment as a decimal string; blank means zero
  */
-public record DebtInput(String label, String type, String balance, String annualInterestRate, String minimumPayment) {
+public record DebtInput(
+        String label,
+        @DebtTypeName String type,
+        @MoneyAmount String balance,
+        @Percentage(scale = SnapshotInput.INTEREST_RATE_SCALE) String annualInterestRate,
+        @MoneyAmount String minimumPayment) {
 }

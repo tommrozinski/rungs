@@ -1,5 +1,8 @@
 package com.rungs.readiness.application;
 
+import com.rungs.readiness.application.validation.MoneyAmount;
+import com.rungs.readiness.application.validation.Percentage;
+
 /**
  * The home mortgage as submitted, before normalization; every value is a raw decimal string and blank means zero.
  *
@@ -8,5 +11,9 @@ package com.rungs.readiness.application;
  * @param monthlyPayment the scheduled monthly payment; informational only
  * @param homeValue the estimated value of the home
  */
-public record MortgageInput(String balance, String annualInterestRate, String monthlyPayment, String homeValue) {
+public record MortgageInput(
+        @MoneyAmount String balance,
+        @Percentage(scale = SnapshotInput.INTEREST_RATE_SCALE) String annualInterestRate,
+        @MoneyAmount String monthlyPayment,
+        @MoneyAmount String homeValue) {
 }

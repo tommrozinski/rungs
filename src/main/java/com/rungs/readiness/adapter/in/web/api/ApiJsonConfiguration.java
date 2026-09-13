@@ -17,8 +17,11 @@ import tools.jackson.databind.type.LogicalType;
  *   <li>JSON numbers and booleans are not coerced into {@code String} fields, so {@code 1000} is not read as
  *       {@code "1000"};
  *   <li>JSON floats are not coerced into whole-number fields, so {@code 3.5} or {@code 4.0} is not read as a month
- *       count.
+ *       count;
+ *   <li>JSON strings are not coerced into whole-number fields, so {@code "3"} is not read as a month count (story 011).
  * </ul>
+ *
+ * <p>Each refusal surfaces as {@code INVALID_TYPE} through {@link ProblemDetailsAdvice}.
  */
 @Configuration(proxyBeanMethods = false)
 class ApiJsonConfiguration {
@@ -33,6 +36,7 @@ class ApiJsonConfiguration {
                         .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
                         .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail))
                 .withCoercionConfig(LogicalType.Integer, whole -> whole
-                        .setCoercion(CoercionInputShape.Float, CoercionAction.Fail));
+                        .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+                        .setCoercion(CoercionInputShape.String, CoercionAction.Fail));
     }
 }

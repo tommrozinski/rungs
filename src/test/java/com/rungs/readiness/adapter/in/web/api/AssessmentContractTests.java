@@ -313,52 +313,73 @@ class AssessmentContractTests {
 
     @Test
     void rejectedBodiesAreNotWrittenToTheLog(CapturedOutput output) {
-        assertThat(post("{\"monthlyTakeHomeIncomeTypo\": \"5000\"}")).hasStatus(400);
-        assertThat(post("{\"monthlyTakeHomeIncome\": 987654}")).hasStatus(400);
-        assertThat(post("{\"emergencyFundMonths\": 3.25}")).hasStatus(400);
-        assertThat(post("{\"monthlyTakeHomeIncome\": \"123abc\"}")).hasStatus(400);
+        assertThat(post("{\"monthlyTakeHomeIncomeTypo\": \"5000\"}")).hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(post("{\"monthlyTakeHomeIncome\": 987654}")).hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(post("{\"emergencyFundMonths\": 3.25}")).hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(post("{\"monthlyTakeHomeIncome\": \"123abc\"}")).hasStatus(400)
+                .hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
 
         assertThat(output).doesNotContain("monthlyTakeHomeIncomeTypo").doesNotContain("987654")
-                .doesNotContain("3.25").doesNotContain("123abc");
+                .doesNotContain("3.25").doesNotContain("123abc").doesNotContain("WARN");
     }
 
     @Test
     void aMisspeltPropertyIsRejectedNotIgnored() {
-        assertThat(post("{\"monthlyTakeHomeIncom\": \"5000\"}")).hasStatus(400);
+        MvcTestResult result = post("{\"monthlyTakeHomeIncom\": \"5000\"}");
+
+        assertThat(result).hasStatus(400).bodyJson().extractingPath("$.errors[0]").asMap().containsExactly(
+                entry("pointer", "/monthlyTakeHomeIncom"), entry("code", "UNKNOWN_FIELD"),
+                entry("message", "Remove this field; it isn't part of the request."));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "{\"monthlyTakeHomeIncome\": 5000}",
-        "{\"monthlyTakeHomeIncome\": 50.25}",
-        "{\"starterEmergencyFund\": true}",
-        "{\"retirementContributionPercent\": 15}",
-        "{\"debts\": [{\"type\": \"AUTO\", \"balance\": 100}]}",
-        "{\"emergencyFundMonths\": 3.5}",
-        "{\"emergencyFundMonths\": 4.0}"
+    @CsvSource(delimiter = '|', value = {
+        "{\"monthlyTakeHomeIncome\": 5000}                        | /monthlyTakeHomeIncome",
+        "{\"monthlyTakeHomeIncome\": 50.25}                       | /monthlyTakeHomeIncome",
+        "{\"starterEmergencyFund\": true}                         | /starterEmergencyFund",
+        "{\"retirementContributionPercent\": 15}                  | /retirementContributionPercent",
+        "{\"debts\": [{\"type\": \"AUTO\", \"balance\": 100}]}    | /debts/0/balance",
+        "{\"emergencyFundMonths\": 3.5}                           | /emergencyFundMonths",
+        "{\"emergencyFundMonths\": 4.0}                           | /emergencyFundMonths"
     })
-    void jsonScalarsAreNotCoercedIntoTextOrWholeNumbers(String request) {
-        assertThat(post(request)).hasStatus(400);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "{\"monthlyTakeHomeIncome\": \"abc\"}",
-        "{\"monthlyEssentialExpenses\": \"-5\"}",
-        "{\"retirementContributionPercent\": \"fifteen\"}",
-        "{\"retirementContributionPercent\": \"101\"}",
-        "{\"emergencyFundMonths\": 2}",
-        "{\"debts\": [{\"type\": \"MORTGAGE\", \"balance\": \"100\"}]}",
-        "{\"debts\": [{\"type\": \"\", \"balance\": \"100\"}]}",
-        "{\"mortgage\": {\"balance\": \"1,00\"}}",
-        "not json"
-    })
-    void inputThatCannotBeNormalizedIsABadRequestWithoutEchoingIt(String request) {
+    void jsonScalarsAreNotCoercedIntoTextOrWholeNumbers(String request, String pointer) {
         MvcTestResult result = post(request);
 
-        assertThat(result).hasStatus(400);
-        assertThat(result).bodyText().doesNotContain("abc").doesNotContain("fifteen").doesNotContain("MORTGAGE")
-                .doesNotContain("Exception");
+        assertThat(result).hasStatus(400).hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(result).bodyJson().extractingPath("$.errors[0].pointer").isEqualTo(pointer);
+        assertThat(result).bodyJson().extractingPath("$.errors[0].code").isEqualTo("INVALID_TYPE");
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+        "{\"monthlyTakeHomeIncome\": \"abc\"}                           | INVALID_AMOUNT",
+        "{\"monthlyEssentialExpenses\": \"-5\"}                         | NEGATIVE",
+        "{\"retirementContributionPercent\": \"fifteen\"}               | INVALID_PERCENT",
+        "{\"retirementContributionPercent\": \"101\"}                   | PERCENT_RANGE",
+        "{\"emergencyFundMonths\": 2}                                   | MONTHS_MIN",
+        "{\"debts\": [{\"type\": \"MORTGAGE\", \"balance\": \"100\"}]}  | MORTGAGE_AS_DEBT",
+        "{\"debts\": [{\"type\": \"\", \"balance\": \"100\"}]}          | INVALID_CHOICE",
+        "{\"mortgage\": {\"balance\": \"1,00\"}}                        | INVALID_AMOUNT"
+    })
+    void inputThatCannotBeNormalizedIsAValidationProblemWithoutEchoingIt(String request, String code) {
+        MvcTestResult result = post(request);
+
+        assertThat(result).hasStatus(400).hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(result).bodyJson().extractingPath("$.errors[0].code").isEqualTo(code);
+        assertThat(result).bodyText().doesNotContain("abc").doesNotContain("fifteen").doesNotContain("\"MORTGAGE\"")
+                .doesNotContain("1,00\"").doesNotContain("Exception");
+    }
+
+    @Test
+    void unreadableJsonIsAMalformedRequestWithoutEchoingIt() {
+        MvcTestResult result = post("not json");
+
+        assertThat(result).hasStatus(400).hasContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(result).bodyJson().extractingPath("$.type").isEqualTo("urn:rungs:problem:malformed-request");
+        assertThat(result).bodyText().doesNotContain("errors").doesNotContain("not json").doesNotContain("Exception");
     }
 
     private MvcTestResult post(String body) {

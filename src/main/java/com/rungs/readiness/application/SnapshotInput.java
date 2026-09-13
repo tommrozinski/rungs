@@ -1,11 +1,19 @@
 package com.rungs.readiness.application;
 
+import com.rungs.readiness.application.validation.AtMostFiftyDebts;
+import com.rungs.readiness.application.validation.EmergencyFundMonths;
+import com.rungs.readiness.application.validation.FieldsThenWholeForm;
+import com.rungs.readiness.application.validation.MoneyAmount;
+import com.rungs.readiness.application.validation.Percentage;
+import com.rungs.readiness.application.validation.WholeForm;
 import com.rungs.readiness.domain.model.Debt;
 import com.rungs.readiness.domain.model.DebtType;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.model.HouseholdFlags;
 import com.rungs.readiness.domain.model.Money;
 import com.rungs.readiness.domain.model.Mortgage;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,18 +21,30 @@ import java.util.List;
 /**
  * A financial snapshot as submitted, before normalization. Money and percentages are raw decimal strings so a blank
  * value can become zero (PRD FR-4).
+ *
+ * <p>Validation (story 011): validate with {@link FieldsThenWholeForm}, so the field-only constraints on the
+ * components, the debts, and the mortgage are checked first and the {@link WholeForm} rule {@link AtMostFiftyDebts}
+ * runs only when they all pass (REQ-007). A missing ({@code null}) entry in {@code debts} is {@code INVALID_TYPE} at
+ * its index.
  */
+@AtMostFiftyDebts(groups = WholeForm.class)
 public record SnapshotInput(
-        String monthlyTakeHomeIncome,
-        String monthlyEssentialExpenses,
-        String starterEmergencyFund,
-        String fullEmergencyFund,
-        String monthlyCollegeContribution,
-        String retirementContributionPercent,
-        Integer emergencyFundMonths,
-        List<DebtInput> debts,
-        MortgageInput mortgage,
+        @MoneyAmount String monthlyTakeHomeIncome,
+        @MoneyAmount String monthlyEssentialExpenses,
+        @MoneyAmount String starterEmergencyFund,
+        @MoneyAmount String fullEmergencyFund,
+        @MoneyAmount String monthlyCollegeContribution,
+        @Percentage(scale = RETIREMENT_PERCENT_SCALE) String retirementContributionPercent,
+        @EmergencyFundMonths Integer emergencyFundMonths,
+        List<@NotNull(message = "INVALID_TYPE") @Valid DebtInput> debts,
+        @Valid MortgageInput mortgage,
         HouseholdFlagsInput householdFlags) {
+
+    /** Decimal places allowed in the retirement contribution percent. */
+    static final int RETIREMENT_PERCENT_SCALE = 2;
+
+    /** Decimal places allowed in an annual interest rate. */
+    static final int INTEREST_RATE_SCALE = 3;
 
     /** Months of expenses the full emergency fund covers when none is supplied. */
     private static final int DEFAULT_EMERGENCY_FUND_MONTHS = 3;
@@ -42,10 +62,11 @@ public record SnapshotInput(
      * {@code debt-N} and, when its label is blank, the label {@code Debt N}; debts with a zero balance are then
      * removed, so numbering still counts them.
      *
-     * <p>Input is assumed valid until story 011 adds constraints. Until then, unparseable money throws
+     * <p>Call only on input that passed validation (story 011 REQ-007). Invalid input throws: unparseable money
      * {@link com.rungs.readiness.domain.model.MoneyFormatException}, an unparseable percentage
      * {@link NumberFormatException}, an unknown debt type or a value the domain rejects (negative amount, percentage
-     * out of range, months below 3) {@link IllegalArgumentException}; all are IllegalArgumentExceptions.
+     * out of range, months below 3) {@link IllegalArgumentException}, and a missing debt entry
+     * {@link NullPointerException}.
      */
     public FinancialSnapshot toSnapshot() {
         List<Debt> normalizedDebts = new ArrayList<>();
