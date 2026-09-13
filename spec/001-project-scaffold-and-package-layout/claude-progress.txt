@@ -113,3 +113,67 @@ Started: 2026-09-13
   (Mockito's byte-buddy agent); harmless now, but a future JDK will disallow it by default.
   Fix later by adding Mockito as a -javaagent in Surefire argLine (natural fit for story 019).
 
+## Post-review fixes — NeutralVocabularyTests and Surefire Mockito agent (2026-09-13)
+- Completed: 2026-09-13
+- Files changed: src/test/java/com/rungs/readiness/NeutralVocabularyTests.java, pom.xml
+  (maven-dependency-plugin properties goal; Surefire argLine
+  -javaagent:${org.mockito:mockito-core:jar}), requirements.md (REQ-015 wording). Task 5.3
+  then synced design §5 (Mockito agent bullet), §6 (NeutralVocabularyTests bullets), and §13
+  (skip-list row, scan-coverage row, new argLine row).
+- Tests: `./mvnw verify`: 42 run, 0 failures, 0 errors; no dynamic-agent warning.
+  NeutralVocabularyTests now has 38: 1 repo scan, 1 @TempDir walker test, 30 positive and 6
+  negative matcher samples.
+- Notes: the Task 4.3 and 4.4 review items are resolved:
+  - Medium, singular form of the first term not matched → matches singular or plural.
+  - Medium, terms wrapped across lines or separated by tab/double space/NBSP missed →
+    matching runs over whole file contents; separator is any mix of whitespace (incl. line
+    breaks, tabs, NBSP via UNICODE_CHARACTER_CLASS), hyphen, underscore, dot, and comment/
+    quote markers (/ * # >), or nothing. Reported line = line where the match starts.
+  - Medium, walker skip rules and hit collection not pinned → @TempDir test pins skip rules,
+    path:line format, wrapped-line hit, hidden .mvn scanned, nested target package scanned,
+    path-only hit, and binary skip.
+  - Low, target skipped at any depth → target/, prd/, backlog/, and own source skipped only
+    root-relative; .git, .idea, .vscode still skipped at any depth.
+  - Low, file/dir names not scanned → each root-relative path is checked
+    (`path: file path contains a trademarked name`), including undecodable files, whose
+    contents are skipped.
+  - Low, dotted separator not matched → dot is an accepted separator.
+  - Low (4.4), dynamic agent warning → Mockito loaded as a Surefire -javaagent.
+  Consequence: the pom sets argLine, so `-DargLine=...` on the command line is ignored (the
+  Task 4.2 mutation commands no longer work as written); put extra JVM args in the pom, and
+  story 019's JaCoCo must prepend @{argLine}.
+- Commits: 6ea0654 (tests + pom), 3c630c6 (progress log + REQ-015 wording).
+
+
+## Task 5.2 — Add .editorconfig, .gitattributes, append .jqwik-database to .gitignore, renormalize, confirm line endings
+- Completed: 2026-09-13
+- Files changed: .editorconfig (new), .gitattributes (new), .gitignore (appended),
+  mvnw.cmd (index renormalized to LF; working copy stays CRLF; line-endings-only diff)
+- Tests: n/a (config). git ls-files --eol: mvnw 100755 i/lf w/lf; mvnw.cmd i/lf w/crlf.
+  Simulated core.autocrlf=true clone: with .gitattributes mvnw LF + executable and mvnw.cmd
+  CRLF; without it mvnw became CRLF ("#!/bin/sh\r"). Full ./mvnw verify: 42 tests, 0 failures.
+- Notes: renormalize scoped to wrapper and supporting files instead of `.` so parallel
+  agents' files were not staged (only mvnw.cmd had non-LF endings, so the result is the
+  same). Spec said mvnw.cmd should be i/crlf; correct is i/lf w/crlf (text eol=crlf stores
+  LF, checks out CRLF). Fixed design §8 and task 5.2 wording. Correctness review: no findings.
+
+## Task 5.3 — Sync docs with the post-review fixes
+- Completed: 2026-09-13
+- Files changed: design.md §5 (Mockito agent), §6 (NeutralVocabularyTests), §13 (scan,
+  skip-list, new argLine row); claude-progress.txt (Post-review fixes section);
+  requirements.md REQ-015 now says the root `target/` (orchestrator).
+- Tests: n/a (docs). Vocabulary scan passes over the edited docs.
+- Notes: correctness review checked §6 line by line against the test: no findings.
+
+## Task 5.1 — README (pending human review)
+- Drafted README.md with the six design §7 sections; ten deferred features each once;
+  "JDK 25 or newer" (matches Enforcer); non-affiliation line adds "or endorsed by".
+  Correctness review Low: Windows command changed to `.\mvnw.cmd verify` (PowerShell
+  rejects bare mvnw.cmd). Awaiting user review of wording before marking complete.
+
+## Task 5.1 — Write README.md with the six sections from design §7 (summary, nothing is stored, prerequisites, build and run, deliberately not included, project documents) using neutral vocabulary only
+- Completed: 2026-09-13 (user reviewed and approved the wording)
+- Files changed: README.md (new); backlog/001-project-scaffold-and-package-layout.md
+  (deferred list now includes save-in-place, matching requirements, design, and README: ten items)
+- Tests: NeutralVocabularyTests scans README.md; full ./mvnw verify 42 tests, 0 failures.
+- Notes: see the pending-review entry above for wording decisions; all approved as drafted.

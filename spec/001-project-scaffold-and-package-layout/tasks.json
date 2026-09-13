@@ -112,14 +112,24 @@
           "description": "Write README.md with the six sections from design §7 (summary, nothing is stored, prerequisites, build and run, deliberately not included, project documents) using neutral vocabulary only",
           "files": ["README.md"],
           "dependencies": ["2.2"],
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "5.2",
-          "description": "Add .editorconfig per design §8 (including a *.{cmd,bat} CRLF section), add .gitattributes (text=auto eol=lf, /mvnw eol=lf, *.cmd and *.bat eol=crlf), append .jqwik-database to the existing .gitignore, then run git add --renormalize . and confirm git ls-files --eol shows mvnw i/lf, mvnw.cmd i/crlf, and mvnw mode 100755",
+          "description": "Add .editorconfig per design §8 (including a *.{cmd,bat} CRLF section), add .gitattributes (text=auto eol=lf, /mvnw eol=lf, *.cmd and *.bat eol=crlf), append .jqwik-database to the existing .gitignore, then run git add --renormalize . and confirm git ls-files --eol shows mvnw i/lf, mvnw.cmd i/lf w/crlf, and mvnw mode 100755",
           "files": [".editorconfig", ".gitattributes", ".gitignore", "mvnw", "mvnw.cmd"],
           "dependencies": ["2.2"],
-          "status": "pending"
+          "status": "complete"
+        },
+        {
+          "id": "5.3",
+          "description": "Sync docs with the post-review fixes: update design §6 NeutralVocabularyTests (whole-file matching, singular/plural, wider separators, file-path check, root-only target skip, @TempDir skip-rule test) and §13 skip-list row, note the Surefire Mockito javaagent in design §5, and log the fixes in claude-progress.txt",
+          "files": [
+            "spec/001-project-scaffold-and-package-layout/design.md",
+            "spec/001-project-scaffold-and-package-layout/claude-progress.txt"
+          ],
+          "dependencies": [],
+          "status": "complete"
         }
       ]
     },

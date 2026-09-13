@@ -59,11 +59,13 @@ the success metrics. Commits go straight to `main`.
 
 ## Phase 5: README and supporting files
 
-- [ ] Write README.md with the six sections from design §7 (summary, nothing is stored, prerequisites, build and run, deliberately not included, project documents) using neutral vocabulary only
+- [x] Write README.md with the six sections from design §7 (summary, nothing is stored, prerequisites, build and run, deliberately not included, project documents) using neutral vocabulary only
   - ID 5.1 · Depends on: 2.2
-- [ ] Add .editorconfig per design §8 (including a *.{cmd,bat} CRLF section), add .gitattributes (text=auto eol=lf, /mvnw eol=lf, *.cmd and *.bat eol=crlf), append .jqwik-database to the existing .gitignore, then run git add --renormalize . and confirm git ls-files --eol shows mvnw i/lf, mvnw.cmd i/crlf, and mvnw mode 100755
+- [x] Add .editorconfig per design §8 (including a *.{cmd,bat} CRLF section), add .gitattributes (text=auto eol=lf, /mvnw eol=lf, *.cmd and *.bat eol=crlf), append .jqwik-database to the existing .gitignore, then run git add --renormalize . and confirm git ls-files --eol shows mvnw i/lf, mvnw.cmd i/lf w/crlf, and mvnw mode 100755
   - ID 5.2 · Depends on: 2.2
   - ⚠️ Risk: without .gitattributes a Windows clone (core.autocrlf=true) checks mvnw out as CRLF and ./mvnw fails with "bad interpreter" under WSL or Git Bash. Renormalizing stages files; stage only these supporting files and the wrapper, not unrelated work.
+- [x] Sync docs with the post-review fixes: update design §6 NeutralVocabularyTests (whole-file matching, singular/plural, wider separators, file-path check, root-only target skip, @TempDir skip-rule test) and §13 skip-list row, note the Surefire Mockito javaagent in design §5, and log the fixes in claude-progress.txt
+  - ID 5.3 · Depends on: none
 
 ## Phase 6: Verification
 

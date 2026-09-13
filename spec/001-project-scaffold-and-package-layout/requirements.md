@@ -109,7 +109,8 @@ that enforce the layout come in story 015, and the CI gates in story 019.
   the Maven version is below the wrapper's pinned version, or any `SNAPSHOT` dependency is
   present. Story 015 may extend it with the no-second-module and no-Node checks.
 - **REQ-015**: A test that runs in `./mvnw verify` scans every file in the repository
-  except `.git/`, `target/`, IDE folders, `prd/`, `backlog/`, and the test's own source. It
+  except `.git/`, the root `target/`, IDE folders, `prd/`, `backlog/`, and the test's own
+  source. It
   fails if a trademarked name from PRD §1 (singular or plural), or the trademark owner's
   name, appears in a file's contents or path, in any letter case, with any mix of
   whitespace (including line breaks), hyphens, underscores, dots, or comment and quote

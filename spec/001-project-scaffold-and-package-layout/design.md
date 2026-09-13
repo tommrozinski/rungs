@@ -132,6 +132,12 @@ enables them and updates the health test.
   is still a milestone). Boot's BOM does not manage it, and `requirePluginVersions` checks
   the `clean`, `deploy`, and `site` lifecycle plugins by default and rejects Maven's built-in
   versions. Boot already pins the clean and deploy plugins.
+- Mockito as a test agent: `maven-dependency-plugin` runs the `properties` goal, which exposes
+  `${org.mockito:mockito-core:jar}`, and `maven-surefire-plugin` sets
+  `<argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>`. Without it the JDK warns
+  that an agent was loaded dynamically, and future JDKs will block that. Because the pom now
+  sets `argLine`, `-DargLine=...` on the command line is ignored; add extra JVM arguments in
+  the pom instead. Story 019's JaCoCo agent must prepend `@{argLine}` to keep Mockito loaded.
 - No other modules, no `<modules>` section, no frontend plugin.
 
 Wrapper generation (one time, during implementation):
@@ -183,14 +189,29 @@ public class RungsApplication {
     `health-path`. Boot adds one link per web operation, and the health operation with a
     path selector gets the ID `health-path`.
 - `NeutralVocabularyTests` (REQ-015): plain JUnit 5 with no Spring context.
-  - Walks the project root (Surefire's working directory), skipping `.git/`, `target/`,
-    `.idea/`, `.vscode/`, `prd/`, `backlog/`, and its own source file.
-  - Reads each file as UTF-8 and skips files that do not decode.
-  - Matches, ignoring case, the PRD §1 trademark terms and the trademark owner's name, with
-    a space, hyphen, underscore, or nothing between words.
-  - Fails with every `path:line` match listed.
+  - Walks the project root (Surefire's working directory, checked by asserting `pom.xml`
+    exists) without following links. Skips `.git/`, `.idea/`, and `.vscode/` at any depth;
+    skips `target/`, `prd/`, `backlog/`, and its own source file only at their root-relative
+    paths, so a source package named `target` is still scanned. Hidden folders such as
+    `.mvn/` are scanned.
+  - Checks each file's root-relative path, reporting `path: file path contains a trademarked
+    name`, so asset names are caught even for binary files.
+  - Reads each file as UTF-8. Files that do not decode have their contents skipped; their
+    path is still checked.
+  - Matches over whole file contents, so a term wrapped across lines is still found; the
+    reported line is the one where the match starts. Matches, ignoring case, the PRD §1
+    terms (the first in singular or plural) and the trademark owner's name, with no word
+    boundaries so identifiers that embed a term are caught.
+  - Between words, accepts nothing or any mix of whitespace (line breaks, tabs, and, via
+    `UNICODE_CHARACTER_CLASS`, non-breaking spaces), hyphens, underscores, dots, and the
+    comment and quote markers `/`, `*`, `#`, `>` that start a wrapped line.
+  - Fails with every `path:line: text` match listed.
+  - A `@TempDir` test pins the walker: skip rules, the `path:line` format, a wrapped-line
+    hit, a scanned `.mvn/` file, a scanned nested `target` package, a path-only hit, and the
+    binary-file skip. Parameterized tests cover 30 spellings that must match and 6 neutral
+    phrases that must not.
   - Spec documents are scanned, so they refer to the terms through PRD §1 and never spell
-    them out.
+    them out, even split across lines.
 
 In Boot 4, `@SpringBootTest` alone does not provide MockMvc; `@AutoConfigureMockMvc` is
 required. `MockMvcTester` uses AssertJ, which `spring-boot-starter-test` already provides.
@@ -233,9 +254,10 @@ No trademarked framework names anywhere (PRD §1).
 
   Without it, Git for Windows (`core.autocrlf=true` by default) checks `mvnw` out with CRLF,
   and running it from WSL, Git Bash, or a Linux container fails with
-  `/bin/sh^M: bad interpreter`. After adding the file, run `git add --renormalize .` and
-  confirm with `git ls-files --eol` that `mvnw` is `i/lf` and `mvnw.cmd` is `i/crlf`, and
-  that `mvnw` is still mode `100755`.
+  `/bin/sh^M: bad interpreter`. After adding the file, run `git add --renormalize` on the
+  wrapper and supporting files and confirm with `git ls-files --eol` that `mvnw` is
+  `i/lf w/lf` and `mvnw.cmd` is `i/lf w/crlf` (`text eol=crlf` stores LF in git and writes
+  CRLF on checkout), and that `mvnw` is still mode `100755`.
 - `.gitignore`: keep existing entries; add `.jqwik-database` now so story 014 needs no
   change.
 - `templates/.gitkeep`, `static/.gitkeep` (REQ-007).
@@ -287,8 +309,9 @@ No trademarked framework names anywhere (PRD §1).
 | Local JDK (26) is newer than the target (25) | Behavior seen only on JDK 25 is missed locally | `--release 25` blocks JDK 26-only APIs at compile time; CI on JDK 25 (story 019) catches runtime differences |
 | Windows clone checks `mvnw` out with CRLF, or an editor saves `mvnw.cmd` as LF | `./mvnw` fails with "bad interpreter"; Windows wrapper breaks | `.gitattributes` pins `mvnw` to LF and `*.cmd` to CRLF; `.editorconfig` keeps `*.cmd` CRLF (§8) |
 | Thymeleaf warns about an empty template location | Noisy startup log | `.gitkeep` keeps `templates/` on the classpath; warning checked on first run |
-| Trademarked names slip into README or code | Public-repo exposure | `NeutralVocabularyTests` fails `./mvnw verify` (REQ-015); no later story covers this |
-| Vocabulary scan trips on local untracked files | False failures on one machine | Skip `.git/`, `target/`, and IDE folders; widen the skip list only for generated or untracked folders |
+| Trademarked names slip into README, code, or file names | Public-repo exposure | `NeutralVocabularyTests` scans contents and paths, across wrapped lines and mixed separators, and fails `./mvnw verify` (REQ-015); no later story covers this |
+| Vocabulary scan trips on local untracked files | False failures on one machine | Skip `.git/` and IDE folders at any depth and root `target/`; widen the skip list only for generated or untracked folders |
+| Pom sets Surefire `argLine` for the Mockito agent | `-DargLine=...` is silently ignored; a later JaCoCo agent could drop Mockito's | Put extra JVM arguments in the pom; story 019 prepends `@{argLine}` (§5) |
 
 ## 14. Requirements traceability
 

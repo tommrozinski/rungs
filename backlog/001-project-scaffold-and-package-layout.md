@@ -58,7 +58,7 @@ trademarked names of the published framework must not appear.
   public README.
 - README names the conscious deferrals from PRD section 12 and design spec
   section 8: auth, rate limiting, persistence, multi-tenancy, i18n, saved
-  households, printing/PDF, dark mode, and charting.
+  households, printing/PDF, dark mode, charting, and save-in-place.
 
 ## Size
 
