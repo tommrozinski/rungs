@@ -1,0 +1,10 @@
+# REQ-006: keep the build context small and free of unrelated documents.
+target/
+.git/
+.idea/
+.vscode/
+*.iml
+prd/
+backlog/
+spec/
+docs/

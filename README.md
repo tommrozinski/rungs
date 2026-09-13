@@ -58,6 +58,69 @@ It should respond with:
 {"status":"UP"}
 ```
 
+## Run with Podman
+
+A hand-written multi-stage `Dockerfile` builds a small, non-root container image; the same
+file also works with the Docker CLI. Building or running the image is optional and never
+part of `./mvnw verify`, which only needs a JDK.
+
+Install Podman and start its VM (once):
+
+```sh
+brew install podman
+podman machine init
+podman machine start
+```
+
+Build the image. `--format docker` is required so the `HEALTHCHECK` instruction below is
+honored; Podman's default OCI format silently ignores it:
+
+```sh
+podman build --format docker -t rungs .
+```
+
+Run it read-only and as its non-root user, on port 18080 so it does not clash with a
+locally running `./mvnw spring-boot:run`:
+
+```sh
+podman run -d --read-only --tmpfs /tmp -p 18080:8080 --name rungs rungs
+```
+
+`--tmpfs /tmp` gives the JVM a writable `/tmp` (it uses it for a handful of small runtime
+files); nothing else on disk is writable, and nothing durable is ever written there — the
+tmpfs disappears with the container.
+
+Confirm it is non-root and becomes healthy:
+
+```sh
+podman exec rungs id
+podman healthcheck run rungs
+```
+
+Smoke-check it end to end: the readiness probe, then one assessment request.
+
+```sh
+curl localhost:18080/actuator/health/readiness
+
+curl -X POST localhost:18080/v1/assessments -H 'Content-Type: application/json' -d '
+{"monthlyTakeHomeIncome": "5000", "monthlyEssentialExpenses": "3000", "starterEmergencyFund": "1000",
+ "fullEmergencyFund": "9000", "retirementContributionPercent": "15", "emergencyFundMonths": 3,
+ "debts": [], "mortgage": null,
+ "householdFlags": {"rents": true, "retired": false, "intendsToFundCollege": false}}'
+```
+
+The first should respond `{"status":"UP"}`; the second, a full stage-by-stage assessment
+with HTTP 200.
+
+Stop and remove the container when done:
+
+```sh
+podman rm -f rungs
+```
+
+The image is built and run locally only: it is not published to a registry, and no CI
+workflow builds it.
+
 ## Deliberately not included
 
 Each of these is a legitimate concern for a production system. Leaving them out is a

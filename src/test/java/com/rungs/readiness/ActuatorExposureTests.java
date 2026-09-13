@@ -20,15 +20,38 @@ class ActuatorExposureTests {
     }
 
     @Test
-    void healthEndpointReturnsOnlyUpStatus() {
+    void healthEndpointReturnsUpStatusAndTheProbeGroupNames() {
+        // With readiness/liveness probes enabled (story 037), Boot always lists the configured group names
+        // alongside the aggregate status; this is separate from show-details, which stays "never".
         assertThat(mvc.get().uri("/actuator/health"))
                 .hasStatusOk()
-                .hasBodyTextEqualTo("{\"status\":\"UP\"}");
+                .bodyJson()
+                .extractingPath("$.status")
+                .isEqualTo("UP");
+        assertThat(mvc.get().uri("/actuator/health"))
+                .bodyJson()
+                .extractingPath("$.groups")
+                .asList()
+                .containsExactlyInAnyOrder("liveness", "readiness");
     }
 
     @Test
     void envEndpointIsNotExposed() {
         assertThat(mvc.get().uri("/actuator/env")).hasStatus(404);
+    }
+
+    @Test
+    void readinessProbeReturnsOnlyUpStatus() {
+        assertThat(mvc.get().uri("/actuator/health/readiness"))
+                .hasStatusOk()
+                .hasBodyTextEqualTo("{\"status\":\"UP\"}");
+    }
+
+    @Test
+    void livenessProbeReturnsOnlyUpStatus() {
+        assertThat(mvc.get().uri("/actuator/health/liveness"))
+                .hasStatusOk()
+                .hasBodyTextEqualTo("{\"status\":\"UP\"}");
     }
 
     @Test
