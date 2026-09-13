@@ -44,7 +44,7 @@ check. Commits go straight to `main`.
 
 ## Phase 3: Formatting
 
-- [ ] Add toBareString and toDisplayString built from Long.toString(cents) with manual comma grouping, with MoneyFormattingTests for 0, 1, 10, 99, 100, 123456, 100000000, -1, -123456, Long.MAX_VALUE, and Long.MIN_VALUE under the default, de-DE, fr-FR, and ar-EG-u-nu-arab locales
+- [x] Add toBareString and toDisplayString built from Long.toString(cents) with manual comma grouping, with MoneyFormattingTests for 0, 1, 10, 99, 100, 123456, 100000000, -1, -123456, Long.MAX_VALUE, and Long.MIN_VALUE under the default, de-DE, fr-FR, and ar-EG-u-nu-arab locales
   - ID 3.1 · Depends on: 2.1
   - ⚠️ Risk: a locale-aware helper (`String.format`, `NumberFormat`) slipping in; de-DE and fr-FR catch separator changes and ar-EG-u-nu-arab catches digit substitution. Restore the default locale in `finally`.
 

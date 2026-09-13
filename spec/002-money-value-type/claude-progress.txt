@@ -69,3 +69,19 @@ Local JDK: OpenJDK 26 via JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jd
   factor just above 1 returns MIN) — added by the orchestrator as a follow-up. Loosening a
   guard constant is result-invisible (setScale/longValueExact give the same outcome), so
   those mutations can't be caught by result tests; accepted. review-changes: no blockers.
+
+## Task 3.1 — Add toBareString and toDisplayString built from Long.toString(cents) with manual comma grouping, with MoneyFormattingTests under the default, de-DE, fr-FR, and ar-EG-u-nu-arab locales
+- Completed: 2026-09-13
+- Files changed: Money.java (toBareString, toDisplayString; private signPrefix, paddedDigits,
+  groupThousands; constants FRACTION_DIGITS, MIN_DIGITS, GROUP_SIZE),
+  MoneyFormattingTests.java (new)
+- Tests: 61 (15-row table incl. Long.MAX_VALUE/MIN_VALUE and grouping boundaries 99999,
+  100000, 99999999, 100000000000 under the JVM default; the same table under de-DE, fr-FR,
+  ar-EG-u-nu-arab with the default locale restored in @AfterEach; zero never negative).
+  `./mvnw clean verify`: 226 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD). Mutation: String.format("%,d") in groupThousands →
+  31 failures (de-DE/fr-FR grouping, every ar-EG row via digit substitution); restored.
+  Correctness review: no findings; confirmed every output is accepted by the §6.4 parse rules
+  (longest 27 chars). Low notes: zero-sign test duplicates the 0 row (negative zero matters
+  for parse in 4.2); JVM-default rows alone would miss String.format on an en-US machine,
+  the non-US rows cover it. review-changes: no blockers.
