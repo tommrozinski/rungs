@@ -14,3 +14,121 @@ Started: 2026-09-13
 - Next: run task 1.1 with a Sonnet implementation-engineer (per the fallback rule).
 - Lessons for future local-model tasks: always use `--nowordwrap`; in the prompt, state
   visibility constraints explicitly (e.g. "build AssessmentService yourself from new StageLadder(List.of(...seven evaluators))").
+
+## Task 1.1 — ExampleHouseholds (Sonnet fallback)
+- 2026-09-13. Sonnet implementation-engineer, TDD. Added application ExampleHouseholds (ids, byId) and
+  ExampleHouseholdsTests (ids order, all values, unknown/null id, FieldsThenWholeForm validity, stages 1/4/6
+  via a locally built AssessmentService). Presets landed on design stages unchanged.
+- clean verify: 1271 tests green, JaCoCo gates met.
+
+## Task 2.1 — layout, htmx vendoring, form screen, SnapshotValidator
+- 2026-09-13. Sonnet implementation-engineer, TDD.
+- Vendored htmx 2.0.10 at `static/js/vendor/htmx.min.js`, downloaded from
+  https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js (cross-checked byte-identical
+  against unpkg's copy of the same release).
+  SHA-256: 71ea67185bfa8c98c39d31717c6fce5d852370fcdfd129db4543774d3145c0de
+- Spike (not committed): a throwaway `@ModelAttribute SnapshotInput` controller + MockMvc test
+  proved Spring 7 constructor-binds nested record lists from form-urlencoded fields
+  (`debts[0].balance`, `mortgage.balance`, `householdFlags.rents`) with no fallback form record
+  needed (design §6 risk resolved in favor of the direct approach).
+- Required-extra: added `application.validation.SnapshotValidator` (wraps the Spring-provided
+  jakarta Validator, always validates with FieldsThenWholeForm; also exposes validateProperty for
+  on-blur), `FieldRejection` (pointer + Rejection), `FieldSummary` (shared "{n} field(s) need
+  attention." wording), and `PropertyPaths` (the ConstraintViolation-path-to-pointer logic moved out
+  of `adapter.in.web.api.JsonPointers`, which now delegates to it and keeps only its
+  Jackson-specific half). `AssessmentController` now calls `SnapshotValidator` and throws a new
+  package-private `SnapshotValidationException` on violations; `ProblemDetailsAdvice` handles that
+  exception instead of `MethodArgumentNotValidException` (removed, since nothing throws it anymore).
+  Wire contract unchanged: AssessmentContractTests, ProblemDetailsContractTests,
+  ProblemDetailsAdviceTests, JsonPointersTests, and the golden JSON all still pass unmodified.
+  Added `SnapshotValidationScanTests` (a cheap source scan, not full ArchUnit) asserting no class
+  under `adapter.in.web` uses `@Valid`/`@Validated` (comments excluded), so the single entry point
+  is enforced going forward.
+- Added `SnapshotInput.forForm()` (027 REQ-007 display normalization: blanks to "0", null months to
+  3, null mortgage to an all-zero one, null flags to false, blank debt labels to "Debt N" by
+  position; keeps $0 debt rows unlike `toSnapshot()`).
+
+## Task 3.1 — 029: AssessmentPage, assessPage, page controller and template, figures-match test
+- 2026-09-13. Sonnet implementation-engineer, TDD.
+- Added `application.AssessmentPage` (`assessment` = the same `AssessmentResponse` the API serializes, plus
+  `totalDebt` and `emergencyFund` `MoneyResponse`s computed from the `FinancialSnapshot`, `surplusPositive`, and
+  `documentTitle`, e.g. "Your stage: 2 of 7 · Rungs", all built in Java per AC-G) and
+  `AssessmentService.assessPage(SnapshotInput)`. Refactored the existing `assess(...)` and the new `assessPage(...)`
+  to share one private `assessWithSnapshot` step (an `AssessedSnapshot` record pairing the assessment and the
+  snapshot it came from) so `toSnapshot()`/the ladder run once; `assess(...)`'s own behavior and tests are
+  unchanged.
+- Changed `StageRowViews.CHANGE_NUMBERS_ACTION` from `/snapshot` to `/` (design decision); its own tests and the
+  gallery reference the constant, not the literal, so nothing else needed updating.
+- Added view-package types: `HiddenField` (name/value) and `HiddenSnapshotFields.of(SnapshotInput normalized)`
+  (flattens a `forForm()`-normalized snapshot into every form field, including debts by index and the mortgage,
+  booleans as `"true"`/`"false"`), `StatCardView`, `WarningBannerView`, `AssessmentPageView`, and
+  `AssessmentPageViews.of(AssessmentPage, SnapshotInput normalizedForHiddenFields)` (maps stage responses through
+  026's `StageRowViews.row`/`verdict`, and warnings through a fixed caution heading "Check these numbers" since
+  `WarningResponse` carries no heading of its own — a small-detail decision, revisit if story 012 warrants a
+  code-specific heading).
+- Added `templates/fragments/hidden-snapshot.html` (one `<input type="hidden">` per `HiddenField`, via `th:each`
+  on the fragment's own root element — a single input tag, not a wrapper — since `th:each` and `th:replace` on the
+  *same* element fail to resolve inner `${...}` parameter expressions against the loop variable in this Thymeleaf
+  version; confirmed by a failing spike, so the warnings loop in `assessment/page.html` uses the same two-element
+  workaround: an outer `th:each` div, an inner `th:replace` div) and `templates/assessment/page.html` (H1 "Your
+  stage", section order verdict → stats → warnings (only when non-empty) → ladder; the ladder's `hiddenFields` slot
+  feeds `fragments/hidden-snapshot`).
+- Added `AssessmentPageController` (`POST /assessment`): validates via `SnapshotValidator` (never `@Valid`); on
+  failure, calls `SnapshotFormController.render(...)` (changed from `private` to package-private `static`, its
+  only change) so a failed submit re-renders `snapshot/form.html` exactly as a failed `POST /` does, at status 200
+  (2.1's pinned status, reused rather than re-decided); on success, renders `assessment/page.html` from
+  `AssessmentService.assessPage(submitted)`. "Change my numbers" already posted to `/`, and `POST /` already
+  re-validates and re-renders the form (from task 2.1), so the hidden-field round trip needed no controller
+  change beyond the constant.
+- Tests added: `AssessmentPageTests` (unit), `AssessmentServiceTests` (+2 for `assessPage`), `HiddenSnapshotFieldsTests`,
+  `HiddenSnapshotFragmentTests`, `AssessmentPageViewsTests`, `AssessmentPageTemplateTests` (renders
+  `assessment/page.html` directly with a hand-built `AssessmentPageView` via `FragmentRenderer`, so the
+  warnings-present path is covered even though the real service reports none until story 012 — section order, all
+  seven stages, warnings present/absent, document title, hidden fields in the current row's call to action), and
+  `AssessmentPageControllerTests` (MockMvc): a figures-match test over all three `ExampleHouseholds` comparing
+  every rendered surplus figure, percentage, blocker, and skip reason against `POST /v1/assessments` JSON for the
+  same input (via `com.jayway.jsonpath`, already on the test classpath through `spring-test`); document title;
+  validation failure re-renders the form; and a full round trip where the rendered hidden fields are POSTed back
+  to `/` and reproduce the same filled form.
+- `./mvnw clean verify`: 1369 tests green (up from the 1339 baseline), JaCoCo gates met.
+
+## Review fixes (post-implementation code review)
+
+- **CRITICAL — form binding 500.** `SnapshotFormController` (`POST /`, `/snapshot/debts/add`,
+  `/snapshot/debts/remove/{index}`) and `AssessmentPageController` (`POST /assessment`) bind `@ModelAttribute
+  SnapshotInput` by record constructor; a posted `debts[N]` at or beyond Spring's `autoGrowCollectionLimit` (256),
+  e.g. `debts[99999].balance=100`, made `DataBinder.createList` throw an uncaught `IndexOutOfBoundsException`
+  before either controller or `SnapshotValidator` ran, reaching the client as an HTTP 500. Separately, a sparse
+  post within the limit (e.g. only `debts[200].balance` set, so the bound list has 201 entries and every one below
+  200 is `null`) made `SnapshotInput.forForm()` throw an uncaught `NullPointerException` in the same request.
+  Fixed with two changes, both scoped to just those two controllers:
+  - Added `SnapshotBindingAdvice`, a `@ControllerAdvice(assignableTypes = {SnapshotFormController.class,
+    AssessmentPageController.class})` that answers `IndexOutOfBoundsException` (the out-of-range binder failure)
+    and `IllegalArgumentException` (see the field-name finding below) with a plain 400 body, no figures from the
+    request and no stack trace.
+  - Added `SnapshotFormController.sanitized(SnapshotInput)`: when a debt list has a `null` entry, returns a copy
+    with a blank row standing in for each one, so rendering never NPEs; `SnapshotValidator.validate` still runs on
+    the *original*, unsanitized submission first, so a sparse index is still correctly reported as `INVALID_TYPE`
+    at that index, exactly as the API path already does. Called before `forForm()` in `changeNumbers`,
+    `AssessmentPageController.assess`'s failure path, `addDebt`, and `removeDebt`.
+  - Tests: `SnapshotFormControllerTests` and `AssessmentPageControllerTests` gained parameterized cases for
+    `debts[256]`/`debts[99999]` (asserts 400) and a dedicated sparse-index case, `debts[200]` (asserts status <
+    500), on all four endpoints.
+
+- **MEDIUM — `text-field.html` always wired to `/snapshot/field`.** The fragment carried `hx-post="/snapshot/field"`
+  unconditionally, so `/dev/components` gallery fields (names like `income`, `incomeFocus`, which are not real
+  snapshot fields) posted there on blur and `FormFields.forBlur`/`topLevelField` threw an uncaught
+  `IllegalArgumentException` → 500. Fixed both sides:
+  - The fragment gained a `blurValidated` parameter; the `hx-*` attributes are now emitted only when it is true
+    (`th:attr` with a ternary per attribute, matching the existing `th:aria-invalid`/`th:aria-describedby` idiom).
+    Every real call in `snapshot/form.html` and `snapshot/field.html` now passes `blurValidated=true`;
+    `dev/components.html`'s four gallery calls pass `blurValidated=false` (Thymeleaf's fragment-selection syntax
+    requires every declared parameter be given a value at the call site, even if null/false).
+  - `SnapshotBindingAdvice`'s `IllegalArgumentException` handler (see above) turns an unknown field name posted to
+    `/snapshot/field` into a 400 instead of a 500.
+  - Tests: `TextFieldFragmentTests` gained `hasNoOnBlurWiringByDefaultAsInTheComponentGallery` and
+    `addsOnBlurWiringWhenRequestedAsInTheSnapshotForm`; `ComponentGalleryTests` gained an assertion that no
+    gallery `input.input` carries `hx-post`; `SnapshotFormControllerTests` gained
+    `onBlurWithAnUnknownFieldNameIs400`.
+
+- `./mvnw -B -ntp clean verify`: 1384 tests green (up from 1369), JaCoCo gates met, BUILD SUCCESS.
