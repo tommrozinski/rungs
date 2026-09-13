@@ -42,6 +42,7 @@ class ComponentGalleryTests {
             assertThat(page.selectFirst("link[rel=stylesheet]").attr("href")).isEqualTo("/css/rungs.css");
             assertThat(page.selectFirst("link[rel=preload][as=font]").attr("href"))
                     .isEqualTo("/fonts/InterVariable.woff2");
+            assertThat(page.selectFirst("noscript").text()).isEqualTo("Rungs needs JavaScript turned on.");
             assertThat(page.select("button.btn")).hasSizeGreaterThanOrEqualTo(12);
             assertThat(page.select("button.btn.is-hover")).hasSize(3);
             assertThat(page.select("button.btn.is-focus")).hasSize(3);

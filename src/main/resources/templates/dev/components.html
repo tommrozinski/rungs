@@ -1,13 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Component gallery</title>
-    <link rel="preload" th:href="@{/fonts/InterVariable.woff2}" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" th:href="@{/css/rungs.css}">
-</head>
+<head th:replace="~{layout :: head(title='Component gallery')}"></head>
 <body>
+<div th:replace="~{layout :: noscript}"></div>
 <main class="gallery">
     <h1>Component gallery</h1>
 

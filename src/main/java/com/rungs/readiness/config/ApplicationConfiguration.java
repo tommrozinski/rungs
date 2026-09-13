@@ -50,4 +50,10 @@ public class ApplicationConfiguration {
     SnapshotValidator snapshotValidator(Validator validator) {
         return new SnapshotValidator(validator);
     }
+
+    /** 034 REQ-002/REQ-007: the security headers filter, on every request and error dispatch. */
+    @Bean
+    SecurityHeadersFilter securityHeadersFilter() {
+        return new SecurityHeadersFilter();
+    }
 }
