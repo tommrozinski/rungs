@@ -9,7 +9,7 @@
 
 - [x] Requirements drafted
 - [x] Requirements approved
-- [ ] Design drafted
+- [x] Design drafted
 - [ ] Design approved
 - [ ] Tasks drafted
 - [ ] Tasks approved
