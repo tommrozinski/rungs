@@ -10,5 +10,5 @@
   - ID 1.1 · Depends on: none
 - [x] Add .github/workflows/ci.yml (push and pull_request, contents: read, concurrency, Temurin 25 with Maven cache, ./mvnw -B verify, JaCoCo artifact always, test reports on failure)
   - ID 1.2 · Depends on: 1.1
-- [ ] Add the CI badge and coverage-gate note to README.md, push, and confirm a green run with the jacoco-report artifact
+- [x] Add the CI badge and coverage-gate note to README.md, push, and confirm a green run with the jacoco-report artifact
   - ID 1.3 · Depends on: 1.2

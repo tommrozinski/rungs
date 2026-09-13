@@ -17,3 +17,4 @@ Started: 2026-09-13
   on main). Low accepted: duplicate push+PR runs for same-repo branches; `-DskipTests`
   skips the check locally. Security: contents: read, no secrets, no untrusted input in run
   steps; actions pinned by major tag per REQ-001.
+- CI: first run on fba3974 green (run 34774664569).
