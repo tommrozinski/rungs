@@ -6,9 +6,9 @@
 
 ## Phase 1: Architecture rules (015)
 
-- [ ] Add archunit-junit5 1.5.0 and ArchitectureRules (AC-A to AC-F, determinism) built from a root package, with ArchitectureTests on main classes and ArchitectureFixtureTests proving each rule fails on its archfixtures case
+- [x] Add archunit-junit5 1.5.0 and ArchitectureRules (AC-A to AC-F, determinism) built from a root package, with ArchitectureTests on main classes and ArchitectureFixtureTests proving each rule fails on its archfixtures case
   - ID 1.1 · Depends on: none
-- [ ] Add WebClientScanTests (AC-G patterns, literal stripping, vendor exclusion, 200-line JS budget) with resource fixtures, and SingleModuleScanTests (AC-H) with a @TempDir violation fixture
+- [x] Add WebClientScanTests (AC-G patterns, literal stripping, vendor exclusion, 200-line JS budget) with resource fixtures, and SingleModuleScanTests (AC-H) with a @TempDir violation fixture
   - ID 1.2 · Depends on: none
 
 ## Phase 2: Snapshot model (003)

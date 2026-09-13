@@ -41,3 +41,26 @@ Started: 2026-09-13
   Percentages.of rejects a negative part, so an underwater mortgage must be handled before the
   call (spec 006 REQ-004 already says progress 0.0).
 - Cleanup: removed an empty stray directory left by a failed file copy during the 003 merge.
+
+## Story 015 — Architecture rules (tasks 1.1, 1.2)
+- 2026-09-13. implementation-engineer in a worktree; merged into main after story 004.
+- Files: pom.xml (archunit-junit5 1.5.0, test scope); architecture/ ArchitectureRules (rule
+  factories by root package), ArchitectureTests (10 rules on main classes), ArchitectureFixtureTests
+  (each rule fails on its archfixtures case), WebClientScanTests (AC-G), SingleModuleScanTests
+  (AC-H, @TempDir violation tree); Java fixtures under archfixtures/; resource fixtures under
+  src/test/resources/archfixtures/ac-g/.
+- Rules: AC_A framework imports; AC_B domain→application/adapter; AC_C adapters independent,
+  outbound only via ports (bans), view not on domain.stage/projection; AC_D field injection;
+  AC_E immutable domain types, no public mutable fields; AC_F floating point; NFR_4 determinism.
+- Interpretations: REQ-004 read as bans (adapter.out may use domain.port and domain.model);
+  now(Clock) allowed; synthetic and anonymous classes exempt from "final" (fields still final);
+  AC-H skips .claude/ at any depth; AC-H fixture built in @TempDir, not committed (IDE risk).
+- Review: no Critical/High. Mediums fixed (NFR-4 method references like Instant::now; htmx hx-on
+  inline handlers; Thymeleaf arithmetic in *{…}, between expressions, and div/mod). Lows fixed:
+  anonymous-class false positive; Clock.system*, RandomGenerator, SplittableRandom, java.time.chrono
+  now(); <script data-src> counted as src. Lows accepted: static state in records/enums;
+  non-UTF-8 files skipped; .mjs not counted; @Value/@Resource injection (outside REQ-005);
+  IDE output folders defeat DoNotIncludeTests. Conservative scan flags |${a} - ${b}| literal
+  text — build such labels server-side.
+- Verification in main: 711 tests, all four architecture suites green against stories 002–004,
+  coverage gates met, no WARNING. Suites add ~1 s.
