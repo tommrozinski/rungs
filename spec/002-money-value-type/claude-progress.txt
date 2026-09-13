@@ -1,0 +1,26 @@
+# Implementation progress: 002-money-value-type
+
+Mode: TDD (src/test exists); config/infra tasks skip tests per the TDD rules
+Started: 2026-09-13
+Local JDK: OpenJDK 26 via JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home
+
+## Task 1.1 — Change the Surefire argLine in pom.xml to @{argLine} -javaagent:${org.mockito:mockito-core:jar} with an empty argLine property default, and confirm ./mvnw verify passes with no dynamic-agent warning
+- Completed: 2026-09-13
+- Files changed: pom.xml (empty <argLine></argLine> property with a comment; Surefire argLine
+  now `@{argLine} -javaagent:${org.mockito:mockito-core:jar}`)
+- Tests: config task, no new tests. `./mvnw -B -ntp verify`: 42 tests, 0 failures, BUILD
+  SUCCESS, no WARNING lines.
+- Notes: done directly by the orchestrator (two-line config change).
+
+## Task 1.2 — Run JaCoCo 0.8.15 (officially supports Java 26) prepare-agent, test, and report from the command line, confirm a report is produced for the existing classes, and record the command in claude-progress.txt
+- Completed: 2026-09-13
+- Files changed: none in the repo (report under target/, git-ignored)
+- Command (with JAVA_HOME set as above):
+    ./mvnw -B -ntp org.jacoco:jacoco-maven-plugin:0.8.15:prepare-agent test \
+           org.jacoco:jacoco-maven-plugin:0.8.15:report
+  Output: "argLine set to -javaagent:.../org.jacoco.agent-0.8.15-runtime.jar=destfile=
+  target/jacoco.exec"; 42 tests, 0 failures; "Analyzed bundle 'rungs' with 1 classes";
+  target/site/jacoco/index.html and jacoco.csv produced. No dynamic-agent warning.
+  Coverage per class: target/site/jacoco/jacoco.csv (LINE_MISSED/BRANCH_MISSED columns).
+- Notes: only RungsApplication is instrumented today; Money and MoneyFormatException will
+  appear once phases 2–4 add them (task 5.2 uses the same command).

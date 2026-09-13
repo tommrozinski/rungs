@@ -25,10 +25,10 @@ check. Commits go straight to `main`.
 
 ## Phase 1: Build
 
-- [ ] Change the Surefire argLine in pom.xml to @{argLine} -javaagent:${org.mockito:mockito-core:jar} with an empty argLine property default, and confirm ./mvnw verify passes with no dynamic-agent warning
+- [x] Change the Surefire argLine in pom.xml to @{argLine} -javaagent:${org.mockito:mockito-core:jar} with an empty argLine property default, and confirm ./mvnw verify passes with no dynamic-agent warning
   - ID 1.1 · Depends on: none
   - ⚠️ Risk: if `@{argLine}` is left unreplaced (no property default), the forked JVM fails to start.
-- [ ] Run JaCoCo 0.8.15 (officially supports Java 26) prepare-agent, test, and report from the command line, confirm a report is produced for the existing classes, and record the command in claude-progress.txt
+- [x] Run JaCoCo 0.8.15 (officially supports Java 26) prepare-agent, test, and report from the command line, confirm a report is produced for the existing classes, and record the command in claude-progress.txt
   - ID 1.2 · Depends on: 1.1
   - Note: checked 2026-09-13; 0.8.15 is the latest release and officially supports Java 26.
 
