@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.rungs.readiness.application.response.AssessmentResponse;
 import com.rungs.readiness.domain.model.Money;
+import com.rungs.readiness.domain.model.Severity;
+import com.rungs.readiness.domain.model.Warning;
+import com.rungs.readiness.domain.model.WarningCode;
 import com.rungs.readiness.domain.stage.CollegeEvaluator;
 import com.rungs.readiness.domain.stage.DebtFreeEvaluator;
 import com.rungs.readiness.domain.stage.FullEmergencyFundEvaluator;
@@ -85,7 +88,7 @@ class AssessmentServiceTests {
         List<Warning> warnings = new ArrayList<>();
         ReadinessAssessment assessment = new ReadinessAssessment(1, stages, Money.ZERO, warnings);
         stages.clear();
-        warnings.add(new Warning("CODE", "Message."));
+        warnings.add(new Warning(WarningCode.EXPENSES_EXCEED_INCOME, Severity.CAUTION, "Message.", List.of()));
 
         assertThat(assessment.stages()).hasSize(7);
         assertThat(assessment.warnings()).isEmpty();

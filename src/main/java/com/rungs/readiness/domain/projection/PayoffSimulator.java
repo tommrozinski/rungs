@@ -2,8 +2,8 @@ package com.rungs.readiness.domain.projection;
 
 import com.rungs.readiness.domain.model.Debt;
 import com.rungs.readiness.domain.model.Money;
+import com.rungs.readiness.domain.model.MonthlyInterest;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,9 +17,6 @@ import java.util.Set;
  * depends only on its argument.
  */
 public final class PayoffSimulator {
-
-    /** The monthly rate divisor: an annual percentage rate divides by 1200 to become a monthly factor. */
-    private static final BigDecimal MONTHS_TIMES_PERCENT = BigDecimal.valueOf(1200);
 
     /**
      * A closing balance at or above this many cents ($1,000,000,000,000.00, 1e14) is treated as runaway
@@ -53,7 +50,7 @@ public final class PayoffSimulator {
         private final long[] balanceCents;
         private final long[] startingBalanceCents;
         private final long[] minimumCents;
-        private final BigDecimal[] monthlyRateFactors;
+        private final BigDecimal[] annualInterestRates;
         private final boolean[] retired;
         private final int[] retiredMonth;
         private final int[] payoffOrder;
@@ -69,7 +66,7 @@ public final class PayoffSimulator {
             this.balanceCents = new long[debtCount];
             this.startingBalanceCents = new long[debtCount];
             this.minimumCents = new long[debtCount];
-            this.monthlyRateFactors = new BigDecimal[debtCount];
+            this.annualInterestRates = new BigDecimal[debtCount];
             this.retired = new boolean[debtCount];
             this.retiredMonth = new int[debtCount];
 
@@ -80,7 +77,7 @@ public final class PayoffSimulator {
                 balanceCents[i] = debt.balance().cents();
                 startingBalanceCents[i] = debt.balance().cents();
                 minimumCents[i] = debt.minimumPayment().cents();
-                monthlyRateFactors[i] = debt.annualInterestRate().divide(MONTHS_TIMES_PERCENT, MathContext.DECIMAL128);
+                annualInterestRates[i] = debt.annualInterestRate();
                 suppliedIndexById.put(debt.id(), i);
             }
 
@@ -113,7 +110,7 @@ public final class PayoffSimulator {
                         continue;
                     }
                     openingCents[i] = balanceCents[i];
-                    Money interest = Money.ofCents(balanceCents[i]).times(monthlyRateFactors[i]);
+                    Money interest = MonthlyInterest.on(Money.ofCents(balanceCents[i]), annualInterestRates[i]);
                     interestCents[i] = interest.cents();
                     balanceCents[i] = Math.addExact(balanceCents[i], interestCents[i]);
 

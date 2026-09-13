@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -81,7 +82,10 @@ class AssessmentContractTests {
                         + satisfied(6)
                         + ",{\"stage\":7,\"status\":\"IN_PROGRESS\",\"percentComplete\":\"50.0\",\"remainingAmount\":null,"
                         + "\"blocker\":\"3 of the 6 earlier stages are complete.\",\"skipReason\":null}],"
-                        + "\"monthlySurplus\":{\"amount\":\"-300.00\",\"display\":\"-$300.00\"},\"warnings\":[]}");
+                        + "\"monthlySurplus\":{\"amount\":\"-300.00\",\"display\":\"-$300.00\"},"
+                        + "\"warnings\":[{\"code\":\"EXPENSES_EXCEED_INCOME\",\"severity\":\"CAUTION\","
+                        + "\"message\":\"Your essential expenses and minimum payments are $300.00 more than your "
+                        + "take-home pay each month.\",\"debtIds\":[]}]}");
     }
 
     @Test
@@ -371,6 +375,38 @@ class AssessmentContractTests {
         assertThat(result).bodyJson().extractingPath("$.errors[0].code").isEqualTo(code);
         assertThat(result).bodyText().doesNotContain("abc").doesNotContain("fifteen").doesNotContain("\"MORTGAGE\"")
                 .doesNotContain("1,00\"").doesNotContain("Exception");
+    }
+
+    @Test
+    void warningsCarryCodeSeverityMessageAndDebtIds() {
+        // Income 3000, expenses 3200, minimum 1: surplus is -201, so EXPENSES_EXCEED_INCOME also fires; both are
+        // asserted together to prove code order (012 REQ-003, REQ-007).
+        String request = """
+                {"monthlyTakeHomeIncome": "3000", "monthlyEssentialExpenses": "3200",
+                 "debts": [{"label": "Card", "type": "CREDIT_CARD", "balance": "10000", "annualInterestRate": "24",
+                            "minimumPayment": "1"}],
+                 "emergencyFundMonths": 9}
+                """;
+
+        MvcTestResult result = post(request);
+
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.warnings").asArray().hasSize(3);
+        assertThat(result).bodyJson().extractingPath("$.warnings[0]").asMap().containsExactly(
+                entry("code", "EXPENSES_EXCEED_INCOME"), entry("severity", "CAUTION"),
+                entry("message", "Your essential expenses and minimum payments are $201.00 more than your "
+                        + "take-home pay each month."),
+                entry("debtIds", List.of()));
+        assertThat(result).bodyJson().extractingPath("$.warnings[1]").asMap().containsExactly(
+                entry("code", "NEGATIVE_AMORTIZATION"), entry("severity", "CAUTION"),
+                entry("message", "The minimum payment on Card doesn't cover its monthly interest, so the balance "
+                        + "grows."),
+                entry("debtIds", List.of("debt-1")));
+        assertThat(result).bodyJson().extractingPath("$.warnings[2]").asMap().containsExactly(
+                entry("code", "EMERGENCY_FUND_TARGET_CAPPED"), entry("severity", "CAUTION"),
+                entry("message", "Emergency fund targets are capped at 6 months, so your target uses 6 months "
+                        + "instead of 9."),
+                entry("debtIds", List.of()));
     }
 
     @Test

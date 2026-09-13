@@ -4,6 +4,7 @@ import com.rungs.readiness.application.response.MoneyResponse;
 import com.rungs.readiness.application.response.MonthlyPeriodResponse;
 import com.rungs.readiness.application.response.ProjectionDebtResponse;
 import com.rungs.readiness.application.response.ProjectionResponse;
+import com.rungs.readiness.application.response.WarningResponse;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.model.Money;
 import com.rungs.readiness.domain.projection.PayoffSimulation;
@@ -12,6 +13,7 @@ import com.rungs.readiness.domain.projection.SimulationInput;
 import com.rungs.readiness.domain.projection.Strategy;
 import com.rungs.readiness.domain.stage.LadderResult;
 import com.rungs.readiness.domain.stage.StageLadder;
+import com.rungs.readiness.domain.stage.WarningDetector;
 import java.util.List;
 import java.util.Objects;
 
@@ -67,6 +69,8 @@ public final class ProjectionService {
                 snapshot.debts().stream().map(ProjectionDebtResponse::from).toList();
         List<MonthlyPeriodResponse> schedule =
                 simulation.schedule().stream().map(MonthlyPeriodResponse::from).toList();
+        List<WarningResponse> warnings =
+                WarningDetector.detect(snapshot).stream().map(WarningResponse::from).toList();
 
         return new ProjectionResponse(
                 monthsToNextStage,
@@ -76,7 +80,7 @@ public final class ProjectionService {
                 simulation.unpayableDebtIds(),
                 debts,
                 schedule,
-                List.of());
+                warnings);
     }
 
     private static Money money(String text) {

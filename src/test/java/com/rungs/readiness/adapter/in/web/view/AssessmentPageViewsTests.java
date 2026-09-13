@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.rungs.readiness.application.AssessmentPage;
 import com.rungs.readiness.application.ReadinessAssessment;
 import com.rungs.readiness.application.SnapshotInput;
-import com.rungs.readiness.application.Warning;
 import com.rungs.readiness.application.response.MoneyResponse;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.model.HouseholdFlags;
 import com.rungs.readiness.domain.model.Money;
+import com.rungs.readiness.domain.model.Severity;
+import com.rungs.readiness.domain.model.Warning;
+import com.rungs.readiness.domain.model.WarningCode;
 import com.rungs.readiness.domain.stage.StageEvaluation;
 import com.rungs.readiness.domain.stage.StageStatus;
 import java.math.BigDecimal;
@@ -54,7 +56,8 @@ class AssessmentPageViewsTests {
     @Test
     void warningsBecomeCautionBannersWithTheirOwnMessage() {
         ReadinessAssessment assessment = new ReadinessAssessment(1, sevenStages(1), Money.ofDollars(500),
-                List.of(new Warning("EXPENSES_EXCEED_INCOME", "Your expenses are higher than your income.")));
+                List.of(new Warning(WarningCode.EXPENSES_EXCEED_INCOME, Severity.CAUTION,
+                        "Your expenses are higher than your income.", List.of())));
         AssessmentPage page = AssessmentPage.from(assessment, SNAPSHOT);
 
         List<WarningBannerView> warnings = AssessmentPageViews.of(page, blankSnapshot().forForm()).warnings();

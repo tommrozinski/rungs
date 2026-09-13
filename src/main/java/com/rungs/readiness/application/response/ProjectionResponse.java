@@ -15,7 +15,7 @@ import java.util.List;
  * @param unpayableDebtIds ids of debts that cannot be paid off within the horizon; an unmodifiable copy
  * @param debts every simulated debt, in supplied order; an unmodifiable copy
  * @param schedule every simulated month, in order; an unmodifiable copy
- * @param warnings the warnings; an unmodifiable copy, empty until story 012
+ * @param warnings non-fatal conditions detected on the snapshot (story 012); an unmodifiable copy
  */
 public record ProjectionResponse(
         Integer monthsToNextStage,

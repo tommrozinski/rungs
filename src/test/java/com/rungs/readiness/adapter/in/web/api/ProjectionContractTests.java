@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -145,6 +146,40 @@ class ProjectionContractTests {
         assertThat(result).hasStatusOk();
         assertThat(result).bodyJson().extractingPath("$.truncated").isEqualTo(true);
         assertThat(result).bodyJson().extractingPath("$.unpayableDebtIds").asArray().containsExactly("debt-1");
+    }
+
+    @Test
+    void warningsCarryCodeSeverityMessageAndDebtIds() {
+        // Income 3000, expenses 3200, minimum 1: surplus is -201, so EXPENSES_EXCEED_INCOME also fires; both are
+        // asserted together to prove code order (012 REQ-003, REQ-007).
+        String snapshot = "{\"monthlyTakeHomeIncome\": \"3000\", \"monthlyEssentialExpenses\": \"3200\","
+                + " \"emergencyFundMonths\": 9,"
+                + " \"debts\": [{\"label\": \"Card\", \"type\": \"CREDIT_CARD\", \"balance\": \"10000\","
+                + " \"annualInterestRate\": \"24\", \"minimumPayment\": \"1\"}]}";
+        String request = "{\"snapshot\": " + snapshot + "}";
+
+        MvcTestResult result = post(request);
+
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.warnings").asArray().hasSize(3);
+        assertThat(result).bodyJson().extractingPath("$.warnings[0]").asMap().containsExactly(
+                org.assertj.core.api.Assertions.entry("code", "EXPENSES_EXCEED_INCOME"),
+                org.assertj.core.api.Assertions.entry("severity", "CAUTION"),
+                org.assertj.core.api.Assertions.entry("message", "Your essential expenses and minimum payments are "
+                        + "$201.00 more than your take-home pay each month."),
+                org.assertj.core.api.Assertions.entry("debtIds", List.of()));
+        assertThat(result).bodyJson().extractingPath("$.warnings[1]").asMap().containsExactly(
+                org.assertj.core.api.Assertions.entry("code", "NEGATIVE_AMORTIZATION"),
+                org.assertj.core.api.Assertions.entry("severity", "CAUTION"),
+                org.assertj.core.api.Assertions.entry("message", "The minimum payment on Card doesn't cover its "
+                        + "monthly interest, so the balance grows."),
+                org.assertj.core.api.Assertions.entry("debtIds", List.of("debt-1")));
+        assertThat(result).bodyJson().extractingPath("$.warnings[2]").asMap().containsExactly(
+                org.assertj.core.api.Assertions.entry("code", "EMERGENCY_FUND_TARGET_CAPPED"),
+                org.assertj.core.api.Assertions.entry("severity", "CAUTION"),
+                org.assertj.core.api.Assertions.entry("message", "Emergency fund targets are capped at 6 months, "
+                        + "so your target uses 6 months instead of 9."),
+                org.assertj.core.api.Assertions.entry("debtIds", List.of()));
     }
 
     @Test

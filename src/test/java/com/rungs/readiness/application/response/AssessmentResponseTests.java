@@ -3,8 +3,10 @@ package com.rungs.readiness.application.response;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.rungs.readiness.application.ReadinessAssessment;
-import com.rungs.readiness.application.Warning;
 import com.rungs.readiness.domain.model.Money;
+import com.rungs.readiness.domain.model.Severity;
+import com.rungs.readiness.domain.model.Warning;
+import com.rungs.readiness.domain.model.WarningCode;
 import com.rungs.readiness.domain.stage.StageEvaluation;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -38,7 +40,8 @@ class AssessmentResponseTests {
                         StageEvaluation.skipped(6, "Rents."),
                         StageEvaluation.notStarted(7, Money.ofCents(1), "Earlier stages.")),
                 Money.ofDollars(-50),
-                List.of(new Warning("CODE", "A message.")));
+                List.of(new Warning(WarningCode.NEGATIVE_AMORTIZATION, Severity.CAUTION, "A message.",
+                        List.of("debt-1"))));
 
         assertThat(AssessmentResponse.from(assessment)).isEqualTo(new AssessmentResponse(1,
                 List.of(
@@ -52,7 +55,7 @@ class AssessmentResponseTests {
                         new StageResponse(7, "NOT_STARTED", "0.0", new MoneyResponse("0.01", "$0.01"),
                                 "Earlier stages.", null)),
                 new MoneyResponse("-50.00", "-$50.00"),
-                List.of(new WarningResponse("CODE", "A message."))));
+                List.of(new WarningResponse("NEGATIVE_AMORTIZATION", "CAUTION", "A message.", List.of("debt-1")))));
     }
 
     @Test
@@ -61,7 +64,7 @@ class AssessmentResponseTests {
         List<WarningResponse> warnings = new ArrayList<>();
         AssessmentResponse response = new AssessmentResponse(7, stages, new MoneyResponse("0.00", "$0.00"), warnings);
         stages.add(new StageResponse(1, "SATISFIED", "100.0", null, null, null));
-        warnings.add(new WarningResponse("CODE", "A message."));
+        warnings.add(new WarningResponse("CODE", "CAUTION", "A message.", List.of()));
 
         assertThat(response.stages()).isEmpty();
         assertThat(response.warnings()).isEmpty();

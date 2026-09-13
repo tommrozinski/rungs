@@ -3,7 +3,7 @@ package com.rungs.readiness.application;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.stage.LadderResult;
 import com.rungs.readiness.domain.stage.StageLadder;
-import java.util.List;
+import com.rungs.readiness.domain.stage.WarningDetector;
 import java.util.Objects;
 
 /** Assesses a submitted snapshot: normalizes it, runs the stage ladder, and computes the monthly surplus (FR-1). */
@@ -17,9 +17,9 @@ public final class AssessmentService {
     }
 
     /**
-     * Returns the assessment of {@code input} after FR-4 normalization; warnings are empty until story 012. Throws
-     * NullPointerException for null input, and IllegalArgumentException for input {@link SnapshotInput#toSnapshot}
-     * cannot normalize.
+     * Returns the assessment of {@code input} after FR-4 normalization, with warnings from {@link WarningDetector}
+     * (story 012). Throws NullPointerException for null input, and IllegalArgumentException for input
+     * {@link SnapshotInput#toSnapshot} cannot normalize.
      */
     public ReadinessAssessment assess(SnapshotInput input) {
         return assessWithSnapshot(input).assessment();
@@ -38,8 +38,8 @@ public final class AssessmentService {
     private AssessedSnapshot assessWithSnapshot(SnapshotInput input) {
         FinancialSnapshot snapshot = Objects.requireNonNull(input, "input").toSnapshot();
         LadderResult result = ladder.assess(snapshot);
-        ReadinessAssessment assessment =
-                new ReadinessAssessment(result.currentStage(), result.stages(), snapshot.monthlySurplus(), List.of());
+        ReadinessAssessment assessment = new ReadinessAssessment(
+                result.currentStage(), result.stages(), snapshot.monthlySurplus(), WarningDetector.detect(snapshot));
         return new AssessedSnapshot(assessment, snapshot);
     }
 
