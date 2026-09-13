@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # CSV snapshot format and parser
@@ -76,12 +76,15 @@ L
   support is needed now. Worth deciding whether the reader should tolerate a list
   of accepted markers anyway, so a future rename is not a breaking change for
   every file a user has saved.
-- The `DEBT` row has no id column, but `Debt.id` exists in the domain model. Are
-  ids generated on import, and how does that interact with the AC-7.1 identity
-  property?
-- The sample shows no `MORTGAGE` row and no `dependentsInCollegePlan` field. Can
-  a mortgage round trip at all? If not, export is lossy and AC-7.1 cannot hold for
-  snapshots that have one.
-- Is the emergency-fund multiple (stories 005, 012) a `FIELD` key?
-- Are `FIELD` keys case-sensitive? Is whitespace around values trimmed?
-- What happens on a duplicate `FIELD` key — last wins, or a rejection?
+- ~~Debt ids on import?~~ **Resolved.** Positional, reassigned on import; file
+  order is preserved, so they round-trip.
+- ~~Can a mortgage round trip?~~ **Resolved.** New optional single `MORTGAGE` row
+  (PRD FR-7). `dependentsInCollegePlan` was removed (spec 003).
+- ~~Emergency-fund multiple key?~~ **Resolved.** `FIELD,emergency_fund_months`.
+- ~~Key case and trimming?~~ **Resolved.** Keys exact lowercase; unquoted values
+  trimmed, quoted values kept exactly.
+- ~~Duplicate `FIELD` key?~~ **Resolved.** The later row is rejected
+  (`DUPLICATE_KEY`).
+- ~~Tolerate other version markers?~~ **Resolved.** No; only `rungs_snapshot_v1`.
+
+Full requirements: [spec/020-csv-snapshot-format-and-parser/requirements.md](../spec/020-csv-snapshot-format-and-parser/requirements.md).

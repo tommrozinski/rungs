@@ -38,10 +38,10 @@ changes the status in the story file itself.
 
 | ID | Title | Status | Summary |
 | --- | --- | --- | --- |
-| [020](020-csv-snapshot-format-and-parser.md) | CSV snapshot format and parser | proposed | The versioned format and its domain-side reader and writer, RFC 4180 quoting. |
-| [021](021-snapshot-import-endpoint.md) | Snapshot import endpoint | proposed | `POST /v1/snapshots/import` returning a snapshot plus a per-row `ImportReport`. |
-| [022](022-snapshot-export-and-in-memory-upload-handling.md) | Snapshot export and in-memory upload handling | proposed | `POST /v1/snapshots/export` plus the config proving no upload touches disk. |
-| [023](023-csv-round-trip-property-test.md) | CSV round-trip property test | proposed | AC-7.1 as a property: export-then-import is the identity on valid snapshots. |
+| [020](020-csv-snapshot-format-and-parser.md) | CSV snapshot format and parser | approved | The versioned format and its domain-side reader and writer, RFC 4180 quoting. |
+| [021](021-snapshot-import-endpoint.md) | Snapshot import endpoint | approved | `POST /v1/snapshots/import` returning a snapshot plus a per-row `ImportReport`. |
+| [022](022-snapshot-export-and-in-memory-upload-handling.md) | Snapshot export and in-memory upload handling | approved | `POST /v1/snapshots/export` plus the config proving no upload touches disk. |
+| [023](023-csv-round-trip-property-test.md) | CSV round-trip property test | approved | AC-7.1 as a property: export-then-import is the identity on valid snapshots. |
 
 ## Web client — increment 3.5b
 
@@ -149,10 +149,7 @@ rather than details.
   schedule; `monthsToNextStage` is populated only when the current stage is 2. The
   mortgage is excluded from the schedule, and a negative surplus is treated as $0
   (PRD FR-2). Stories 010 and 030 to align when specified.
-- **Can a mortgage round trip through CSV?** (020, 022, 023) — the format has no
-  mortgage row, so export is lossy for any household with one, and AC-7.1 cannot
-  hold for those snapshots.
-- **Upload transport** (021, 022) — FR-7 says the endpoint accepts `text/csv`,
-  but NFR-1's multipart-spooling instruction and the design spec's file picker
-  both imply `multipart/form-data`. The no-disk guarantee is shaped differently
-  in each case.
+- ~~Can a mortgage round trip through CSV?~~ **Resolved** (spec 020). New optional
+  single `MORTGAGE` row; every snapshot round-trips (PRD FR-7).
+- ~~Upload transport.~~ **Resolved** (spec 021). `multipart/form-data` with a `file`
+  part, held in memory only and proven by a temp-folder test (spec 022).

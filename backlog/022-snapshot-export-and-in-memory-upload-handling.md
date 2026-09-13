@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Snapshot export and in-memory upload handling
@@ -45,12 +45,11 @@ M
 
 ## Open Questions
 
-- What filename does export suggest? A fixed name, a timestamp (which would need
-  `Clock` injection per NFR-4), or one the client supplies?
-- If the upload is raw `text/csv` rather than multipart (story 021's open
-  question), the spooling concern changes shape — the container may still buffer
-  large bodies. What is the guarantee against *that*?
-- Does export need to round-trip a mortgage, and what happens if the format
-  cannot represent one (story 020)?
-- Is a `Cache-Control: no-store` header wanted on the export response, given the
-  file is household data?
+- ~~Export filename?~~ **Resolved.** Fixed: `rungs-snapshot.csv`.
+- ~~Raw-body buffering?~~ **Resolved.** Not applicable; uploads are multipart only.
+- ~~Mortgage round trip?~~ **Resolved.** Yes, via the new `MORTGAGE` row.
+- ~~`Cache-Control: no-store`?~~ **Resolved.** Yes.
+- **Also decided:** export requires a valid snapshot, so every exported file
+  imports cleanly.
+
+Full requirements: [spec/022-snapshot-export-and-in-memory-upload-handling/requirements.md](../spec/022-snapshot-export-and-in-memory-upload-handling/requirements.md).

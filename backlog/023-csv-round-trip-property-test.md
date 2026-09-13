@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # CSV round-trip property test
@@ -54,10 +54,10 @@ M
 
 ## Open Questions
 
-- Does `Debt.id` participate in the equality assertion? If ids are generated on
-  import (story 020), it cannot, and the exclusion needs justifying.
-- Does the property cover snapshots with a mortgage? Only if the format can
-  represent one.
-- Is `import(export(s))` the required direction, or should
-  `export(import(csv))` also hold for valid CSV input? The second is the stronger
-  property and would catch writer-side normalization drift.
+- ~~Does `Debt.id` participate in equality?~~ **Resolved.** Yes; positional ids
+  round-trip because file order is preserved.
+- ~~Mortgage snapshots?~~ **Resolved.** Included, via the new `MORTGAGE` row.
+- ~~Which direction?~~ **Resolved.** Both: `import(export(s)) == s`, and
+  `export(import(export(s)))` is byte-identical to `export(s)`.
+
+Full requirements: [spec/023-csv-round-trip-property-test/requirements.md](../spec/023-csv-round-trip-property-test/requirements.md).

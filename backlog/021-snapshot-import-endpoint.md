@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Snapshot import endpoint
@@ -54,15 +54,15 @@ M
 
 ## Open Questions
 
-- Is the upload a raw `text/csv` body or a `multipart/form-data` file part? FR-7
-  says "accepts `text/csv`" but the design spec describes a file picker, and
-  NFR-1's multipart spooling instruction (story 022) implies multipart. These
-  need to agree.
-- Is the 64 KB limit enforced on the raw body, and what status does exceeding it
-  return — 413, or a 400 problem detail?
-- Does the response echo the filename for the design spec's file bar state line,
-  and if so does that conflict with NFR-2's logging ban (response vs log)?
-- What is "accepted rows" counted by — the design spec's clean-state copy is
-  "Loaded 3 debts and 8 values", implying counts per row type.
+- ~~Raw body or multipart?~~ **Resolved.** `multipart/form-data`, part `file`
+  (PRD FR-7).
+- ~~64 KB limit status?~~ **Resolved.** 413 with problem type
+  `urn:rungs:problem:file-too-large`, before parsing.
+- ~~Echo the filename?~~ **Resolved.** Yes, sanitized, in the response only; never
+  logged.
+- ~~What counts as accepted?~~ **Resolved.** Per row type: fields, flags, debts,
+  mortgage; the summary counts debts and values.
 - ~~Clean or partial when only paid-off debts were skipped?~~ **Resolved.**
   Clean.
+
+Full requirements: [spec/021-snapshot-import-endpoint/requirements.md](../spec/021-snapshot-import-endpoint/requirements.md).
