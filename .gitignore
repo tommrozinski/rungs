@@ -14,3 +14,6 @@ target/
 
 # jqwik
 .jqwik-database
+
+# Claude Code agent worktrees
+.claude/worktrees/
