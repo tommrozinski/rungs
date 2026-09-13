@@ -14,7 +14,7 @@ changes the status in the story file itself.
 | ID | Title | Status | Summary |
 | --- | --- | --- | --- |
 | [001](001-project-scaffold-and-package-layout.md) | Project scaffold and package layout | approved | Single-module Maven / Java 25 / Spring Boot 4.1 + Thymeleaf skeleton; no frontend toolchain. |
-| [002](002-money-value-type.md) | Money value type | proposed | Whole-cent `Money` backed by `long`, owning rounding, parsing, and display format. |
+| [002](002-money-value-type.md) | Money value type | approved | Whole-cent `Money` backed by `long`, owning rounding, parsing, and display format. |
 | [003](003-financial-snapshot-domain-model.md) | Financial snapshot domain model | proposed | Immutable `FinancialSnapshot`, `Debt`, `Mortgage`, `HouseholdFlags` with value equality. |
 | [004](004-stage-evaluation-framework.md) | Stage evaluation framework and progression rules | proposed | `StageEvaluator` contract and the ladder logic that picks the current stage. |
 | [005](005-stage-evaluators-1-to-3.md) | Stage evaluators 1–3: starter fund, non-mortgage debt, full emergency fund | proposed | The three cash-and-debt stages with percent-complete and verdict-ready blockers. |

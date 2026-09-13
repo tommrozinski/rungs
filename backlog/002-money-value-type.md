@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Money value type
@@ -47,9 +47,10 @@ M
 
 ## Open Questions
 
-- What is the machine-readable wire format — integer cents, or a decimal string
-  like `"1234.56"`? The design spec settles that a *formatted* string is present;
-  it does not settle what sits beside it.
-- Should `Money` permit negative values at all, or should deltas use a separate
-  signed type? `monthlySurplus` can legitimately be negative.
-- How is a negative amount formatted for display — `-$50.00` or `($50.00)`?
+- ~~Wire format?~~ **Resolved.** `{"amount": "1234.56", "display": "$1,234.56"}` —
+  decimal string, never a JSON number (PRD §5).
+- ~~Negative values?~~ **Resolved.** `Money` allows negatives; input rules such as
+  non-negative balances belong to validation (story 011).
+- ~~Negative display format?~~ **Resolved.** `-$50.00`.
+
+Full requirements: [spec/002-money-value-type/requirements.md](../spec/002-money-value-type/requirements.md).
