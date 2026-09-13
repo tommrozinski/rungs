@@ -14,10 +14,10 @@ application/
   SnapshotInput, DebtInput, MortgageInput, HouseholdFlagsInput   records of raw strings; constraints (011)
   SnapshotInput.toSnapshot()     FR-4 normalization → domain FinancialSnapshot
   AssessmentService, ReadinessAssessment, Warning
+  response/   AssessmentResponse, StageResponse, MoneyResponse, WarningResponse + from(ReadinessAssessment)
   validation/ ValidationCode (enum: code + message), constraint annotations + validators, WholeForm group
 adapter/in/web/api/
-  AssessmentController           POST /v1/assessments
-  AssessmentResponse, StageResponse, MoneyResponse   response records, explicit property order
+  AssessmentController           POST /v1/assessments; returns application response records
   ProblemDetailsAdvice           the single @RestControllerAdvice (011)
   JsonPointers                   property path / Jackson path → RFC 6901 pointer
 config/
@@ -60,7 +60,10 @@ domain/model/FinancialSnapshot   + monthlySurplus()
   `ladder.assess`, and returns `ReadinessAssessment(currentStage, stages, monthlySurplus, warnings = List.of())`.
   - The ladder is built once in `ApplicationConfiguration`, with constructor injection only.
   - `application` stays free of Spring stereotypes.
-- The response records live in the adapter, and their component order is the wire order:
+- The response records live in `application.response`, not in the API adapter. Design spec §7 has
+  view pages (029) build their models from the same response objects, and ArchUnit AC-C forbids the
+  view adapter from depending on the API adapter (changed 2026-09-13, during phase 1). Their component
+  order is the wire order:
   - `MoneyResponse(amount = toBareString, display = toDisplayString)`;
   - `percentComplete` is `toPlainString()`, e.g. `"50.0"`;
   - null values are always written.
