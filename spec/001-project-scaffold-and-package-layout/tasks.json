@@ -24,14 +24,14 @@
           "description": "Write pom.xml: parent spring-boot-starter-parent 4.1.1, com.rungs:rungs:0.1.0-SNAPSHOT, java.version 25, the five starters, spring-boot-maven-plugin, maven-enforcer-plugin (requireJavaVersion [25,), requireMavenVersion [3.9.16,), requireReleaseDeps with default settings, requirePluginVersions) with the design's messages, and a pluginManagement pin for maven-site-plugin 3.22.0",
           "files": ["pom.xml"],
           "dependencies": ["1.1"],
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "2.2",
           "description": "Generate the Maven wrapper (mvn -N wrapper:wrapper -Dmaven=3.9.16 -Dtype=only-script) and confirm ./mvnw -v reports Maven 3.9.16 on Java 26 with JAVA_HOME set to Homebrew OpenJDK",
           "files": ["mvnw", "mvnw.cmd", ".mvn/wrapper/maven-wrapper.properties"],
           "dependencies": ["2.1"],
-          "status": "pending"
+          "status": "complete"
         }
       ]
     },
@@ -116,9 +116,9 @@
         },
         {
           "id": "5.2",
-          "description": "Add .editorconfig per design §8 and append .jqwik-database to the existing .gitignore",
-          "files": [".editorconfig", ".gitignore"],
-          "dependencies": [],
+          "description": "Add .editorconfig per design §8 (including a *.{cmd,bat} CRLF section), add .gitattributes (text=auto eol=lf, /mvnw eol=lf, *.cmd and *.bat eol=crlf), append .jqwik-database to the existing .gitignore, then run git add --renormalize . and confirm git ls-files --eol shows mvnw i/lf, mvnw.cmd i/crlf, and mvnw mode 100755",
+          "files": [".editorconfig", ".gitattributes", ".gitignore", "mvnw", "mvnw.cmd"],
+          "dependencies": ["2.2"],
           "status": "pending"
         }
       ]

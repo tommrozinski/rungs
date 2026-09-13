@@ -15,3 +15,35 @@ Started: 2026-09-13
   §12, §13, and tasks 1.1 and 2.2 to match. `mvn -v`: Maven 3.9.16, Java 26.0.2.1 (Homebrew).
   OpenJDK is keg-only: set JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home.
 
+## Task 2.1 — Write pom.xml: parent spring-boot-starter-parent 4.1.1, com.rungs:rungs:0.1.0-SNAPSHOT, java.version 25, the five starters, spring-boot-maven-plugin, maven-enforcer-plugin (...), and a pluginManagement pin for maven-site-plugin 3.22.0
+- Completed: 2026-09-13
+- Files changed: pom.xml (new)
+- Tests: n/a (build config). `mvn -B -ntp validate` (Homebrew Maven 3.9.16, OpenJDK 26):
+  all four Enforcer rules passed, BUILD SUCCESS. Enforcer 3.6.3 from parent.
+- Notes: removing the maven-site-plugin pin makes requirePluginVersions fail
+  ("3.12.1 via default lifecycle bindings"), so the pin is required. Correctness review: no
+  findings; it confirmed the Java and SNAPSHOT failure messages on scratch pom copies and that
+  the project's own -SNAPSHOT version passes. review-changes: no blockers or warnings; one
+  cosmetic note (long comment line) left as is. Added <relativePath/> on the parent (standard).
+
+## Task 2.2 — Generate the Maven wrapper (mvn -N wrapper:wrapper -Dmaven=3.9.16 -Dtype=only-script) and confirm ./mvnw -v reports Maven 3.9.16 on Java 26 with JAVA_HOME set to Homebrew OpenJDK
+- Completed: 2026-09-13
+- Files changed: mvnw (755, LF), mvnw.cmd (CRLF), .mvn/wrapper/maven-wrapper.properties (all new)
+- Tests: n/a (build infra). `./mvnw -v`: Maven 3.9.16, Java 26.0.2.1. `./mvnw -B -ntp validate`:
+  all four Enforcer rules passed, BUILD SUCCESS.
+- Notes: wrapper plugin pinned on the command line to 3.3.4 (latest), not added to pom.
+  only-script type, so no jar. Added beyond the task: distributionSha256Sum
+  5af3b743…d89ce, computed from a zip verified against the official .sha512/.sha1 (Central
+  has no .sha256); fresh download passed, zeroed checksum was rejected. Must be updated when
+  Maven is upgraded. Correctness review (independently re-verified the checksum): no
+  Critical/High. Medium: no .gitattributes, so a Windows clone with core.autocrlf=true can
+  check mvnw out as CRLF (bad interpreter under WSL/Git Bash), and mvnw.cmd CRLF is
+  unprotected. Low: planned .editorconfig (task 5.2) forces LF, which could flip mvnw.cmd on
+  save. Reported to user; not fixed in this task.
+
+## Scope change — task 5.2 extended (2026-09-13)
+- User approved folding the line-ending fix into task 5.2: add .gitattributes (text=auto
+  eol=lf; /mvnw eol=lf; *.cmd, *.bat eol=crlf) and a *.{cmd,bat} CRLF section in
+  .editorconfig; renormalize and confirm with git ls-files --eol (mvnw i/lf 100755,
+  mvnw.cmd i/crlf). Task 5.2 now depends on 2.2. Design §1, §8, §13 updated.
+

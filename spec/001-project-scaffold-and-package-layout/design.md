@@ -38,6 +38,7 @@ package holds only a `package-info.java`.
 ```
 rungs/
 ├── .editorconfig
+├── .gitattributes
 ├── .gitignore                 (existing; kept)
 ├── .mvn/wrapper/maven-wrapper.properties
 ├── mvnw
@@ -217,7 +218,24 @@ No trademarked framework names anywhere (PRD §1).
 ## 8. Supporting files
 
 - `.editorconfig` (REQ-014): UTF-8, LF, final newline, 4-space indent for Java/XML, 2-space
-  for YAML/JSON/HTML/CSS, trim trailing whitespace except Markdown.
+  for YAML/JSON/HTML/CSS, trim trailing whitespace except Markdown. A `[*.{cmd,bat}]` section
+  sets `end_of_line = crlf` so saving `mvnw.cmd` in a compliant editor keeps Windows line
+  endings.
+- `.gitattributes` (Story 2, fresh clone with only a JDK): pins line endings in git so they
+  don't depend on each machine's `core.autocrlf`:
+
+  ```gitattributes
+  * text=auto eol=lf
+  /mvnw text eol=lf
+  *.cmd text eol=crlf
+  *.bat text eol=crlf
+  ```
+
+  Without it, Git for Windows (`core.autocrlf=true` by default) checks `mvnw` out with CRLF,
+  and running it from WSL, Git Bash, or a Linux container fails with
+  `/bin/sh^M: bad interpreter`. After adding the file, run `git add --renormalize .` and
+  confirm with `git ls-files --eol` that `mvnw` is `i/lf` and `mvnw.cmd` is `i/crlf`, and
+  that `mvnw` is still mode `100755`.
 - `.gitignore`: keep existing entries; add `.jqwik-database` now so story 014 needs no
   change.
 - `templates/.gitkeep`, `static/.gitkeep` (REQ-007).
@@ -267,6 +285,7 @@ No trademarked framework names anywhere (PRD §1).
 | `requirePluginVersions` rejects the unpinned `maven-site-plugin` (not managed by Boot's BOM) | Build fails immediately | Pin `maven-site-plugin` 3.22.0 in `<pluginManagement>` (§5) |
 | `requireReleaseDeps` misconfigured with `onlyWhenRelease=true` | Rule silently skips every SNAPSHOT build | Keep default settings; the rule checks dependencies and the parent, never the project's own version |
 | Local JDK (26) is newer than the target (25) | Behavior seen only on JDK 25 is missed locally | `--release 25` blocks JDK 26-only APIs at compile time; CI on JDK 25 (story 019) catches runtime differences |
+| Windows clone checks `mvnw` out with CRLF, or an editor saves `mvnw.cmd` as LF | `./mvnw` fails with "bad interpreter"; Windows wrapper breaks | `.gitattributes` pins `mvnw` to LF and `*.cmd` to CRLF; `.editorconfig` keeps `*.cmd` CRLF (§8) |
 | Thymeleaf warns about an empty template location | Noisy startup log | `.gitkeep` keeps `templates/` on the classpath; warning checked on first run |
 | Trademarked names slip into README or code | Public-repo exposure | `NeutralVocabularyTests` fails `./mvnw verify` (REQ-015); no later story covers this |
 | Vocabulary scan trips on local untracked files | False failures on one machine | Skip `.git/`, `target/`, and IDE folders; widen the skip list only for generated or untracked folders |

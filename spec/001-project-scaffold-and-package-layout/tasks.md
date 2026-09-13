@@ -31,10 +31,10 @@ the success metrics. Commits go straight to `main`.
 
 ## Phase 2: Build
 
-- [ ] Write pom.xml: parent spring-boot-starter-parent 4.1.1, com.rungs:rungs:0.1.0-SNAPSHOT, java.version 25, the five starters, spring-boot-maven-plugin, maven-enforcer-plugin (requireJavaVersion [25,), requireMavenVersion [3.9.16,), requireReleaseDeps with default settings, requirePluginVersions) with the design's messages, and a pluginManagement pin for maven-site-plugin 3.22.0
+- [x] Write pom.xml: parent spring-boot-starter-parent 4.1.1, com.rungs:rungs:0.1.0-SNAPSHOT, java.version 25, the five starters, spring-boot-maven-plugin, maven-enforcer-plugin (requireJavaVersion [25,), requireMavenVersion [3.9.16,), requireReleaseDeps with default settings, requirePluginVersions) with the design's messages, and a pluginManagement pin for maven-site-plugin 3.22.0
   - ID 2.1 · Depends on: 1.1
   - ⚠️ Risk: without the site plugin pin, `requirePluginVersions` fails the first build, because Boot's BOM does not manage that plugin.
-- [ ] Generate the Maven wrapper (mvn -N wrapper:wrapper -Dmaven=3.9.16 -Dtype=only-script) and confirm ./mvnw -v reports Maven 3.9.16 on Java 26 with JAVA_HOME set to Homebrew OpenJDK
+- [x] Generate the Maven wrapper (mvn -N wrapper:wrapper -Dmaven=3.9.16 -Dtype=only-script) and confirm ./mvnw -v reports Maven 3.9.16 on Java 26 with JAVA_HOME set to Homebrew OpenJDK
   - ID 2.2 · Depends on: 2.1
 
 ## Phase 3: Application skeleton
@@ -61,8 +61,9 @@ the success metrics. Commits go straight to `main`.
 
 - [ ] Write README.md with the six sections from design §7 (summary, nothing is stored, prerequisites, build and run, deliberately not included, project documents) using neutral vocabulary only
   - ID 5.1 · Depends on: 2.2
-- [ ] Add .editorconfig per design §8 and append .jqwik-database to the existing .gitignore
-  - ID 5.2 · Depends on: none
+- [ ] Add .editorconfig per design §8 (including a *.{cmd,bat} CRLF section), add .gitattributes (text=auto eol=lf, /mvnw eol=lf, *.cmd and *.bat eol=crlf), append .jqwik-database to the existing .gitignore, then run git add --renormalize . and confirm git ls-files --eol shows mvnw i/lf, mvnw.cmd i/crlf, and mvnw mode 100755
+  - ID 5.2 · Depends on: 2.2
+  - ⚠️ Risk: without .gitattributes a Windows clone (core.autocrlf=true) checks mvnw out as CRLF and ./mvnw fails with "bad interpreter" under WSL or Git Bash. Renormalizing stages files; stage only these supporting files and the wrapper, not unrelated work.
 
 ## Phase 6: Verification
 
