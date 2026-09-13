@@ -52,7 +52,7 @@ src/test/java/com/rungs/readiness/domain/model/
 | Language | Java 25 record | Immutable by construction (AC-E) |
 | Scaled math | `java.math.BigDecimal`, `RoundingMode.HALF_EVEN` | Only inside `times` |
 | Tests | JUnit 5 (`@ParameterizedTest`, `@MethodSource`), AssertJ | Already on the test classpath |
-| Coverage check | JaCoCo, run on demand from the command line | Not added to the pom; the gate arrives in story 019 |
+| Coverage check | JaCoCo 0.8.15, run on demand from the command line | Officially supports Java 26; not added to the pom; the gate arrives in story 019 |
 
 No new dependencies. jqwik property tests come in story 014.
 
@@ -146,12 +146,12 @@ Coverage for the 100% success metric is then checked on demand, with no JaCoCo p
 the pom:
 
 ```bash
-./mvnw org.jacoco:jacoco-maven-plugin:<version>:prepare-agent test \
-       org.jacoco:jacoco-maven-plugin:<version>:report
+./mvnw org.jacoco:jacoco-maven-plugin:0.8.15:prepare-agent test \
+       org.jacoco:jacoco-maven-plugin:0.8.15:report
 ```
 
-Use the latest JaCoCo release that supports Java 25 class files and runs on the local
-JDK 26. Story 019 turns this into a pom-managed gate.
+JaCoCo 0.8.15 (released 2026-06-04) officially supports Java 26, which covers both the
+Java 25 class files and the local JDK 26. Story 019 turns this into a pom-managed gate.
 
 ## 6. Code design
 
@@ -163,6 +163,7 @@ boxing (requirements: Performance). `sum` loops with `Math.addExact` over the co
 ### 6.2 `times(BigDecimal factor)`
 
 ```text
+if factor.precision() > 64              → ArithmeticException("Money factor too precise")
 product = BigDecimal.valueOf(cents).multiply(factor)      // exact, no MathContext
 if product.signum() == 0                → ZERO
 e = product.precision() - product.scale() - 1             // decimal exponent of the leading digit
@@ -171,9 +172,14 @@ if e > 18                               → ArithmeticException("Money overflow"
 return ofCents(product.setScale(0, HALF_EVEN).longValueExact())
 ```
 
-- The two guards keep `setScale` cheap. A factor with an extreme exponent (for example
-  `1E-999999999` or `1E+999999999`) would otherwise force a huge power-of-ten division or
-  expansion.
+- The three guards keep `setScale` cheap. The exponent guards stop a factor with an extreme
+  exponent (for example `1E-999999999` or `1E+999999999`) from forcing a huge power-of-ten
+  division or expansion. The precision cap stops a factor with an enormous number of digits
+  (for example `0.5` followed by a million zeros) from passing the exponent guards and then
+  forcing the same huge division. Story 008's factor comes from `MathContext.DECIMAL128`
+  (at most 34 digits), well under the cap of 64.
+- Guard edges: a product of `0.1` cent (exponent -1) is rounded normally; `0.09` cent
+  (exponent -2) returns `ZERO` early; `1E18` cents is allowed; `1E19` cents throws.
 - `longValueExact` still throws `ArithmeticException` for results between 10^18 and the
   `long` limit that do not fit.
 - Story 008 passes `annualInterestRate ÷ 1200` computed with `MathContext.DECIMAL128`; the
@@ -242,6 +248,9 @@ Surefire's default includes and the project's naming.
   `.025` and their negatives (hand-computed: 0, 2, 2 and 0, -2, -2 cents), plus `.0051`
   rounding up; factor zero, negative factor, extreme-exponent factors (returns `ZERO` or
   throws quickly), and a product just past `Long.MAX_VALUE`.
+- `times` guard edges: products of `0.1` and `0.09` cents (rounded normally vs early
+  `ZERO`), `1E18` cents (allowed) and `1E19` cents (throws), and a 64-digit factor accepted
+  while a 65-digit factor throws.
 - `compareTo`, `min`/`max` including ties (returns `this`), `isZero`/`isNegative`/
   `isPositive` for -1, 0, 1.
 - `sum` of empty, single, mixed, and overflowing collections.
@@ -250,8 +259,11 @@ Surefire's default includes and the project's naming.
 
 - Display and bare output for 0, 1, 10, 99, 100, 123456, 100000000, -1, -123456,
   `Long.MAX_VALUE`, `Long.MIN_VALUE`.
-- The same expectations re-run with `Locale.setDefault` set to `de-DE` and `fr-FR`
-  (restored in `finally`), proving no locale dependence (Story 2).
+- The same expectations re-run with `Locale.setDefault` set to `de-DE`, `fr-FR`, and
+  `ar-EG-u-nu-arab` (restored in `finally`), proving no locale dependence (Story 2).
+  `de-DE` and `fr-FR` catch changed decimal and grouping separators; `ar-EG-u-nu-arab`
+  catches digit substitution (a locale-aware `String.format("%d")` would emit Arabic-Indic
+  digits).
 - Zero never renders with a minus sign.
 
 ### `MoneyParsingTests`
@@ -260,6 +272,11 @@ Surefire's default includes and the project's naming.
   whitespace, `-0`, `-$0.00`, leading zeros) with expected cents.
 - One or more rejected inputs per `Reason`, asserting the reason code and that the message
   does not contain the input.
+- Precedence when an input has several problems, following the §6.4 step order:
+  `"1,23.456"` → `MISPLACED_SEPARATOR` (not `TOO_MANY_DECIMALS`), `"$-5"` →
+  `INVALID_CHARACTER`, 40 spaces → `TOO_LONG` (length is checked before trimming; input
+  models turn blanks into zero before calling `parse`), `"-"` → `MISSING_DIGITS`,
+  `"1.2,3"` → `MISPLACED_SEPARATOR`.
 - Exactly 32 characters accepted (when otherwise valid), 33 rejected as `TOO_LONG`.
 - Round trip `parse(m.toBareString())` equals `m` for 0, ±1, ±50, ±123456,
   `Long.MAX_VALUE`, `Long.MIN_VALUE`, `Long.MIN_VALUE + 1`; also `parse(m.toDisplayString())`.
@@ -278,8 +295,8 @@ Surefire's default includes and the project's naming.
   figure (PRD NFR-2).
 - Input is capped at 32 characters before any scanning; the parser is a single linear pass
   with no regular expressions, so there is no catastrophic backtracking.
-- `times` guards against extreme `BigDecimal` exponents that could otherwise cost large
-  amounts of CPU and memory.
+- `times` guards against extreme `BigDecimal` exponents and over-precise factors (more than
+  64 digits) that could otherwise cost large amounts of CPU and memory.
 - Overflow always throws, so no computation silently wraps to a wrong figure.
 - The default record `toString` still prints `cents`. That is acceptable until story 018,
   because nothing logs domain objects yet; story 018 must redact it.
@@ -312,11 +329,12 @@ Surefire's default includes and the project's naming.
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
 | `Long.MIN_VALUE` breaks formatting or round trip via `Math.abs` | Wrong output or exception for one extreme value | Format from `Long.toString`; parse on the negative side; tests include `MIN_VALUE` |
-| Extreme `BigDecimal` exponent in `times` | CPU/memory spike | Exponent guards before `setScale` (§6.2) with tests |
-| Locale-dependent formatting slips in (e.g. `String.format`, `NumberFormat`) | Output differs by machine (NFR-4) | Manual digit grouping; tests under `de-DE` and `fr-FR` |
+| Extreme `BigDecimal` exponent or precision in `times` | CPU/memory spike | 64-digit factor cap and exponent guards before `setScale` (§6.2), with tests at each guard edge |
+| Locale-dependent formatting slips in (e.g. `String.format`, `NumberFormat`) | Output differs by machine (NFR-4) | Manual digit grouping; tests under `de-DE`, `fr-FR`, and `ar-EG-u-nu-arab` (digit substitution) |
+| Inconsistent reason when input has several problems | Confusing field errors in story 011 | §6.4 step order defines precedence; tests pin the multi-problem cases (§7) |
 | Non-ASCII digits accepted via `Character.isDigit` | Surprising parses | Compare to `'0'`..`'9'` only; test with Arabic-Indic digits |
 | `@{argLine}` change breaks the Mockito agent | Dynamic-agent warning returns | Verify `./mvnw verify` output has no warning after the change |
-| JaCoCo version lacks Java 25/26 support | Coverage cannot be measured | Pick the newest release; if unsupported, record the gap and defer the measurement to story 019 |
+| JaCoCo cannot instrument on the local JDK | Coverage cannot be measured | JaCoCo 0.8.15 officially supports Java 26 (checked 2026-09-13); task 1.2 confirms a report is produced before the Money work starts |
 | Default `toString` leaks amounts into logs | Figures in logs | Nothing logs domain types yet; story 018 REQ-003 redacts it |
 | Parse messages too vague to act on | Poor error messages in story 011 | One fixed, specific sentence per `Reason`; story 011 maps reasons to field errors |
 

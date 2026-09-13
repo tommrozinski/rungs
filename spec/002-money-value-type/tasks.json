@@ -1,0 +1,166 @@
+{
+  "specName": "002-money-value-type",
+  "generatedAt": "2026-09-13T00:00:00Z",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Build",
+      "tasks": [
+        {
+          "id": "1.1",
+          "description": "Change the Surefire argLine in pom.xml to @{argLine} -javaagent:${org.mockito:mockito-core:jar} with an empty argLine property default, and confirm ./mvnw verify passes with no dynamic-agent warning",
+          "files": [
+            "pom.xml"
+          ],
+          "dependencies": [],
+          "status": "pending"
+        },
+        {
+          "id": "1.2",
+          "description": "Run JaCoCo 0.8.15 (officially supports Java 26) prepare-agent, test, and report from the command line, confirm a report is produced for the existing classes, and record the command in claude-progress.txt",
+          "files": [
+            "spec/002-money-value-type/claude-progress.txt"
+          ],
+          "dependencies": [
+            "1.1"
+          ],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Arithmetic",
+      "tasks": [
+        {
+          "id": "2.1",
+          "description": "Add the Money record (long cents) with ZERO, ofCents, ofDollars (multiplyExact), and plus, minus, negate using Math.*Exact, with MoneyArithmeticTests for zero, ±1 cent, mixed signs, and overflow including negate of Long.MIN_VALUE",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/model/Money.java",
+            "src/test/java/com/rungs/readiness/domain/model/MoneyArithmeticTests.java"
+          ],
+          "dependencies": [
+            "1.1"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "2.2",
+          "description": "Add Comparable compareTo, instance min and max returning this on ties, isZero/isNegative/isPositive, and static sum(Collection) returning ZERO when empty, with tests for ties, signs, and empty, single, mixed, and overflowing collections",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/model/Money.java",
+            "src/test/java/com/rungs/readiness/domain/model/MoneyArithmeticTests.java"
+          ],
+          "dependencies": [
+            "2.1"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "2.3",
+          "description": "Add times(BigDecimal) per design §6.2 (ArithmeticException for a factor over 64 significant digits, exact multiply, ZERO when the leading-digit exponent is below -1, ArithmeticException above 18, HALF_EVEN setScale, longValueExact), with tests for 100 cents × .005/.015/.025 and negatives (0, 2, 2 and 0, -2, -2 cents), .0051, zero and negative factors, extreme exponents, guard edges (products of 0.1 and 0.09 cents, 1E18 and 1E19 cents, 64- and 65-digit factors), and overflow",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/model/Money.java",
+            "src/test/java/com/rungs/readiness/domain/model/MoneyArithmeticTests.java"
+          ],
+          "dependencies": [
+            "2.1"
+          ],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Formatting",
+      "tasks": [
+        {
+          "id": "3.1",
+          "description": "Add toBareString and toDisplayString built from Long.toString(cents) with manual comma grouping, with MoneyFormattingTests for 0, 1, 10, 99, 100, 123456, 100000000, -1, -123456, Long.MAX_VALUE, and Long.MIN_VALUE under the default, de-DE, fr-FR, and ar-EG-u-nu-arab locales",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/model/Money.java",
+            "src/test/java/com/rungs/readiness/domain/model/MoneyFormattingTests.java"
+          ],
+          "dependencies": [
+            "2.1"
+          ],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Parsing",
+      "tasks": [
+        {
+          "id": "4.1",
+          "description": "Add MoneyFormatException extending IllegalArgumentException with a Reason enum (BLANK, TOO_LONG, INVALID_CHARACTER, MISSING_DIGITS, MISPLACED_SEPARATOR, TOO_MANY_DECIMALS, OUT_OF_RANGE), a reason() accessor, and one fixed message per reason that never includes the input, with tests in MoneyParsingTests",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/model/MoneyFormatException.java",
+            "src/test/java/com/rungs/readiness/domain/model/MoneyParsingTests.java"
+          ],
+          "dependencies": [
+            "1.1"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "4.2",
+          "description": "Add Money.parse as the single left-to-right scan in design §6.4 (null or blank, 32-character bound before strip, optional - then $, ASCII digits only, comma groups, one or two decimals, negative-side accumulation), with MoneyParsingTests for every accepted example and at least one rejected input per Reason asserting the message omits the input, plus pinned precedence cases: \"1,23.456\" MISPLACED_SEPARATOR, \"$-5\" INVALID_CHARACTER, 40 spaces TOO_LONG, \"-\" MISSING_DIGITS, \"1.2,3\" MISPLACED_SEPARATOR",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/model/Money.java",
+            "src/test/java/com/rungs/readiness/domain/model/MoneyParsingTests.java"
+          ],
+          "dependencies": [
+            "2.1",
+            "4.1"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "4.3",
+          "description": "Add round-trip tests that parse(m.toBareString()) and parse(m.toDisplayString()) equal m for 0, ±1, ±50, ±123456, Long.MAX_VALUE, Long.MIN_VALUE, and Long.MIN_VALUE + 1",
+          "files": [
+            "src/test/java/com/rungs/readiness/domain/model/MoneyParsingTests.java"
+          ],
+          "dependencies": [
+            "3.1",
+            "4.2"
+          ],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Verification",
+      "tasks": [
+        {
+          "id": "5.1",
+          "description": "Run ./mvnw verify and search Money.java, MoneyFormatException.java, and the three test classes for double, float, Double, and Float, confirming none appear",
+          "files": [],
+          "dependencies": [
+            "2.2",
+            "2.3",
+            "4.3"
+          ],
+          "status": "pending"
+        },
+        {
+          "id": "5.2",
+          "description": "Measure JaCoCo line and branch coverage for Money and MoneyFormatException and add tests for any uncovered line or branch until both reach 100%, using JaCoCo 0.8.15 as in task 1.2",
+          "files": [
+            "src/test/java/com/rungs/readiness/domain/model/MoneyArithmeticTests.java",
+            "src/test/java/com/rungs/readiness/domain/model/MoneyFormattingTests.java",
+            "src/test/java/com/rungs/readiness/domain/model/MoneyParsingTests.java"
+          ],
+          "dependencies": [
+            "1.2",
+            "5.1"
+          ],
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}
