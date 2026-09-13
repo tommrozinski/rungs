@@ -134,3 +134,12 @@ Nothing in an error body or a log contains a household figure.
 - A test proves a misspelt numeric property is rejected, not defaulted to zero.
 - A test proves no submitted value appears in the problem body.
 - 100% line coverage on the input models' constraints and the controller advice.
+
+## Notes carried from earlier stories (2026-09-13)
+
+- Amount caps must keep `min(emergencyFundMonths, 6)` × `monthlyEssentialExpenses` and the sum of
+  all debt balances within a `long` of cents; otherwise stage 2 or 3 throws `ArithmeticException`
+  and the whole assessment fails (review of stories 005/006).
+- Use one "blank" definition across validation, CSV (020), and the round-trip generator (023):
+  `String.isBlank` accepts a label of only non-breaking spaces, while `Money.parse` trims them
+  (review of story 003).

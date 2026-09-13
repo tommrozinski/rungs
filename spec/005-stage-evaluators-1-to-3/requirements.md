@@ -28,7 +28,8 @@ stages decide AC-1.1 and most households' current stage.
 **Acceptance Criteria:**
 - [ ] Satisfied at exactly $1,000.00 and above.
 - [ ] Below $1,000.00: `percentComplete` is fund ÷ $1,000 (rounded down), `remainingAmount`
-  is the shortfall, status is `IN_PROGRESS` above $0 and `NOT_STARTED` at $0.
+  is the shortfall, status is `IN_PROGRESS` when that percentage is above 0.0 and
+  `NOT_STARTED` at 0.0 (story 004 REQ-005; decided 2026-09-13, so $0.99 is `NOT_STARTED`).
 - [ ] Blocker: "Your starter emergency fund is $500.00 short of $1,000.00."
 
 ### Story 2: Stage 2 — debt eliminated
@@ -53,7 +54,8 @@ stages decide AC-1.1 and most households' current stage.
 - [ ] Satisfied when `fullEmergencyFund` ≥ target, including exactly at the target and
   whenever the target is $0.
 - [ ] Otherwise `percentComplete` is fund ÷ target (rounded down), `remainingAmount` is the
-  shortfall, `IN_PROGRESS` above $0 and `NOT_STARTED` at $0.
+  shortfall, `IN_PROGRESS` when that percentage is above 0.0 and `NOT_STARTED` at 0.0
+  (story 004 REQ-005).
 - [ ] Blocker: "Your emergency fund is $2,400.00 short of a 3-month target of $10,500.00."
 
 ## Functional Requirements

@@ -23,9 +23,9 @@
 
 ## Phase 4: Evaluators (005, 006)
 
-- [ ] Add StarterFundEvaluator, DebtFreeEvaluator, FullEmergencyFundEvaluator with boundary tests and verbatim blockers
+- [x] Add StarterFundEvaluator, DebtFreeEvaluator, FullEmergencyFundEvaluator with boundary tests and verbatim blockers
   - ID 4.1 · Depends on: 3.1
-- [ ] Add RetirementEvaluator, CollegeEvaluator, MortgageEvaluator, WealthBuildingEvaluator with boundary, skip-precedence, and verbatim copy tests
+- [x] Add RetirementEvaluator, CollegeEvaluator, MortgageEvaluator, WealthBuildingEvaluator with boundary, skip-precedence, and verbatim copy tests
   - ID 4.2 · Depends on: 3.1
-- [ ] Add LadderAcceptanceTests for AC-1.1 and AC-1.2 through the real seven-evaluator StageLadder
+- [x] Add LadderAcceptanceTests for AC-1.1 and AC-1.2 through the real seven-evaluator StageLadder
   - ID 4.3 · Depends on: 4.1, 4.2

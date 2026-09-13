@@ -64,3 +64,25 @@ Started: 2026-09-13
   text — build such labels server-side.
 - Verification in main: 711 tests, all four architecture suites green against stories 002–004,
   coverage gates met, no WARNING. Suites add ~1 s.
+
+## Stories 005 + 006 — Stage evaluators 1–7 and ladder acceptance (tasks 4.1–4.3)
+- 2026-09-13. One implementation-engineer in the main checkout (the planned parallel worktrees
+  were dropped: agent worktrees branch from origin/main, which lacked 003/004).
+- Files: domain/stage StarterFundEvaluator, DebtFreeEvaluator, FullEmergencyFundEvaluator,
+  RetirementEvaluator, CollegeEvaluator, MortgageEvaluator, WealthBuildingEvaluator; one test
+  class each plus LadderAcceptanceTests (AC-1.1 → stage 1, AC-1.2 → stage 7 with 5 and 6
+  skipped, 006 REQ-008 → stage 4 satisfied at current stage 2).
+- Tests: 74 (all copy asserted verbatim; boundaries from both success metrics). Full suite 785,
+  100% line/branch on the evaluators, ArchUnit and coverage gates green.
+- Decision (orchestrator, 2026-09-13): status follows the computed percent for every stage
+  except stage 2 (story 004 REQ-005), so a fund that rounds to 0.0% (e.g. $0.99 of $1,000) is
+  NOT_STARTED. Spec 005 acceptance criteria updated to match (they said "above $0").
+- Interpretations: stage 7 rejects lowerStages whose size isn't 6; stage 6 treats a $0 home
+  value, balance ≥ home value, and equity rounding to 0.0 as NOT_STARTED before/after
+  Percentages; copy uses %s (locale-independent) for counts.
+- Review: no Critical/High/Medium. Lows accepted: 6 × expenses or the debt total can overflow
+  long and abort the assessment — story 011's amount caps must keep both in range; REQ-008
+  acceptance covers stage 4 only; stage 6's "home value ≤ balance" early branch is output-
+  equivalent to the rounds-to-zero path.
+- Security: pure domain, no I/O; blocker copy carries household figures and is response
+  content only; exception messages contain none.
