@@ -27,6 +27,15 @@ public record Money(long cents) implements Comparable<Money> {
     /** Products whose leading digit is above 10^18 cents cannot fit a long, so they overflow without rescaling. */
     private static final long MAX_FITTING_EXPONENT = 18;
 
+    /** Digits after the decimal point in both string formats. */
+    private static final int FRACTION_DIGITS = 2;
+
+    /** Cents are zero-padded to at least one whole-dollar digit plus the fraction digits. */
+    private static final int MIN_DIGITS = FRACTION_DIGITS + 1;
+
+    /** Whole-dollar digits between comma separators in the display format. */
+    private static final int GROUP_SIZE = 3;
+
     /**
      * Returns the exact total of {@code amounts}, or {@link #ZERO} when empty; adds in iteration order and
      * throws ArithmeticException as soon as a running total overflows, and NullPointerException for a null
@@ -125,5 +134,47 @@ public record Money(long cents) implements Comparable<Money> {
     /** Returns whether this amount is above zero cents. */
     public boolean isPositive() {
         return cents > 0;
+    }
+
+    /**
+     * Returns the amount with exactly two decimals and no symbol or separators, independent of the default
+     * locale; for example {@code 1234.56}, {@code -1234.56}, or {@code 0.00}.
+     */
+    public String toBareString() {
+        String digits = paddedDigits();
+        int point = digits.length() - FRACTION_DIGITS;
+        return signPrefix() + digits.substring(0, point) + "." + digits.substring(point);
+    }
+
+    /**
+     * Returns the amount with a dollar sign, comma thousands separators, and exactly two decimals, independent of
+     * the default locale; for example {@code $1,234.56}, {@code -$1,234.56}, or {@code $0.00}.
+     */
+    public String toDisplayString() {
+        String digits = paddedDigits();
+        int point = digits.length() - FRACTION_DIGITS;
+        return signPrefix() + "$" + groupThousands(digits.substring(0, point)) + "." + digits.substring(point);
+    }
+
+    /** Returns "-" for negative amounts, else ""; zero is never negative. */
+    private String signPrefix() {
+        return cents < 0 ? "-" : "";
+    }
+
+    /** Returns the unsigned decimal digits of cents, left-padded with zeros to at least {@link #MIN_DIGITS}. */
+    private String paddedDigits() {
+        // Long.toString always emits ASCII digits, whatever the default locale.
+        String text = Long.toString(cents);
+        String digits = text.startsWith("-") ? text.substring(1) : text;
+        return digits.length() >= MIN_DIGITS ? digits : "0".repeat(MIN_DIGITS - digits.length()) + digits;
+    }
+
+    /** Inserts a comma every three digits from the right of {@code whole}. */
+    private static String groupThousands(String whole) {
+        StringBuilder grouped = new StringBuilder(whole);
+        for (int index = whole.length() - GROUP_SIZE; index > 0; index -= GROUP_SIZE) {
+            grouped.insert(index, ',');
+        }
+        return grouped.toString();
     }
 }
