@@ -60,7 +60,7 @@ check. Commits go straight to `main`.
 
 ## Phase 5: Verification
 
-- [ ] Run ./mvnw verify and search Money.java, MoneyFormatException.java, and the three test classes for double, float, Double, and Float, confirming none appear
+- [x] Run ./mvnw verify and search Money.java, MoneyFormatException.java, and the three test classes for double, float, Double, and Float, confirming none appear
   - ID 5.1 · Depends on: 2.2, 2.3, 4.3
-- [ ] Measure JaCoCo line and branch coverage for Money and MoneyFormatException and add tests for any uncovered line or branch until both reach 100%, using JaCoCo 0.8.15 as in task 1.2
+- [x] Measure JaCoCo line and branch coverage for Money and MoneyFormatException and add tests for any uncovered line or branch until both reach 100%, using JaCoCo 0.8.15 as in task 1.2
   - ID 5.2 · Depends on: 1.2, 5.1

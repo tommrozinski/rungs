@@ -127,3 +127,20 @@ Local JDK: OpenJDK 26 via JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jd
   errors), formatters dropping the sign (same), wrong display grouping (3 errors, extremes
   only); Money.java restored and confirmed identical with cmp. Correctness review: no findings
   (the 20 cases confirmed in the surefire report). review-changes: no blockers.
+
+## Task 5.1 — Run ./mvnw verify and search Money.java, MoneyFormatException.java, and the three test classes for double, float, Double, and Float, confirming none appear
+- Completed: 2026-09-13
+- Files changed: none
+- Tests: `./mvnw -B -ntp clean verify`: 339 tests, 0 failures, BUILD SUCCESS, no WARNING.
+  `grep -E 'double|float|Double|Float'` over the five files: no matches (exit 1).
+- Notes: done directly by the orchestrator (check task).
+
+## Task 5.2 — Measure JaCoCo line and branch coverage for Money and MoneyFormatException and add tests for any uncovered line or branch until both reach 100%
+- Completed: 2026-09-13
+- Files changed: none (report under target/site/jacoco, git-ignored)
+- Tests: JaCoCo 0.8.15 command from task 1.2 (with clean): 339 tests, 0 failures.
+  jacoco.csv: Money 0/113 lines missed, 0/100 branches missed, 0/26 methods missed;
+  MoneyFormatException 0/4 lines (no branches); MoneyFormatException.Reason 0/11 lines
+  (no branches). Both classes at 100% line and branch coverage; no tests needed.
+- Notes: done directly by the orchestrator. The 4.2 review's added "1,,23"/"1,2,3" rows
+  are what cover the last comma-placement branch.
