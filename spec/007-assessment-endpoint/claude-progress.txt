@@ -1,0 +1,54 @@
+# Implementation progress: 007 + 011 (combined spec)
+
+Mode: TDD; lean process (one implementer per phase, one code-reviewer for the pair)
+Started: 2026-09-13
+
+## Story 007 — Assessment endpoint (task 1.1)
+- 2026-09-13. implementation-engineer in the main checkout; committed d277af5.
+- Files: FinancialSnapshot.monthlySurplus; application SnapshotInput/DebtInput/MortgageInput/
+  HouseholdFlagsInput (toSnapshot applies FR-4), InputText (shared blank predicate: isBlank or
+  every char whitespace/space char), AssessmentService, ReadinessAssessment, Warning;
+  application.response AssessmentResponse/StageResponse/MoneyResponse/WarningResponse with
+  from/of mappers; config ApplicationConfiguration; adapter.in.web.api AssessmentController and
+  ApiJsonConfiguration (JsonMapperBuilderCustomizer: FAIL_ON_UNKNOWN_PROPERTIES on; number/
+  boolean→String and float→int coercion fail); golden file golden/assessment-ac-1-2.json
+  (compact, no trailing newline, byte-for-byte).
+- Tests: 122 runs (normalization, blank predicate, service, response mapping, 80 MockMvc
+  contract cases: AC-1.1–1.4, blank-as-zero per field, zero-balance removal, byte-identical
+  output, 400s without echo). Suite 907; 100% line on new classes; all gates green.
+- Design change during the phase: response records moved to application.response so view pages
+  (029) can share them under ArchUnit AC-C (design §1/§4 updated).
+- Findings: Jackson 3.1.5 writes records in declaration order with nulls, so no annotations.
+  Boot's customizer turns FAIL_ON_UNKNOWN_PROPERTIES off; ours runs after it. Spring's default
+  resolver logs unreadable bodies at WARN with submitted values (NFR-2), so a temporary controller
+  handler resolved them; phase 2's advice replaces it.
+- Handed to phase 2: null element in debts → 500; ArithmeticException for oversized totals (the
+  $1B cap); "3" string accepted for emergencyFundMonths; bad type on a zero-balance debt not caught
+  (validation will run before toSnapshot).
+- REQ-011 latency smoke test skipped (wall-clock assertions banned by story 019).
+- Review: deferred to the single 007+011 review after phase 2.
+
+## Story 011 — Validation and problem details (task 2.1)
+- 2026-09-13. implementation-engineer (Opus, started before the model-routing change; resumed
+  once after an API spend limit); committed a258f36.
+- Files: pom.xml (spring-boot-starter-validation); application.validation ValidationCode, Rejection,
+  MoneyAmount/Percentage/EmergencyFundMonths/DebtTypeName/AtMostFiftyDebts + validators, WholeForm,
+  FieldsThenWholeForm, Violations; constraints on SnapshotInput/DebtInput/MortgageInput; api
+  ProblemDetailsAdvice, JsonPointers; ApiJsonConfiguration rejects String→Integer; controller
+  validates with @Validated(FieldsThenWholeForm.class).
+- Tests: 233 new (suite 1140 at commit; 1260 after the 024–026 merge); 100% line on new classes.
+- Deviation: @GroupSequence on the record doesn't reach @Valid debts, so an explicit
+  FieldsThenWholeForm group is used.
+- Decisions: "1 field needs attention." / "N fields need attention."; MORTGAGE matched exactly
+  (case-sensitive, no trim); null debt entry → INVALID_TYPE at /debts/N; malformed title "The
+  request body isn't valid JSON.", detail "Send a JSON object that matches the request format.",
+  non-object root counts as malformed; percent syntax -?([0-9]+(\.[0-9]*)?|\.[0-9]+), ASCII only,
+  ≤ 32 chars; UNKNOWN_FIELD "Remove this field; it isn't part of the request."; INVALID_TYPE "Send
+  this value as the JSON type the field expects."; INVALID_DEBT_TYPE/INVALID_STRATEGY both send
+  INVALID_CHOICE; custom problem records (Spring ProblemDetail writes alphabetically and adds
+  instance); ArithmeticException fallback 500 logs only the exception class.
+- Review of 007+011 (Sonnet): no Critical/High. Medium — the whole-form rule depends on callers
+  passing FieldsThenWholeForm; addressed in story 027 phase 2 by a single application
+  SnapshotValidator entry point used by both the API and form controllers. Lows accepted: 405/415
+  return Spring's default error body, not problem+json (outside 011's stated scope); unknown property
+  names are echoed in pointers, bounded only by Jackson's string limit (no value leak).
