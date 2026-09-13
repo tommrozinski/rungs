@@ -18,7 +18,7 @@
 
 ## Phase 3: Stage framework (004)
 
-- [ ] Add StageStatus, StageEvaluation (REQ-004 combinations), Percentages.of/ofRatio, StageEvaluator, StageLadder, LadderResult, and FixedStageEvaluator, with rejecting tests per forbidden combination and ladder tests (all satisfied, skipped below unsatisfied, satisfied above current, missing/duplicate/wrong-stage evaluator)
+- [x] Add StageStatus, StageEvaluation (REQ-004 combinations), Percentages.of/ofRatio, StageEvaluator, StageLadder, LadderResult, and FixedStageEvaluator, with rejecting tests per forbidden combination and ladder tests (all satisfied, skipped below unsatisfied, satisfied above current, missing/duplicate/wrong-stage evaluator)
   - ID 3.1 · Depends on: 2.1
 
 ## Phase 4: Evaluators (005, 006)
