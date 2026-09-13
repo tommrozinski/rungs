@@ -297,6 +297,41 @@ class FinancialSnapshotTests {
         assertThat(snapshot.totalDebtBalance()).isEqualTo(Money.ofCents(50_000 + 1_200_000 + 80_050));
     }
 
+    @Test
+    void monthlySurplusSubtractsExpensesAndEveryMinimumPaymentButNotTheMortgagePayment() {
+        Mortgage mortgage = new Mortgage(Money.ofDollars(90_000), Money.ofDollars(800), Money.ofDollars(200_000),
+                new BigDecimal("3.75"));
+        FinancialSnapshot snapshot = aSnapshot()
+                .withMonthlyTakeHomeIncome(Money.ofDollars(5_000))
+                .withMonthlyEssentialExpenses(Money.ofDollars(3_000))
+                .withDebts(List.of(CARD, LOAN, CLINIC))
+                .withMortgage(mortgage)
+                .build();
+
+        assertThat(snapshot.monthlySurplus()).isEqualTo(Money.ofDollars(5_000 - 3_000 - 25 - 140));
+    }
+
+    @Test
+    void monthlySurplusIsIncomeMinusExpensesWithoutDebts() {
+        FinancialSnapshot snapshot = aSnapshot()
+                .withMonthlyTakeHomeIncome(Money.ofCents(400_050))
+                .withMonthlyEssentialExpenses(Money.ofDollars(1_000))
+                .build();
+
+        assertThat(snapshot.monthlySurplus()).isEqualTo(Money.ofCents(300_050));
+    }
+
+    @Test
+    void monthlySurplusMayBeNegative() {
+        FinancialSnapshot snapshot = aSnapshot()
+                .withMonthlyTakeHomeIncome(Money.ofDollars(2_000))
+                .withMonthlyEssentialExpenses(Money.ofDollars(1_900))
+                .withDebts(List.of(LOAN))
+                .build();
+
+        assertThat(snapshot.monthlySurplus()).isEqualTo(Money.ofDollars(-40));
+    }
+
     private static FinancialSnapshotBuilder withMoney(String component, Money amount) {
         FinancialSnapshotBuilder builder = aSnapshot();
         return switch (component) {

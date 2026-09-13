@@ -78,4 +78,14 @@ public record FinancialSnapshot(
     public Money totalDebtBalance() {
         return Money.sum(debts.stream().map(Debt::balance).toList());
     }
+
+    /**
+     * Returns income minus essential expenses minus the sum of every debt's minimum payment; the result may be
+     * negative. The mortgage payment is not subtracted, since it is already part of the essential expenses. Throws
+     * ArithmeticException if the result does not fit in {@link Money}.
+     */
+    public Money monthlySurplus() {
+        Money minimumPayments = Money.sum(debts.stream().map(Debt::minimumPayment).toList());
+        return monthlyTakeHomeIncome.minus(monthlyEssentialExpenses).minus(minimumPayments);
+    }
 }
