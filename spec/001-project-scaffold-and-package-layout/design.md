@@ -8,7 +8,7 @@
 
 A single Maven module producing one Spring Boot application. The scaffold creates the
 ports-and-adapters package tree from PRD §8 with no behavior in it yet, plus the minimum
-runtime needed to prove the build works: a main class, a health endpoint, and two tests.
+runtime needed to prove the build works: a main class, a health endpoint, and three tests.
 
 ```mermaid
 flowchart TB
@@ -60,7 +60,8 @@ rungs/
     │       └── static/.gitkeep
     └── test/java/com/rungs/readiness/
         ├── RungsApplicationTests.java
-        └── ActuatorExposureTests.java
+        ├── ActuatorExposureTests.java
+        └── NeutralVocabularyTests.java
 ```
 
 ## 2. Tech stack
@@ -75,7 +76,7 @@ rungs/
 | Operations | `spring-boot-starter-actuator` | managed by parent |
 | Tests | `spring-boot-starter-webmvc-test`, `spring-boot-starter-actuator-test` | managed by parent; JUnit 5 |
 | Build guard | `maven-enforcer-plugin` | 3.6.3, managed by parent |
-| Local JDK | Eclipse Temurin 25 | installed via `brew install --cask temurin@25` at implementation |
+| Local JDK | Homebrew OpenJDK 26 | installed as Homebrew Maven's dependency; `--release 25` keeps compilation on the Java 25 API, and CI (story 019) runs on JDK 25 |
 
 The deprecated `spring-boot-starter-web` is not used.
 
@@ -98,9 +99,13 @@ The only HTTP surface is Actuator health:
 spring.application.name=rungs
 management.endpoints.web.exposure.include=health
 management.endpoint.health.show-details=never
+management.endpoint.health.probes.enabled=false
 ```
 
-No other properties (REQ-013).
+No other properties (REQ-013). Probes are off because Boot 4.1.1 enables them by default
+(`AvailabilityProbesAutoConfiguration`, `matchIfMissing = true`), and the root health
+response then lists `"groups":["liveness","readiness"]` even with details hidden. Story 017
+enables them and updates the health test.
 
 ## 5. Build design (`pom.xml`)
 
@@ -116,14 +121,22 @@ No other properties (REQ-013).
   - `maven-enforcer-plugin`, execution `enforce` bound to `validate`, rules:
     - `requireJavaVersion` `[25,)`, message "Rungs requires Java 25 or newer."
     - `requireMavenVersion` `[3.9.16,)`, message "Use ./mvnw so Maven 3.9.16 or newer is used."
-    - `requireReleaseDeps`, message "SNAPSHOT dependencies are not allowed."
-    - `requirePluginVersions` so no plugin version floats.
+    - `requireReleaseDeps`, message "SNAPSHOT dependencies are not allowed." Default
+      settings: the rule checks dependencies and the parent, never the project's own
+      version, so `0.1.0-SNAPSHOT` passes. Do not set `onlyWhenRelease=true`, which would
+      skip the rule on every SNAPSHOT build.
+    - `requirePluginVersions`, message "Every plugin version must be pinned.", so no plugin
+      version floats.
+- Plugin management: pin `maven-site-plugin` to `3.22.0`, the latest stable release (4.0.0
+  is still a milestone). Boot's BOM does not manage it, and `requirePluginVersions` checks
+  the `clean`, `deploy`, and `site` lifecycle plugins by default and rejects Maven's built-in
+  versions. Boot already pins the clean and deploy plugins.
 - No other modules, no `<modules>` section, no frontend plugin.
 
 Wrapper generation (one time, during implementation):
 
 ```bash
-brew install maven          # temporary, only to generate the wrapper
+brew install maven          # only to generate the wrapper; also installs OpenJDK 26
 mvn -N wrapper:wrapper -Dmaven=3.9.16 -Dtype=only-script
 ```
 
@@ -160,14 +173,26 @@ public class RungsApplication {
 ### Tests
 
 - `RungsApplicationTests`: `@SpringBootTest`, one `contextLoads()` test (REQ-009).
-- `ActuatorExposureTests`: `@SpringBootTest` with MockMvc auto-configuration:
-  - `GET /actuator/health` → 200 and body exactly `{"status":"UP"}`.
+- `ActuatorExposureTests`: `@SpringBootTest` plus `@AutoConfigureMockMvc`
+  (`org.springframework.boot.webmvc.test.autoconfigure`, from `spring-boot-webmvc-test`),
+  asserting with an injected `MockMvcTester`:
+  - `GET /actuator/health` → 200 and body exactly `{"status":"UP"}` (probes off, §4).
   - `GET /actuator/env` → 404.
-  - `GET /actuator` → the discovery page lists only `health` (or 404 if discovery is
-    disabled). Pinned during implementation.
+  - `GET /actuator` → 200, and `_links` has exactly the keys `self`, `health`, and
+    `health-path`. Boot adds one link per web operation, and the health operation with a
+    path selector gets the ID `health-path`.
+- `NeutralVocabularyTests` (REQ-015): plain JUnit 5 with no Spring context.
+  - Walks the project root (Surefire's working directory), skipping `.git/`, `target/`,
+    `.idea/`, `.vscode/`, `prd/`, `backlog/`, and its own source file.
+  - Reads each file as UTF-8 and skips files that do not decode.
+  - Matches, ignoring case, the PRD §1 trademark terms and the trademark owner's name, with
+    a space, hyphen, underscore, or nothing between words.
+  - Fails with every `path:line` match listed.
+  - Spec documents are scanned, so they refer to the terms through PRD §1 and never spell
+    them out.
 
-Boot 4 moved the MockMvc test auto-configuration into the `webmvc-test` module; the import
-path is confirmed at implementation.
+In Boot 4, `@SpringBootTest` alone does not provide MockMvc; `@AutoConfigureMockMvc` is
+required. `MockMvcTester` uses AssertJ, which `spring-boot-starter-test` already provides.
 
 ## 7. README design
 
@@ -221,11 +246,12 @@ No trademarked framework names anywhere (PRD §1).
 
 ## 12. Implementation sequence
 
-1. Install JDK 25 and temporary Maven via Homebrew (user approves prompts).
+1. Install Maven via Homebrew, which brings OpenJDK 26 (user approves prompts).
 2. Write `pom.xml`, generate the wrapper, and confirm `./mvnw -v` reports Maven 3.9.16 on
-   Java 25.
+   the local JDK 26. Homebrew's OpenJDK is keg-only, so set `JAVA_HOME` to
+   `/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home` for `./mvnw`.
 3. Add `RungsApplication`, `package-info.java` files, resources, and `application.properties`.
-4. Add the two tests; run `./mvnw verify`.
+4. Add the three tests; run `./mvnw verify`.
 5. Add README, `.editorconfig`, and the `.gitignore` update.
 6. Manual checks: `./mvnw spring-boot:run` plus `curl` health; check that the Enforcer
    message appears when run with a JDK below 25 (if one is available), otherwise by
@@ -235,12 +261,15 @@ No trademarked framework names anywhere (PRD §1).
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Boot 4 test auto-configuration packages differ from Boot 3 examples | Test compile errors | Resolve imports against the 4.1.1 jars during implementation; no Boot 3 snippets copied blindly |
-| Health response includes extra keys (e.g. `groups`) if probes auto-enable | Exact-body assertion fails | Probes are not enabled in this story; the test pins the exact body and story 017 updates it deliberately |
-| `requireReleaseDeps` flags the project's own `-SNAPSHOT` version | Build fails immediately | Configure the rule to check dependencies only (`onlyWhenRelease=false`, exclude the project itself); verify on first run |
-| No JDK/Maven on the machine | Cannot build | Homebrew installs at step 1 |
+| Boot 4 test auto-configuration packages differ from Boot 3 examples | Test compile errors | Import `AutoConfigureMockMvc` from `org.springframework.boot.webmvc.test.autoconfigure` (checked against the 4.1.1 jars); no Boot 3 snippets copied |
+| Boot 4 enables probes by default, adding `groups` to the health response | Exact-body assertion fails | `management.endpoint.health.probes.enabled=false` (§4); story 017 enables probes and updates the test |
+| Discovery page lists `self` and `health-path` besides `health` | "Only health" assertion fails | Test pins the exact link set `self`, `health`, `health-path` (§6) |
+| `requirePluginVersions` rejects the unpinned `maven-site-plugin` (not managed by Boot's BOM) | Build fails immediately | Pin `maven-site-plugin` 3.22.0 in `<pluginManagement>` (§5) |
+| `requireReleaseDeps` misconfigured with `onlyWhenRelease=true` | Rule silently skips every SNAPSHOT build | Keep default settings; the rule checks dependencies and the parent, never the project's own version |
+| Local JDK (26) is newer than the target (25) | Behavior seen only on JDK 25 is missed locally | `--release 25` blocks JDK 26-only APIs at compile time; CI on JDK 25 (story 019) catches runtime differences |
 | Thymeleaf warns about an empty template location | Noisy startup log | `.gitkeep` keeps `templates/` on the classpath; warning checked on first run |
-| Trademarked names slip into README or code | Public-repo exposure | Manual search before committing (story 015 automates later checks) |
+| Trademarked names slip into README or code | Public-repo exposure | `NeutralVocabularyTests` fails `./mvnw verify` (REQ-015); no later story covers this |
+| Vocabulary scan trips on local untracked files | False failures on one machine | Skip `.git/`, `target/`, and IDE folders; widen the skip list only for generated or untracked folders |
 
 ## 14. Requirements traceability
 
@@ -260,3 +289,4 @@ No trademarked framework names anywhere (PRD §1).
 | REQ-012 Enforcer | §5 |
 | REQ-013 minimal properties | §4 |
 | REQ-014 `.editorconfig` | §8 |
+| REQ-015 trademark scan test | §6, §13 |

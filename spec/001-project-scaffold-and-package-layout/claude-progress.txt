@@ -1,0 +1,17 @@
+# Implementation progress: 001-project-scaffold-and-package-layout
+
+Mode: code-only (no test infrastructure existed at start; tests are delivered as tasks 4.1–4.3)
+Started: 2026-09-13
+
+## Task 1.1 — Install Maven (brew install maven, which brings OpenJDK 26) with user approval, and confirm mvn -v reports Maven 3.9.16 on Java 26
+- Completed: 2026-09-13
+- Files changed: none (machine setup)
+- Tests: n/a (infra task)
+- Notes: `brew install --cask temurin@25` failed: its installer needs sudo with a password,
+  which a non-interactive session cannot supply. User chose to build locally with the
+  Homebrew OpenJDK 26 that Maven installed, rather than add another JDK. Java 25 stays the
+  product target (java.version=25 gives --release 25; Enforcer [25,); CI in story 019 and
+  container in story 037 use Temurin 25). Updated requirements assumptions, design §2, §5,
+  §12, §13, and tasks 1.1 and 2.2 to match. `mvn -v`: Maven 3.9.16, Java 26.0.2.1 (Homebrew).
+  OpenJDK is keg-only: set JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home.
+

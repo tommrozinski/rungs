@@ -66,6 +66,8 @@ that enforce the layout come in story 015, and the CI gates in story 019.
   multi-tenancy, and internationalization (PRD §12); saved households, printing/PDF,
   dark mode, charting, and save-in-place (design spec §8).
 - [ ] No trademarked framework names appear in the repo name, package names, or README.
+- [ ] An automated test in `./mvnw verify` fails if a trademarked name appears in any file
+  outside `prd/` and `backlog/`.
 
 ## Functional Requirements
 
@@ -106,10 +108,17 @@ that enforce the layout come in story 015, and the CI gates in story 019.
   `./mvnw verify` and fails the build with a clear message when the JDK is older than 25,
   the Maven version is below the wrapper's pinned version, or any `SNAPSHOT` dependency is
   present. Story 015 may extend it with the no-second-module and no-Node checks.
+- **REQ-015**: A test that runs in `./mvnw verify` scans every file in the repository
+  except `.git/`, `target/`, IDE folders, `prd/`, `backlog/`, and the test's own source. It
+  fails if a trademarked name from PRD §1, or the trademark owner's name, appears in any
+  letter case and with a space, hyphen, underscore, or nothing between words. The failure
+  lists each file and line. No later story replaces this check.
 
 ### Should Have (P1)
-- **REQ-013**: `application.properties` sets the application name and the Actuator
-  exposure, and nothing else.
+- **REQ-013**: `application.properties` sets only the application name, the Actuator
+  exposure, `show-details=never`, and `management.endpoint.health.probes.enabled=false`.
+  Boot 4 enables probes by default, which adds a `groups` field to the health response;
+  story 017 turns them back on.
 
 ### Nice to Have (P2)
 - **REQ-014**: An `.editorconfig` for consistent indentation and line endings.
@@ -151,11 +160,11 @@ that enforce the layout come in story 015, and the CI gates in story 019.
 ### Assumptions
 - Reviewers have a JDK 25 from any vendor, and internet access on the first build so the
   wrapper can download Maven and dependencies.
-- The development machine has no JDK or Maven yet. At the start of implementation,
-  Claude runs the installs with the user approving each prompt:
-  `brew install --cask temurin@25` (JDK 25) and `brew install maven` (temporary, only to
-  generate the wrapper with `mvn wrapper:wrapper -Dmaven=3.9.16`). After that, everything
-  runs through `./mvnw`.
+- The development machine builds with Homebrew OpenJDK 26, which `brew install maven`
+  installs as a dependency. Homebrew Maven is used once, to generate the wrapper with
+  `mvn wrapper:wrapper -Dmaven=3.9.16`; after that, everything runs through `./mvnw`. No
+  separate JDK 25 is installed locally: `--release 25` keeps compilation on the Java 25 API,
+  the Enforcer accepts 25 or newer, and CI (story 019) runs on JDK 25.
 - Spring Boot 4.1 uses Jackson 3 (`tools.jackson`). Nothing in this story touches it, but
   stories 007 and 015 depend on it.
 - Architecture packages without classes are expected; later stories fill them.
@@ -190,10 +199,10 @@ that enforce the layout come in story 015, and the CI gates in story 019.
 - **Structure is complete:** all eight architecture packages have a `package-info.java`.
 - **No forbidden files:** a search of the repository finds no `package.json`, lockfile,
   `node_modules`, or second module.
-- **No trademarked names in the product:** a search of source code, package names,
-  `pom.xml`, the README, and the repository name finds no trademarked framework name. The
-  planning documents in `prd/` and `backlog/` are excluded, since the PRD's trademark note
-  necessarily names them.
+- **No trademarked names in the product:** the REQ-015 test passes, covering source code,
+  package names, `pom.xml`, the README, and spec documents, and the repository name contains
+  no trademarked framework name. The planning documents in `prd/` and `backlog/` are
+  excluded, since the PRD's trademark note necessarily names them.
 - **README stands alone:** a newcomer can build and run the app from the README alone,
   and it lists every deferred feature.
 - No build-time target is set: timing on a skeleton says little, and the first run is

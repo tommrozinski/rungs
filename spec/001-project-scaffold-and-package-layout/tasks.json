@@ -1,0 +1,154 @@
+{
+  "specName": "001-project-scaffold-and-package-layout",
+  "generatedAt": "2026-09-13T00:00:00Z",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Toolchain",
+      "tasks": [
+        {
+          "id": "1.1",
+          "description": "Install Maven (brew install maven, which brings OpenJDK 26) with user approval, and confirm mvn -v reports Maven 3.9.16 on Java 26",
+          "files": [],
+          "dependencies": [],
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Build",
+      "tasks": [
+        {
+          "id": "2.1",
+          "description": "Write pom.xml: parent spring-boot-starter-parent 4.1.1, com.rungs:rungs:0.1.0-SNAPSHOT, java.version 25, the five starters, spring-boot-maven-plugin, maven-enforcer-plugin (requireJavaVersion [25,), requireMavenVersion [3.9.16,), requireReleaseDeps with default settings, requirePluginVersions) with the design's messages, and a pluginManagement pin for maven-site-plugin 3.22.0",
+          "files": ["pom.xml"],
+          "dependencies": ["1.1"],
+          "status": "pending"
+        },
+        {
+          "id": "2.2",
+          "description": "Generate the Maven wrapper (mvn -N wrapper:wrapper -Dmaven=3.9.16 -Dtype=only-script) and confirm ./mvnw -v reports Maven 3.9.16 on Java 26 with JAVA_HOME set to Homebrew OpenJDK",
+          "files": ["mvnw", "mvnw.cmd", ".mvn/wrapper/maven-wrapper.properties"],
+          "dependencies": ["2.1"],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Application skeleton",
+      "tasks": [
+        {
+          "id": "3.1",
+          "description": "Add RungsApplication main class, application.properties (application name, health-only exposure, show-details never, probes disabled), and templates/.gitkeep and static/.gitkeep",
+          "files": [
+            "src/main/java/com/rungs/readiness/RungsApplication.java",
+            "src/main/resources/application.properties",
+            "src/main/resources/templates/.gitkeep",
+            "src/main/resources/static/.gitkeep"
+          ],
+          "dependencies": ["2.2"],
+          "status": "pending"
+        },
+        {
+          "id": "3.2",
+          "description": "Add package-info.java with the design's one-line Javadoc to each of the eight architecture packages",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/model/package-info.java",
+            "src/main/java/com/rungs/readiness/domain/stage/package-info.java",
+            "src/main/java/com/rungs/readiness/domain/projection/package-info.java",
+            "src/main/java/com/rungs/readiness/domain/port/package-info.java",
+            "src/main/java/com/rungs/readiness/application/package-info.java",
+            "src/main/java/com/rungs/readiness/adapter/in/web/api/package-info.java",
+            "src/main/java/com/rungs/readiness/adapter/in/web/view/package-info.java",
+            "src/main/java/com/rungs/readiness/adapter/out/ai/package-info.java"
+          ],
+          "dependencies": ["2.2"],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Tests",
+      "tasks": [
+        {
+          "id": "4.1",
+          "description": "Add RungsApplicationTests with a @SpringBootTest contextLoads test",
+          "files": ["src/test/java/com/rungs/readiness/RungsApplicationTests.java"],
+          "dependencies": ["3.1"],
+          "status": "pending"
+        },
+        {
+          "id": "4.2",
+          "description": "Add ActuatorExposureTests (@SpringBootTest, @AutoConfigureMockMvc, MockMvcTester) asserting /actuator/health returns 200 with body exactly {\"status\":\"UP\"}, /actuator/env returns 404, and /actuator _links keys are exactly self, health, and health-path",
+          "files": ["src/test/java/com/rungs/readiness/ActuatorExposureTests.java"],
+          "dependencies": ["3.1"],
+          "status": "pending"
+        },
+        {
+          "id": "4.3",
+          "description": "Add NeutralVocabularyTests, a plain JUnit test that scans every repo file except .git/, target/, IDE folders, prd/, backlog/, and its own source for the PRD §1 trademark terms and owner name (any case; space, hyphen, underscore, or no separator) and fails listing each path:line",
+          "files": ["src/test/java/com/rungs/readiness/NeutralVocabularyTests.java"],
+          "dependencies": ["2.2"],
+          "status": "pending"
+        },
+        {
+          "id": "4.4",
+          "description": "Run ./mvnw verify and fix any failures, including Enforcer rule misconfiguration and Thymeleaf template-location warnings",
+          "files": ["pom.xml"],
+          "dependencies": ["3.2", "4.1", "4.2", "4.3"],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "README and supporting files",
+      "tasks": [
+        {
+          "id": "5.1",
+          "description": "Write README.md with the six sections from design §7 (summary, nothing is stored, prerequisites, build and run, deliberately not included, project documents) using neutral vocabulary only",
+          "files": ["README.md"],
+          "dependencies": ["2.2"],
+          "status": "pending"
+        },
+        {
+          "id": "5.2",
+          "description": "Add .editorconfig per design §8 and append .jqwik-database to the existing .gitignore",
+          "files": [".editorconfig", ".gitignore"],
+          "dependencies": [],
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Verification",
+      "tasks": [
+        {
+          "id": "6.1",
+          "description": "Start the app with ./mvnw spring-boot:run and confirm curl localhost:8080/actuator/health returns {\"status\":\"UP\"}",
+          "files": [],
+          "dependencies": ["4.4"],
+          "status": "pending"
+        },
+        {
+          "id": "6.2",
+          "description": "Confirm the Enforcer fails with the \"requires Java 25\" message on an older JDK, or by temporarily raising the required version, then revert",
+          "files": ["pom.xml"],
+          "dependencies": ["4.4"],
+          "status": "pending"
+        },
+        {
+          "id": "6.3",
+          "description": "Rerun ./mvnw verify so NeutralVocabularyTests covers the README and supporting files, and search the repo for package.json, lockfiles, node_modules, and second modules, confirming none exist",
+          "files": [],
+          "dependencies": ["4.4", "5.1", "5.2"],
+          "status": "pending"
+        }
+      ]
+    }
+  ]
+}
