@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<p th:text="${#numbers.formatDecimal(total, 1, 2)}">total</p>
+<p th:text="${income - expenses}">left</p>
+<button type="button" onclick="go()">Go</button>
+<script>go();</script>
+<script src="/js/app.js"></script>
+<li th:classappend="${stage.current ? 'is-current' : 'is-later'}">stage</li>
+</body>
+</html>

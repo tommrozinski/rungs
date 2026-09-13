@@ -47,6 +47,13 @@
             <artifactId>spring-boot-starter-actuator-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <!-- Architecture rules AC-A to AC-F (PRD §8); not managed by the Spring Boot parent. -->
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.5.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
