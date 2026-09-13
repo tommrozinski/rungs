@@ -1,0 +1,16 @@
+# Implementation progress: 027 + 029 (combined spec)
+
+Mode: TDD; lean process; model routing per 2026-09-13 (Sonnet agents, local qwen3-coder:30b for
+class-1 tasks, one Sonnet review for the pair)
+Started: 2026-09-13
+
+## Task 1.1 — ExampleHouseholds (local model attempt)
+- 2026-09-13. Routed to qwen3-coder:30b via the workflow's local-model step (Sonnet driver).
+- Result: FALLBACK. Attempt 1 (~72 s): `ollama run` output contained ANSI redraw codes and the
+  model spliced repeated token sequences into statements, giving ~20 syntax errors. Retry (~63 s,
+  `ollama run --nowordwrap`): clean output with correct values, but the test called the
+  package-private `ApplicationConfiguration.assessmentService()` from another package, which
+  failed to compile. Both drafts were deleted; tree clean.
+- Next: run task 1.1 with a Sonnet implementation-engineer (per the fallback rule).
+- Lessons for future local-model tasks: always use `--nowordwrap`; in the prompt, state
+  visibility constraints explicitly (e.g. "build AssessmentService yourself from new StageLadder(List.of(...seven evaluators))").
