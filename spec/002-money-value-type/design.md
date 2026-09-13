@@ -85,7 +85,7 @@ public record Money(long cents) implements Comparable<Money>
 | `int compareTo(Money other)` | `Long.compare` | NPE if null |
 | `Money min(Money other)` / `max(Money other)` | Smaller / larger; `this` on a tie | NPE if null |
 | `boolean isZero()` / `isNegative()` / `isPositive()` | Sign tests on `cents` | — |
-| `static Money sum(Collection<Money> amounts)` | Exact total; `ZERO` when empty (REQ-011) | `ArithmeticException`; NPE for a null collection or element |
+| `static Money sum(Collection<Money> amounts)` | Exact total; `ZERO` when empty (REQ-011). Adds in iteration order and throws as soon as a running total overflows, even if later amounts would bring it back in range | `ArithmeticException`; NPE for a null collection or element |
 | `String toDisplayString()` | `$1,234.56`, `-$1,234.56`, `$0.00` (REQ-005) | — |
 | `String toBareString()` | `1234.56`, `-1234.56`, `0.00` (REQ-006) | — |
 | `static Money parse(String text)` | Tolerant parse (§6.4) | `MoneyFormatException` |

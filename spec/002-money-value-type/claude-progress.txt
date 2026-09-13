@@ -24,3 +24,48 @@ Local JDK: OpenJDK 26 via JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jd
   Coverage per class: target/site/jacoco/jacoco.csv (LINE_MISSED/BRANCH_MISSED columns).
 - Notes: only RungsApplication is instrumented today; Money and MoneyFormatException will
   appear once phases 2–4 add them (task 5.2 uses the same command).
+
+## Task 2.1 — Add the Money record (long cents) with ZERO, ofCents, ofDollars (multiplyExact), and plus, minus, negate using Math.*Exact, with MoneyArithmeticTests for zero, ±1 cent, mixed signs, and overflow including negate of Long.MIN_VALUE
+- Completed: 2026-09-13
+- Files changed: src/main/java/com/rungs/readiness/domain/model/Money.java (new),
+  src/test/java/com/rungs/readiness/domain/model/MoneyArithmeticTests.java (new)
+- Tests: 45 in MoneyArithmeticTests (factories, plus/minus/negate incl. exact-limit results,
+  overflow both directions, negate of Long.MIN_VALUE, null operands, immutability). Red→green
+  per slice. `./mvnw clean verify`: 87 tests, 0 failures, no WARN/ERROR.
+- Notes: implementation-engineer (TDD). Use `clean` builds: the IDE compiler can leave broken
+  classes in target/. Correctness review: no Critical/High/Medium; hand mutations (plain
+  +/-/*, swapped operands) all caught. Low (folded into task 2.2): ofDollars exact-limit
+  cases; minus with Long.MIN_VALUE as right operand. review-changes warning (folded into
+  2.2): extract the literal 100 into a CENTS_PER_DOLLAR constant.
+
+## Task 2.2 — Add Comparable compareTo, instance min and max returning this on ties, isZero/isNegative/isPositive, and static sum(Collection) returning ZERO when empty, with tests for ties, signs, and empty, single, mixed, and overflowing collections
+- Completed: 2026-09-13
+- Files changed: Money.java (implements Comparable; compareTo, min, max, isZero, isNegative,
+  isPositive, sum; CENTS_PER_DOLLAR constant), MoneyArithmeticTests.java
+- Tests: MoneyArithmeticTests 45 → 83 (compareTo incl. MIN vs MAX, min/max both orders and
+  tie identity, sign tests, sum empty/single/mixed/exact-MAX/overflow/nulls; plus the 2.1
+  follow-ups: ofDollars exact limits, minus with Long.MIN_VALUE right operand).
+  `./mvnw clean verify`: 125 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD; the eight sum tests went red→green together).
+  Correctness review: no Critical/High/Medium. Low (accepted, documented in design §4): sum
+  adds in iteration order and throws on intermediate overflow even if later elements would
+  cancel it ([MAX, 1, -1] throws); story 005 sums only non-negative amounts, so no caller is
+  affected. review-changes: no blockers or warnings.
+
+## Task 2.3 — Add times(BigDecimal) per design §6.2 (64-digit factor cap, exact multiply, exponent guards, HALF_EVEN setScale, longValueExact) with half-even, guard-edge, extreme-exponent, and overflow tests
+- Completed: 2026-09-13
+- Files changed: Money.java (times; constants MAX_FACTOR_PRECISION=64,
+  MIN_ROUNDED_EXPONENT=-1, MAX_FITTING_EXPONENT=18; java.math imports),
+  MoneyArithmeticTests.java
+- Tests: MoneyArithmeticTests 83 → 120 (+37): half-even .005/.015/.025 both signs, .0051,
+  zero/negative/trailing-zero factors, guard edges (0.1, 0.6, 0.09, 1E18, 1E19, 10×9.3E17),
+  64/65-digit factors, extreme exponents with 1 s preemptive timeouts (all ran in ≤3 ms),
+  overflow, null factor. `./mvnw clean verify`: 162 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD). Beyond the design: the exponent is computed in long,
+  because precision - scale - 1 overflows int for scales near Integer.MIN_VALUE and would
+  silently return ZERO; pinned by tests. Mutation checks (int exponent, tightened guards)
+  caught. Correctness review: no Critical/High/Medium. Low: no test for rounding at the long
+  limits (MAX + 0.4999… cent returns MAX; MAX + 0.5 rounds to MAX+1 and throws; MIN × a
+  factor just above 1 returns MIN) — added by the orchestrator as a follow-up. Loosening a
+  guard constant is result-invisible (setScale/longValueExact give the same outcome), so
+  those mutations can't be caught by result tests; accepted. review-changes: no blockers.

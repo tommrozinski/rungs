@@ -34,11 +34,11 @@ check. Commits go straight to `main`.
 
 ## Phase 2: Arithmetic
 
-- [ ] Add the Money record (long cents) with ZERO, ofCents, ofDollars (multiplyExact), and plus, minus, negate using Math.*Exact, with MoneyArithmeticTests for zero, ±1 cent, mixed signs, and overflow including negate of Long.MIN_VALUE
+- [x] Add the Money record (long cents) with ZERO, ofCents, ofDollars (multiplyExact), and plus, minus, negate using Math.*Exact, with MoneyArithmeticTests for zero, ±1 cent, mixed signs, and overflow including negate of Long.MIN_VALUE
   - ID 2.1 · Depends on: 1.1
-- [ ] Add Comparable compareTo, instance min and max returning this on ties, isZero/isNegative/isPositive, and static sum(Collection) returning ZERO when empty, with tests for ties, signs, and empty, single, mixed, and overflowing collections
+- [x] Add Comparable compareTo, instance min and max returning this on ties, isZero/isNegative/isPositive, and static sum(Collection) returning ZERO when empty, with tests for ties, signs, and empty, single, mixed, and overflowing collections
   - ID 2.2 · Depends on: 2.1
-- [ ] Add times(BigDecimal) per design §6.2 (ArithmeticException for a factor over 64 significant digits, exact multiply, ZERO when the leading-digit exponent is below -1, ArithmeticException above 18, HALF_EVEN setScale, longValueExact), with tests for 100 cents × .005/.015/.025 and negatives (0, 2, 2 and 0, -2, -2 cents), .0051, zero and negative factors, extreme exponents, guard edges (products of 0.1 and 0.09 cents, 1E18 and 1E19 cents, 64- and 65-digit factors), and overflow
+- [x] Add times(BigDecimal) per design §6.2 (ArithmeticException for a factor over 64 significant digits, exact multiply, ZERO when the leading-digit exponent is below -1, ArithmeticException above 18, HALF_EVEN setScale, longValueExact), with tests for 100 cents × .005/.015/.025 and negatives (0, 2, 2 and 0, -2, -2 cents), .0051, zero and negative factors, extreme exponents, guard edges (products of 0.1 and 0.09 cents, 1E18 and 1E19 cents, 64- and 65-digit factors), and overflow
   - ID 2.3 · Depends on: 2.1
   - ⚠️ Risk: an off-by-one in the guards either rounds a real half cent to zero or lets an expensive `setScale` run; the guard-edge tests pin each boundary.
 
