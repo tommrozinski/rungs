@@ -177,3 +177,27 @@ Started: 2026-09-13
   (deferred list now includes save-in-place, matching requirements, design, and README: ten items)
 - Tests: NeutralVocabularyTests scans README.md; full ./mvnw verify 42 tests, 0 failures.
 - Notes: see the pending-review entry above for wording decisions; all approved as drafted.
+
+## Task 6.1 — Start the app with ./mvnw spring-boot:run and confirm curl localhost:8080/actuator/health returns {"status":"UP"}
+- Completed: 2026-09-13
+- Files changed: none
+- Tests: manual. `./mvnw spring-boot:run`: started in 0.474 s, no WARN/ERROR.
+  `curl localhost:8080/actuator/health` → HTTP 200 {"status":"UP"}; /actuator/env → 404.
+  App stopped; port 8080 free.
+
+## Task 6.2 — Confirm the Enforcer fails with the "requires Java 25" message on an older JDK, or by temporarily raising the required version, then revert
+- Completed: 2026-09-13
+- Files changed: none (repo pom.xml never edited)
+- Tests: manual. No older JDK installed, so a scratchpad copy of pom.xml with [99,) ran
+  `./mvnw -f <copy> validate` → BUILD FAILURE, "Rule 0: RequireJavaVersion failed with
+  message: Rungs requires Java 25 or newer." `git diff -- pom.xml` empty.
+- Notes: used a scratch copy instead of edit-and-revert so the repo stayed untouched.
+
+## Task 6.3 — Rerun ./mvnw verify so NeutralVocabularyTests covers the README and supporting files, and search the repo for package.json, lockfiles, node_modules, and second modules, confirming none exist
+- Completed: 2026-09-13
+- Files changed: none
+- Tests: `./mvnw verify` → 42 tests, 0 failures, BUILD SUCCESS, no warnings. No
+  package.json, lockfiles (npm/yarn/pnpm/bun), node_modules, or .nvmrc; one pom.xml; no
+  <modules>, frontend, exec, npm, or node references in pom.xml.
+- Notes: phase 6 changed no code, so no correctness review or phase security review
+  (nothing to review). All 15 tasks complete.

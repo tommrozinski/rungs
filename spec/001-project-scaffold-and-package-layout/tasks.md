@@ -69,9 +69,9 @@ the success metrics. Commits go straight to `main`.
 
 ## Phase 6: Verification
 
-- [ ] Start the app with ./mvnw spring-boot:run and confirm curl localhost:8080/actuator/health returns {"status":"UP"}
+- [x] Start the app with ./mvnw spring-boot:run and confirm curl localhost:8080/actuator/health returns {"status":"UP"}
   - ID 6.1 · Depends on: 4.4
-- [ ] Confirm the Enforcer fails with the "requires Java 25" message on an older JDK, or by temporarily raising the required version, then revert
+- [x] Confirm the Enforcer fails with the "requires Java 25" message on an older JDK, or by temporarily raising the required version, then revert
   - ID 6.2 · Depends on: 4.4
-- [ ] Rerun ./mvnw verify so NeutralVocabularyTests covers the README and supporting files, and search the repo for package.json, lockfiles, node_modules, and second modules, confirming none exist
+- [x] Rerun ./mvnw verify so NeutralVocabularyTests covers the README and supporting files, and search the repo for package.json, lockfiles, node_modules, and second modules, confirming none exist
   - ID 6.3 · Depends on: 4.4, 5.1, 5.2
