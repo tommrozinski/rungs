@@ -1,6 +1,7 @@
 package com.rungs.readiness.config;
 
 import com.rungs.readiness.application.AssessmentService;
+import com.rungs.readiness.application.ProjectionService;
 import com.rungs.readiness.application.validation.SnapshotValidator;
 import com.rungs.readiness.domain.stage.CollegeEvaluator;
 import com.rungs.readiness.domain.stage.DebtFreeEvaluator;
@@ -19,17 +20,29 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class ApplicationConfiguration {
 
-    /** The assessment service over a ladder of all seven stage evaluators, built once. */
+    /** The ladder of all seven stage evaluators, built once and shared by every service that needs the current stage. */
     @Bean
-    AssessmentService assessmentService() {
-        return new AssessmentService(new StageLadder(List.of(
+    StageLadder stageLadder() {
+        return new StageLadder(List.of(
                 new StarterFundEvaluator(),
                 new DebtFreeEvaluator(),
                 new FullEmergencyFundEvaluator(),
                 new RetirementEvaluator(),
                 new CollegeEvaluator(),
                 new MortgageEvaluator(),
-                new WealthBuildingEvaluator())));
+                new WealthBuildingEvaluator()));
+    }
+
+    /** The assessment service over the shared {@link StageLadder}. */
+    @Bean
+    AssessmentService assessmentService(StageLadder stageLadder) {
+        return new AssessmentService(stageLadder);
+    }
+
+    /** The projection service (story 010) over the shared {@link StageLadder}. */
+    @Bean
+    ProjectionService projectionService(StageLadder stageLadder) {
+        return new ProjectionService(stageLadder);
     }
 
     /** The single validation entry point for a submitted snapshot (story 011 review finding), over Spring's Validator. */

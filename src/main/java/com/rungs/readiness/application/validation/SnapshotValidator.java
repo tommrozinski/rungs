@@ -1,5 +1,6 @@
 package com.rungs.readiness.application.validation;
 
+import com.rungs.readiness.application.ProjectionInput;
 import com.rungs.readiness.application.SnapshotInput;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -44,6 +45,16 @@ public final class SnapshotValidator {
     }
 
     /**
+     * Validates {@code input} with {@link FieldsThenWholeForm} (story 010, 011 REQ-011): the same sequence as
+     * {@link #validate(SnapshotInput)}, cascaded into the nested {@code snapshot}, so a violation there is reported
+     * at a pointer prefixed with {@code /snapshot} (the property path already includes that component's name).
+     * Returns every violation, in pointer order; empty when {@code input} is valid.
+     */
+    public List<FieldRejection> validate(ProjectionInput input) {
+        return fieldRejections(validator.validate(input, FieldsThenWholeForm.class));
+    }
+
+    /**
      * Validates only {@link WholeForm}'s 50-debt rule against {@code snapshot} (story 027's debts-table add action):
      * the rule tolerates a missing debt entry or an unparseable balance on its own (it counts neither), so a form
      * that is mid-edit and not yet field-valid can still be checked for the debt count alone, without the {@link
@@ -64,9 +75,9 @@ public final class SnapshotValidator {
         return violations.stream().findFirst().map(Rejection::of);
     }
 
-    private List<FieldRejection> fieldRejections(Set<ConstraintViolation<SnapshotInput>> violations) {
+    private List<FieldRejection> fieldRejections(Set<? extends ConstraintViolation<?>> violations) {
         List<FieldRejection> fieldRejections = new ArrayList<>();
-        for (ConstraintViolation<SnapshotInput> violation : violations) {
+        for (ConstraintViolation<?> violation : violations) {
             String pointer = PropertyPaths.fromViolation(SNAPSHOT_AT_ROOT, violation.getPropertyPath());
             fieldRejections.add(new FieldRejection(pointer, Rejection.of(violation)));
         }

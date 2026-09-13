@@ -82,9 +82,10 @@ class ProblemDetailsAdvice {
     }
 
     /**
-     * Arithmetic that overflowed while handling a request. Validation caps every amount at $1,000,000,000.00, so an
-     * assessment cannot reach this; it is a safety net that answers with a fixed 500 and logs only the exception
-     * class, since an arithmetic message may describe the figures involved.
+     * Arithmetic that overflowed while handling a request. Validation caps every amount at $1,000,000,000.00, and
+     * the simulator's runaway-balance ceiling (008 code review) stops negative amortization long before a
+     * {@code long} could overflow, so no valid input reaches this; it is a safety net that answers with a fixed
+     * 500 and logs only the exception class, since an arithmetic message may describe the figures involved.
      */
     @ExceptionHandler(ArithmeticException.class)
     ResponseEntity<Problem> arithmeticFailure(ArithmeticException exception) {
