@@ -101,10 +101,11 @@ a dollar.
 - **REQ-008**: Parse failures throw an unchecked `MoneyFormatException` (in
   `domain.model`) carrying a reason code; the message names the reason, not the raw input
   (NFR-2).
-- **REQ-009**: **Wire format contract.** In JSON, a `Money` value is always an object
+- **REQ-009**: **Wire format contract.** In JSON responses, a `Money` value is an object
   `{"amount": "<bare string>", "display": "<display string>"}`, e.g.
-  `{"amount": "-45.00", "display": "-$45.00"}`. The amount is a string, never a JSON
-  number. `Money` supplies both strings; the Jackson mapping is implemented in the web
+  `{"amount": "-45.00", "display": "-$45.00"}`. In JSON requests, it is a plain decimal
+  string (`"1234.56"`) read with `parse`. The amount is a string, never a JSON number
+  (request format amended 2026-09-13 in story 007). `Money` supplies both strings; the Jackson mapping is implemented in the web
   adapter (story 007), and the OpenAPI schema documents it (story 016).
 - **REQ-010**: No `double`, `float`, `Double`, or `Float` appears in the type, its
   exception, or its tests.

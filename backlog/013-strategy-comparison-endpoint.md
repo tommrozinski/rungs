@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Compare strategies endpoint
@@ -48,11 +48,10 @@ M
 
 ## Open Questions
 
-- Does this endpoint accept a `strategy` field at all? It runs both, so the field
-  is meaningless — is it rejected as an unknown property (per FR-4) or ignored?
-- What does "months saved" mean when one strategy truncates and the other does
-  not — null, or the horizon as a floor?
-- Is the AC-3.2 note free text or a coded reason like the warnings? The design
-  spec's closing line ("when the gap is small, the order matters less than the
-  habit") suggests the API may need to supply a small-gap note too — is that in
-  scope, and what threshold counts as small?
+- ~~Accept a `strategy` field?~~ **Resolved.** Rejected as an unknown property.
+- ~~Months saved when one truncates?~~ **Resolved.** Null.
+- ~~Note format and small-gap threshold?~~ **Resolved.** Coded note
+  (`IDENTICAL_SCHEDULES`, `TRUNCATED`) with a message. No small-gap threshold: the
+  closing line is fixed page copy in story 031 (NG-4).
+
+Full requirements: [spec/013-strategy-comparison-endpoint/requirements.md](../spec/013-strategy-comparison-endpoint/requirements.md).

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Debt payoff simulation engine
@@ -59,16 +59,13 @@ L
 
 ## Open Questions
 
-- Does a mortgage participate in the schedule at all (accruing interest, showing
-  balances) while being excluded from `monthsToDebtFreedom`, or is it omitted
-  entirely?
-- Is interest applied before or after the month's payments? "Applied to the
-  opening balance" implies before, but this needs pinning explicitly since it
-  moves every figure in the golden file.
-- When surplus is negative (expenses exceed income), is it clamped to zero or
-  does it erode balances upward?
-- `MonthlyPeriod.stageReached` — is the full ladder re-evaluated each simulated
-  month, and against what projected emergency-fund and retirement values? The
-  simulation models debt balances only, so stages 1, 3, and 4 have no projected
-  inputs. This also drives `monthsToNextStage` in story 010 and the schedule
-  table in story 031.
+- ~~Does the mortgage participate?~~ **Resolved.** Excluded from the schedule and
+  from `totalInterestPaid`.
+- ~~Interest before or after payments?~~ **Resolved.** Interest accrues on the
+  opening balance first, then payments apply (PRD FR-2).
+- ~~Negative surplus?~~ **Resolved.** Treated as $0: minimums plus
+  `extraMonthlyPayment` only.
+- ~~`MonthlyPeriod.stageReached`?~~ **Resolved.** Removed. `monthsToNextStage` is
+  populated only when the current stage is 2.
+
+Full requirements: [spec/008-debt-payoff-simulation-engine/requirements.md](../spec/008-debt-payoff-simulation-engine/requirements.md).

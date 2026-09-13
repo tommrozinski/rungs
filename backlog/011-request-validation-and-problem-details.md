@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Request validation and RFC 9457 problem details
@@ -87,8 +87,8 @@ M
 
 ## Open Questions
 
-- Is `id` uniqueness across debts a validation rule, and what does a duplicate
-  produce? If adopted, it is a whole-form rule.
+- ~~Is `id` uniqueness a validation rule?~~ **Resolved** (spec 003). Ids are
+  server-assigned; a client-supplied `id` is rejected as an unknown property.
 - ~~Is FR-4's "at the adapter boundary" wording consistent?~~ **Resolved.** FR-4
   now states that rules live in `application` and adapters only trigger them.
 - ~~Are zero-value debts valid?~~ **Resolved.** PRD FR-4: accepted and ignored,
@@ -96,9 +96,11 @@ M
 - ~~Is the 50-debt limit counted before or after removing $0 debts?~~
   **Resolved.** After. Raw request size is still bounded by the general body-size
   limit, not by this rule.
-- Should validation reject a `MORTGAGE`-type debt alongside a `mortgage` object,
-  or is that strictly the non-fatal `MORTGAGE_IN_DEBT_LIST` warning? FR-4 and
-  FR-5 could each be read to cover it.
-- What `type` URI scheme should problem details use?
-- What is the field-pointer format — JSON Pointer, or a dotted path? The client
-  binds to it, so it needs settling before story 028.
+- ~~`MORTGAGE`-type debts: reject or warn?~~ **Resolved** (spec 006). Rejected;
+  the warning was removed.
+- ~~Problem `type` URI scheme?~~ **Resolved.** `urn:rungs:problem:<code>`, e.g.
+  `urn:rungs:problem:validation`.
+- ~~Field-pointer format?~~ **Resolved.** JSON Pointer (RFC 6901), e.g.
+  `/debts/2/balance` (PRD FR-4).
+
+Full requirements: [spec/011-request-validation-and-problem-details/requirements.md](../spec/011-request-validation-and-problem-details/requirements.md).

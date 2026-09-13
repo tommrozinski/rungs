@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Stage evaluators 1–3: starter fund, non-mortgage debt, full emergency fund
@@ -52,14 +52,10 @@ M
 
 ## Open Questions
 
-- PRD open question, unresolved: is the emergency-fund multiple a request
-  parameter or fixed at 3 with a warning above 6? Section 5.2 says
-  "configurable", FR-5 implies a caller can request a value, but
-  `FinancialSnapshot` has no field for it and neither does the CSV format in
-  FR-7. Where does it come from?
-- Stage 2 percent-complete needs a starting-debt baseline, but the engine is
-  stateless and only sees current balances. Is it simply 0 until satisfied, or is
-  there an intended denominator?
+- ~~Where does the emergency-fund multiple come from?~~ **Resolved** (spec 003).
+  `FinancialSnapshot.emergencyFundMonths`, 3–6, default 3, capped at 6.
+- ~~Stage 2 percent-complete baseline?~~ **Resolved** (PRD 5.3). No baseline:
+  stage 2 is `IN_PROGRESS` at 0.0% while non-mortgage debt remains.
 - ~~Does a zero-balance debt need reporting anywhere?~~ **Resolved.** PRD FR-4:
   a zero-balance debt is paid off and is removed by the `application` input
   models before evaluation, so stage 2 never sees one. CSV import reports it as

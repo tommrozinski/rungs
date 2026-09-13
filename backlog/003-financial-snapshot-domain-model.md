@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Financial snapshot domain model
@@ -25,8 +25,10 @@ equality on every type here a hard requirement, not an incidental.
 
 - `FinancialSnapshot` carries `monthlyTakeHomeIncome`, `monthlyEssentialExpenses`,
   `starterEmergencyFund`, `fullEmergencyFund`, `debts`, `retirementContributionPercent`,
-  `mortgage` (nullable), `dependentsInCollegePlan`, and `householdFlags`.
-- `Debt` carries `id`, `label`, `balance`, `annualInterestRate`, `minimumPayment`,
+  `emergencyFundMonths`, `monthlyCollegeContribution`, `mortgage` (nullable), and
+  `householdFlags`. `dependentsInCollegePlan` is removed.
+- `Debt` carries `id` (server-assigned `debt-N`), `label`, `balance`,
+  `annualInterestRate` (a percentage), `minimumPayment`,
   and a `DebtType` enum of `MORTGAGE | STUDENT_LOAN | AUTO | CREDIT_CARD |
   MEDICAL | PERSONAL | OTHER`.
 - `Mortgage` carries `balance`, `annualInterestRate`, `monthlyPayment`, `homeValue`.
@@ -48,13 +50,11 @@ S
 
 ## Open Questions
 
-- Is `annualInterestRate` a percentage (`7.25`) or a fraction (`0.0725`)? The PRD
-  uses `15` for `retirementContributionPercent` and the CSV sample in FR-7 shows
-  `26.99` and `6.40` for rates, which implies percentage-style — worth confirming.
-- What scale is required for `annualInterestRate`? The CSV sample uses 2 decimals.
-- Is `Debt.id` caller-supplied and required to be unique? The CSV `DEBT` row
-  format in FR-7 has no id column, so imported debts need ids generated — which
-  makes id round-trip-unstable unless it is derived or excluded from equality.
-- `dependentsInCollegePlan` is on the snapshot but no stage rule references it,
-  and the CSV format has no field for it. What is it for, and should it round
-  trip?
+- ~~Percentage or fraction?~~ **Resolved.** Percentage, as a decimal string.
+- ~~Rate scale?~~ **Resolved.** Up to 3 decimals, normalized on construction.
+- ~~Is `Debt.id` caller-supplied?~~ **Resolved.** Server-assigned `debt-N` by
+  position; clients never send it.
+- ~~What is `dependentsInCollegePlan` for?~~ **Resolved.** Removed; stage 5 uses the
+  new `monthlyCollegeContribution`.
+
+Full requirements: [spec/003-financial-snapshot-domain-model/requirements.md](../spec/003-financial-snapshot-domain-model/requirements.md).

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Non-fatal warnings
@@ -48,12 +48,12 @@ S
 
 ## Open Questions
 
-- `EMERGENCY_FUND_TARGET_CAPPED` presumes a caller-supplied multiple, but
-  `FinancialSnapshot` has no such field. Same unresolved question as story 005.
-- When `MORTGAGE_IN_DEBT_LIST` fires, which figure wins for surplus and
-  projection purposes — the debt entry or the `mortgage` object?
-- Which of the four map to C-09 "caution" (gold) versus "problem" (red)? The
-  design spec reserves red for input validation and says a user behind on goals
-  is never shown red — does any warning qualify as red at all?
-- Does the CSV import unknown-key warning (FR-7) share this `Warning` type, or is
-  it separate and confined to `ImportReport`?
+- ~~Caller-supplied multiple?~~ **Resolved** (spec 003). `emergencyFundMonths`.
+- ~~`MORTGAGE_IN_DEBT_LIST` precedence?~~ **Resolved.** Warning removed; mortgage-type
+  debts are rejected (spec 006). Three warnings remain.
+- ~~Caution or problem?~~ **Resolved.** All warnings are `CAUTION`; red is reserved
+  for validation.
+- ~~Shared with CSV unknown-key warnings?~~ **Resolved.** No; those stay in
+  `ImportReport` (story 021).
+
+Full requirements: [spec/012-assessment-warnings/requirements.md](../spec/012-assessment-warnings/requirements.md).

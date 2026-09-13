@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Stage evaluation framework and progression rules
@@ -49,11 +49,9 @@ M
 
 ## Open Questions
 
-- What distinguishes `NOT_STARTED` from `IN_PROGRESS`? The PRD lists both but
-  never defines the boundary — is zero progress `NOT_STARTED` and any progress
-  `IN_PROGRESS`, or is it about stages above the current one?
-- Are stages above the current one reported as `NOT_STARTED` even when their
-  underlying condition happens to be met? (e.g. a household at stage 2 that
-  already contributes 15% to retirement — is stage 4 `SATISFIED` or
-  `NOT_STARTED`?) This changes the ladder output and what the UI renders on every
-  row, so it needs settling before story 027.
+- ~~`NOT_STARTED` vs `IN_PROGRESS`?~~ **Resolved.** By progress: above 0% is
+  `IN_PROGRESS`, exactly 0% is `NOT_STARTED` (PRD 5.3).
+- ~~Do stages above the current one report their true status?~~ **Resolved.** Yes;
+  a met condition reports `SATISFIED` regardless of position.
+
+Full requirements: [spec/004-stage-evaluation-framework/requirements.md](../spec/004-stage-evaluation-framework/requirements.md).

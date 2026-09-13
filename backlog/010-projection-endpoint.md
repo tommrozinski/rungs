@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Project the path forward endpoint
@@ -47,11 +47,11 @@ M
 
 ## Open Questions
 
-- `monthsToNextStage` — next stage relative to the *current* stage at month zero,
-  or the next stage boundary crossed at any point in the schedule?
-- Is a 600-month schedule returned in full in the response body? With the client
-  server-rendered (design spec section 7), the browser re-fetches rendered HTML
-  rather than this JSON on each slider move, so the concern shifts to the size of
-  the rendered table — but API consumers still get the full payload. Is a summary
-  mode or pagination wanted?
-- Does `totalInterestPaid` include mortgage interest?
+- ~~What does `monthsToNextStage` mean?~~ **Resolved** (spec 008). Populated only
+  when the current stage is 2, equal to `monthsToDebtFreedom`; null otherwise.
+- ~~Full schedule or summary/pagination?~~ **Resolved.** Always the full schedule;
+  a summary mode can be added later without breaking clients.
+- ~~Mortgage interest in `totalInterestPaid`?~~ **Resolved.** Excluded.
+- **Also decided:** the request nests the snapshot under `snapshot` (PRD FR-2).
+
+Full requirements: [spec/010-projection-endpoint/requirements.md](../spec/010-projection-endpoint/requirements.md).

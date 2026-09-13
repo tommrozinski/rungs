@@ -15,17 +15,17 @@ changes the status in the story file itself.
 | --- | --- | --- | --- |
 | [001](001-project-scaffold-and-package-layout.md) | Project scaffold and package layout | approved | Single-module Maven / Java 25 / Spring Boot 4.1 + Thymeleaf skeleton; no frontend toolchain. |
 | [002](002-money-value-type.md) | Money value type | approved | Whole-cent `Money` backed by `long`, owning rounding, parsing, and display format. |
-| [003](003-financial-snapshot-domain-model.md) | Financial snapshot domain model | proposed | Immutable `FinancialSnapshot`, `Debt`, `Mortgage`, `HouseholdFlags` with value equality. |
-| [004](004-stage-evaluation-framework.md) | Stage evaluation framework and progression rules | proposed | `StageEvaluator` contract and the ladder logic that picks the current stage. |
-| [005](005-stage-evaluators-1-to-3.md) | Stage evaluators 1–3: starter fund, non-mortgage debt, full emergency fund | proposed | The three cash-and-debt stages with percent-complete and verdict-ready blockers. |
-| [006](006-stage-evaluators-4-to-7.md) | Stage evaluators 4–7: retirement, college, mortgage, wealth building | proposed | The four lifecycle stages, including skip rules for renters and non-funders. |
-| [007](007-assessment-endpoint.md) | Assess readiness endpoint | proposed | `POST /v1/assessments` returning the full ladder, current stage, and surplus. |
-| [008](008-debt-payoff-simulation-engine.md) | Debt payoff simulation engine | proposed | Month-by-month amortization: interest, minimums, surplus, cascade, horizon. |
-| [009](009-snowball-and-avalanche-strategies.md) | Snowball and avalanche payoff strategies | proposed | The two debt orderings with a documented, tested tie-break rule. |
-| [010](010-projection-endpoint.md) | Project the path forward endpoint | proposed | `POST /v1/projections` with defaults, horizon clamp, and golden fixtures. |
-| [011](011-request-validation-and-problem-details.md) | Request validation and RFC 9457 problem details | proposed | Boundary validation whose error copy the client renders verbatim. |
-| [012](012-assessment-warnings.md) | Non-fatal warnings | proposed | The four conditions that qualify an assessment without failing it. |
-| [013](013-strategy-comparison-endpoint.md) | Compare strategies endpoint | proposed | `POST /v1/projections/comparison` with a delta derived from both projections. |
+| [003](003-financial-snapshot-domain-model.md) | Financial snapshot domain model | approved | Immutable `FinancialSnapshot`, `Debt`, `Mortgage`, `HouseholdFlags` with value equality. |
+| [004](004-stage-evaluation-framework.md) | Stage evaluation framework and progression rules | approved | `StageEvaluator` contract and the ladder logic that picks the current stage. |
+| [005](005-stage-evaluators-1-to-3.md) | Stage evaluators 1–3: starter fund, non-mortgage debt, full emergency fund | approved | The three cash-and-debt stages with percent-complete and verdict-ready blockers. |
+| [006](006-stage-evaluators-4-to-7.md) | Stage evaluators 4–7: retirement, college, mortgage, wealth building | approved | The four lifecycle stages, including skip rules for renters and non-funders. |
+| [007](007-assessment-endpoint.md) | Assess readiness endpoint | approved | `POST /v1/assessments` returning the full ladder, current stage, and surplus. |
+| [008](008-debt-payoff-simulation-engine.md) | Debt payoff simulation engine | approved | Month-by-month amortization: interest, minimums, surplus, cascade, horizon. |
+| [009](009-snowball-and-avalanche-strategies.md) | Snowball and avalanche payoff strategies | approved | The two debt orderings with a documented, tested tie-break rule. |
+| [010](010-projection-endpoint.md) | Project the path forward endpoint | approved | `POST /v1/projections` with defaults, horizon clamp, and golden fixtures. |
+| [011](011-request-validation-and-problem-details.md) | Request validation and RFC 9457 problem details | approved | Boundary validation whose error copy the client renders verbatim. |
+| [012](012-assessment-warnings.md) | Non-fatal warnings | approved | The four conditions that qualify an assessment without failing it. |
+| [013](013-strategy-comparison-endpoint.md) | Compare strategies endpoint | approved | `POST /v1/projections/comparison` with a delta derived from both projections. |
 | [014](014-property-based-invariant-suite.md) | Property-based invariant test suite | proposed | jqwik generator plus the projection invariants across all inputs. |
 | [015](015-archunit-architecture-suite.md) | ArchUnit architecture constraint suite | proposed | Section 8's eight constraints, including AC-G (no client logic) and AC-H (one module). |
 | [016](016-openapi-document.md) | OpenAPI 3.1 document generation | proposed | Generated and committed contract covering all five endpoints, plus ADRs. |
@@ -131,19 +131,24 @@ rather than details.
 
 ## Unresolved questions that block multiple stories
 
-- **The emergency-fund multiple has no home** (005, 012, 020) — section 5.2 calls
-  it configurable and the `EMERGENCY_FUND_TARGET_CAPPED` warning implies a caller
-  supplies it, but there is no field for it on `FinancialSnapshot` and no key for
-  it in the CSV format.
-- **Stage 5 can never be satisfied as written** (006, 026, 027) — the rule
-  references "a college contribution", but no such field exists in the domain
-  model or the CSV format.
-- **`NOT_STARTED` vs `IN_PROGRESS` is undefined** (004, 026) — and it determines
-  what every ladder row renders.
-- **`MonthlyPeriod.stageReached`** (008, 010, 030) — requires re-evaluating the
-  ladder each simulated month, but the simulation models debt balances only, so
-  stages 1, 3, and 4 have no projected inputs. Needs pinning before golden files
-  are committed.
+- ~~The emergency-fund multiple has no home.~~ **Resolved** (spec 003). New
+  `emergencyFundMonths` snapshot field, 3–6, default 3, capped above 6 with the
+  warning; CSV key `emergency_fund_months`. Stories 005, 012, 020 to align when
+  specified.
+- ~~Stage 5 can never be satisfied as written.~~ **Resolved** (spec 003). New
+  `monthlyCollegeContribution` field; stage 5 is satisfied when it is above $0.
+  `dependentsInCollegePlan` removed; CSV key `college_contribution`. Stories 006,
+  026, 027 to align when specified.
+- **Also settled in spec 003:** interest rates are percentages written as decimal
+  strings; debt ids are server-assigned `debt-N` by position (story 011's id
+  uniqueness question no longer applies).
+- ~~`NOT_STARTED` vs `IN_PROGRESS` is undefined.~~ **Resolved** (spec 004). Status
+  follows progress (above 0% is in progress), and every stage reports its true
+  status regardless of which stage is current (PRD 5.3).
+- ~~`MonthlyPeriod.stageReached`.~~ **Resolved** (spec 008). Removed from the
+  schedule; `monthsToNextStage` is populated only when the current stage is 2. The
+  mortgage is excluded from the schedule, and a negative surplus is treated as $0
+  (PRD FR-2). Stories 010 and 030 to align when specified.
 - **Can a mortgage round trip through CSV?** (020, 022, 023) — the format has no
   mortgage row, so export is lossy for any household with one, and AC-7.1 cannot
   hold for those snapshots.

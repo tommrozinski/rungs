@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Assess readiness endpoint
@@ -53,9 +53,12 @@ M
 
 ## Open Questions
 
-- Can `monthlySurplus` be negative, and how is that formatted for display (see
-  story 002)? The `EXPENSES_EXCEED_INCOME` warning implies yes.
-- Do minimum payments for `MORTGAGE`-type debts count against `monthlySurplus`,
-  or only the separate `mortgage.monthlyPayment`? Both can be present — that is
-  the `MORTGAGE_IN_DEBT_LIST` warning case.
-- Should the response echo a correlation ID for the structured-logging story?
+- ~~Can `monthlySurplus` be negative?~~ **Resolved.** Yes; displayed `-$45.00`
+  (story 002).
+- ~~Mortgage minimums in the surplus?~~ **Resolved.** `MORTGAGE`-type debts are
+  rejected (story 006), and the mortgage payment is part of essential expenses, so
+  it is never subtracted separately (PRD FR-1).
+- ~~Correlation ID?~~ **Resolved.** Echoed as an `X-Request-Id` response header
+  (details in story 018).
+
+Full requirements: [spec/007-assessment-endpoint/requirements.md](../spec/007-assessment-endpoint/requirements.md).

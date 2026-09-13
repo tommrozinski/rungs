@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Stage evaluators 4–7: retirement, college, mortgage, wealth building
@@ -49,16 +49,14 @@ M
 
 ## Open Questions
 
-- PRD open question, unresolved: does stage 5 accept a dollar target for college
-  funding, or stay a boolean intent flag in v1? As written the rule says "a
-  college contribution is present", but no such field exists on
-  `FinancialSnapshot` and none exists in the CSV format — so stage 5 can
-  currently only be skipped or blocked, never satisfied. This is now blocking two
-  layers: the evaluator and the ladder UI.
-- `HouseholdFlags.retired` is defined, is carried in the CSV format as
-  `FLAG,retired`, but no stage rule uses it. Should a retired household skip
-  stage 4 or stage 5? The PRD's problem statement mentions "a retiree has no
-  college fund to build" but section 5.2 encodes no such rule.
-- What is stage 7's `percentComplete` — binary, or graded?
-- Does `dependentsInCollegePlan == 0` imply a skip for stage 5 independently of
-  the `intendsToFundCollege` flag?
+- ~~Stage 5 has no contribution field.~~ **Resolved** (spec 003).
+  `monthlyCollegeContribution`; satisfied above $0.
+- ~~What does `retired` do?~~ **Resolved.** A retired household skips stages 4
+  and 5 (PRD 5.2).
+- ~~Stage 7 `percentComplete`?~~ **Resolved.** Graded: the share of stages 1–6
+  satisfied or skipped.
+- ~~`dependentsInCollegePlan`?~~ **Resolved.** Removed (spec 003).
+- **Also decided:** `MORTGAGE`-type debts are rejected by validation, so stage 6
+  reads only the `mortgage` object.
+
+Full requirements: [spec/006-stage-evaluators-4-to-7/requirements.md](../spec/006-stage-evaluators-4-to-7/requirements.md).
