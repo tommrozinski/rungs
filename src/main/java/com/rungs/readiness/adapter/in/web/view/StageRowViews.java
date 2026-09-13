@@ -18,7 +18,7 @@ public final class StageRowViews {
     public static final String PAYOFF_PLAN_ACTION = "/projection";
 
     /** Form action for "Change my numbers"; the snapshot screen (027) owns the route. */
-    public static final String CHANGE_NUMBERS_ACTION = "/snapshot";
+    public static final String CHANGE_NUMBERS_ACTION = "/";
 
     /** Verdict when the current stage is 7 and nothing earlier is left to do. */
     static final String FINISHED_VERDICT = "Every earlier stage is complete or doesn't apply to you.";

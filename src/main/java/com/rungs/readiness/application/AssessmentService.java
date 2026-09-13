@@ -22,8 +22,27 @@ public final class AssessmentService {
      * cannot normalize.
      */
     public ReadinessAssessment assess(SnapshotInput input) {
+        return assessWithSnapshot(input).assessment();
+    }
+
+    /**
+     * Returns the assessment page (029) built from {@code input}: the same {@link ReadinessAssessment} as
+     * {@link #assess(SnapshotInput)}, plus the figures {@link AssessmentPage} adds. Throws NullPointerException for
+     * null input.
+     */
+    public AssessmentPage assessPage(SnapshotInput input) {
+        AssessedSnapshot assessed = assessWithSnapshot(input);
+        return AssessmentPage.from(assessed.assessment(), assessed.snapshot());
+    }
+
+    private AssessedSnapshot assessWithSnapshot(SnapshotInput input) {
         FinancialSnapshot snapshot = Objects.requireNonNull(input, "input").toSnapshot();
         LadderResult result = ladder.assess(snapshot);
-        return new ReadinessAssessment(result.currentStage(), result.stages(), snapshot.monthlySurplus(), List.of());
+        ReadinessAssessment assessment =
+                new ReadinessAssessment(result.currentStage(), result.stages(), snapshot.monthlySurplus(), List.of());
+        return new AssessedSnapshot(assessment, snapshot);
+    }
+
+    private record AssessedSnapshot(ReadinessAssessment assessment, FinancialSnapshot snapshot) {
     }
 }

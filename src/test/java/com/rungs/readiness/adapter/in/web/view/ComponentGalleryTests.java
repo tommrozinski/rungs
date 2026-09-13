@@ -49,6 +49,8 @@ class ComponentGalleryTests {
             assertThat(page.select("input.input.is-focus")).hasSize(1);
             assertThat(page.select("input.input.is-error[aria-invalid=true]")).hasSize(1);
             assertThat(page.select("input.input[readonly]")).hasSize(1);
+            assertThat(page.select("input.input[hx-post]"))
+                    .as("gallery text fields aren't wired to /snapshot/field (review fix)").isEmpty();
             assertThat(page.select("fieldset.toggle-group")).hasSize(1);
             assertThat(page.select("label.check input[checked]")).hasSize(1);
             assertThat(page.select("label.check input:not([checked])")).hasSize(1);

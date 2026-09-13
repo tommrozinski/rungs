@@ -3,6 +3,7 @@ package com.rungs.readiness.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.rungs.readiness.application.response.AssessmentResponse;
 import com.rungs.readiness.domain.model.Money;
 import com.rungs.readiness.domain.stage.CollegeEvaluator;
 import com.rungs.readiness.domain.stage.DebtFreeEvaluator;
@@ -45,6 +46,23 @@ class AssessmentServiceTests {
         assertThat(assessment.stages()).isEqualTo(expected.stages());
         assertThat(assessment.monthlySurplus()).isEqualTo(Money.ofDollars(700));
         assertThat(assessment.warnings()).isEmpty();
+    }
+
+    @Test
+    void assessPageCarriesTheSameAssessmentPlusTotalDebtAndEmergencyFund() {
+        SnapshotInput input = new SnapshotInput("4000", "3000", "500", "9000", null, null, null,
+                List.of(new DebtInput("Card", "CREDIT_CARD", "1200", "10", "50")), null, null);
+
+        AssessmentPage page = service.assessPage(input);
+
+        assertThat(page.assessment()).isEqualTo(AssessmentResponse.from(service.assess(input)));
+        assertThat(page.totalDebt().amount()).isEqualTo("1200.00");
+        assertThat(page.emergencyFund().amount()).isEqualTo("9000.00");
+    }
+
+    @Test
+    void assessPageRejectsNullInput() {
+        assertThatThrownBy(() -> service.assessPage(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

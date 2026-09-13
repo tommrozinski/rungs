@@ -1,15 +1,26 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <body>
-<!--/* C-02 text field. state: '' | focus | error | readonly. errorId is built server-side, e.g. "monthly-income-error". */-->
-<div th:fragment="textField(id, name, label, value, state, errorId, errorMessage)" class="field">
+<!--/* C-02 text field. state: '' | focus | error | readonly. errorId is built server-side, e.g. "monthly-income-error".
+     027 REQ-005: when blurValidated is true, the field validates on blur against /snapshot/field, swapping in the
+     server-rendered field (its own id, so htmx 2 restores focus); hx-include="this" sends only this field, never
+     the whole form. The snapshot form and its on-blur re-render pass blurValidated=true; the component gallery
+     (/dev/components), whose sample field names aren't real snapshot fields, does not, so it renders with no
+     hx-* wiring at all (a code review fix: those names used to 400/500 the on-blur endpoint). */-->
+<div th:fragment="textField(id, name, label, value, state, errorId, errorMessage, blurValidated)" class="field">
     <label th:for="${id}" th:text="${label}">Label</label>
     <input class="input" type="text"
            th:id="${id}" th:name="${name}" th:value="${value}"
            th:classappend="${state == 'focus'} ? 'is-focus' : (${state == 'error'} ? 'is-error' : '')"
            th:readonly="${state == 'readonly'}"
            th:aria-invalid="${state == 'error'} ? 'true'"
-           th:aria-describedby="${state == 'error'} ? ${errorId}">
+           th:aria-describedby="${state == 'error'} ? ${errorId}"
+           th:attr="hx-post=${blurValidated} ? '/snapshot/field',
+                    hx-trigger=${blurValidated} ? 'blur',
+                    hx-target=${blurValidated} ? 'this',
+                    hx-swap=${blurValidated} ? 'outerHTML',
+                    hx-include=${blurValidated} ? 'this',
+                    hx-sync=${blurValidated} ? 'this:replace'">
     <p class="field-error" th:if="${state == 'error'}" th:id="${errorId}" th:text="${errorMessage}">Message</p>
 </div>
 </body>

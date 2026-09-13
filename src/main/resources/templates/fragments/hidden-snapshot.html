@@ -1,0 +1,7 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* 029 REQ-004: the snapshot as hidden inputs, one per field, feeding a call-to-action form. fields: List<HiddenField>. */-->
+<input th:fragment="hiddenSnapshot(fields)" type="hidden" th:each="f : ${fields}" th:name="${f.name}" th:value="${f.value}">
+</body>
+</html>

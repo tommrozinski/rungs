@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:fragment="head(title)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">Rungs</title>
+    <link rel="preload" th:href="@{/fonts/InterVariable.woff2}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" th:href="@{/css/rungs.css}">
+    <!--/* Pinned htmx 2.0.10 (see spec/027-snapshot-form-screen/claude-progress.txt for its SHA-256). */-->
+    <script th:src="@{/js/vendor/htmx.min.js}" defer></script>
+</head>
+<body>
+<!--/* 027 REQ-011: the server renders every state correctly on its own, so the page still works without this. */-->
+<noscript th:fragment="noscript">
+    <p class="small">Some actions on this page need JavaScript; every field still works, but "Add a debt",
+        "Remove", and inline errors need a full page reload instead.</p>
+</noscript>
+</body>
+</html>

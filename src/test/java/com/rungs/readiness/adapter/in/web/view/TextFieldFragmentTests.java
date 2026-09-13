@@ -13,7 +13,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 class TextFieldFragmentTests {
 
     private static final String CALL = "<div th:replace=\"~{fragments/text-field :: textField(id=${id}, name=${name}, "
-            + "label=${label}, value=${value}, state=${state}, errorId=${errorId}, errorMessage=${errorMessage})}\">"
+            + "label=${label}, value=${value}, state=${state}, errorId=${errorId}, errorMessage=${errorMessage}, "
+            + "blurValidated=${blurValidated})}\">"
             + "</div>";
 
     @ParameterizedTest
@@ -53,6 +54,32 @@ class TextFieldFragmentTests {
         assertThat(input.hasClass("is-error")).isTrue();
         assertThat(message.hasClass("field-error")).isTrue();
         assertThat(message.text()).isEqualTo("Enter zero or more.");
+    }
+
+    @Test
+    void hasNoOnBlurWiringByDefaultAsInTheComponentGallery() {
+        Element input = render("", "", "").selectFirst("input");
+
+        assertThat(input.hasAttr("hx-post")).isFalse();
+        assertThat(input.hasAttr("hx-trigger")).isFalse();
+        assertThat(input.hasAttr("hx-target")).isFalse();
+        assertThat(input.hasAttr("hx-swap")).isFalse();
+        assertThat(input.hasAttr("hx-include")).isFalse();
+        assertThat(input.hasAttr("hx-sync")).isFalse();
+    }
+
+    @Test
+    void addsOnBlurWiringWhenRequestedAsInTheSnapshotForm() {
+        Element input = FragmentRenderer.render(CALL, Map.of("id", "monthly-income", "name", "monthlyIncome",
+                "label", "Monthly income", "value", "$4,200.00", "state", "", "errorId", "", "errorMessage", "",
+                "blurValidated", true)).selectFirst("input");
+
+        assertThat(input.attr("hx-post")).isEqualTo("/snapshot/field");
+        assertThat(input.attr("hx-trigger")).isEqualTo("blur");
+        assertThat(input.attr("hx-target")).isEqualTo("this");
+        assertThat(input.attr("hx-swap")).isEqualTo("outerHTML");
+        assertThat(input.attr("hx-include")).isEqualTo("this");
+        assertThat(input.attr("hx-sync")).isEqualTo("this:replace");
     }
 
     @Test

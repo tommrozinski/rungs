@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* 027 REQ-005: one field, re-rendered after an on-blur post to /snapshot/field. f: FieldView. */-->
+<div th:fragment="field(f)" th:replace="~{fragments/text-field :: textField(id=${f.id()}, name=${f.name()},
+        label=${f.label()}, value=${f.value()}, state=${f.state()}, errorId=${f.errorId()},
+        errorMessage=${f.errorMessage()}, blurValidated=true)}">Field</div>
+</body>
+</html>

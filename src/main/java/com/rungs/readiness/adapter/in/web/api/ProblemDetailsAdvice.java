@@ -1,8 +1,8 @@
 package com.rungs.readiness.adapter.in.web.api;
 
+import com.rungs.readiness.application.validation.FieldSummary;
 import com.rungs.readiness.application.validation.Rejection;
 import com.rungs.readiness.application.validation.ValidationCode;
-import jakarta.validation.ConstraintViolation;
 import java.util.Comparator;
 import java.util.List;
 import org.slf4j.Logger;
@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import tools.jackson.databind.exc.MismatchedInputException;
@@ -48,13 +47,14 @@ class ProblemDetailsAdvice {
     private static final Comparator<FieldProblem> ERROR_ORDER =
             Comparator.comparing(FieldProblem::pointer, JsonPointers.ORDER).thenComparing(FieldProblem::code);
 
-    /** A rejected body: every field-only violation, or else the whole-form violation, in pointer order. */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<ValidationProblem> invalidFields(MethodArgumentNotValidException exception) {
-        List<FieldProblem> errors = exception.getBindingResult().getAllErrors().stream()
-                .map(error -> (ConstraintViolation<?>) error.unwrap(ConstraintViolation.class))
-                .map(violation -> FieldProblem.of(JsonPointers.fromViolation(SNAPSHOT_AT_ROOT,
-                        violation.getPropertyPath()), Rejection.of(violation)))
+    /**
+     * A rejected body: every field-only violation {@link com.rungs.readiness.application.validation.SnapshotValidator}
+     * reported, or else the whole-form violation, in pointer order.
+     */
+    @ExceptionHandler(SnapshotValidationException.class)
+    ResponseEntity<ValidationProblem> invalidSnapshot(SnapshotValidationException exception) {
+        List<FieldProblem> errors = exception.violations().stream()
+                .map(violation -> FieldProblem.of(violation.pointer(), violation.rejection()))
                 .sorted(ERROR_ORDER)
                 .toList();
         return validationProblem(errors);
@@ -113,9 +113,9 @@ class ProblemDetailsAdvice {
                 .body(new Problem(type, title, status.value(), detail));
     }
 
-    /** "1 field needs attention." or "N fields need attention." (REQ-006's "{n} field(s)", written out in English). */
+    /** See {@link FieldSummary#detail(int)}. */
     static String detail(int fieldCount) {
-        return fieldCount == 1 ? "1 field needs attention." : fieldCount + " fields need attention.";
+        return FieldSummary.detail(fieldCount);
     }
 
     /**

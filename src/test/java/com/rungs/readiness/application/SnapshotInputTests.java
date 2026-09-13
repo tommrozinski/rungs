@@ -144,4 +144,36 @@ class SnapshotInputTests {
     private static SnapshotInput withDebts(DebtInput... debts) {
         return new SnapshotInput(null, null, null, null, null, null, null, List.of(debts), null, null);
     }
+
+    @Test
+    void forFormTurnsEveryBlankValueIntoItsDisplayDefault() {
+        SnapshotInput input = new SnapshotInput(null, null, null, null, null, null, null, null, null, null);
+
+        assertThat(input.forForm()).isEqualTo(new SnapshotInput("0", "0", "0", "0", "0", "0", 3, List.of(),
+                new MortgageInput("0", "0", "0", "0"), new HouseholdFlagsInput(false, false, false)));
+    }
+
+    @Test
+    void forFormKeepsSuppliedValuesAndOnlyFillsInBlanksAndDefaults() {
+        SnapshotInput input = new SnapshotInput("6000", "3500", "", "9000", "", "15.5", null,
+                List.of(new DebtInput("Car", "AUTO", "9000", "4.9", "310.25")),
+                new MortgageInput("150000", "", "1200", ""), new HouseholdFlagsInput(true, null, true));
+
+        assertThat(input.forForm()).isEqualTo(new SnapshotInput("6000", "3500", "0", "9000", "0", "15.5", 3,
+                List.of(new DebtInput("Car", "AUTO", "9000", "4.9", "310.25")),
+                new MortgageInput("150000", "0", "1200", "0"), new HouseholdFlagsInput(true, false, true)));
+    }
+
+    @Test
+    void forFormKeepsAZeroBalanceDebtVisibleAndNamesABlankLabelByPosition() {
+        SnapshotInput input = withDebts(
+                new DebtInput("", "CREDIT_CARD", "0.00", "", ""),
+                new DebtInput("  ", "AUTO", "500", "6", "20"),
+                new DebtInput("Car", "AUTO", "", null, null));
+
+        assertThat(input.forForm().debts()).containsExactly(
+                new DebtInput("Debt 1", "CREDIT_CARD", "0.00", "0", "0"),
+                new DebtInput("Debt 2", "AUTO", "500", "6", "20"),
+                new DebtInput("Car", "AUTO", "0", "0", "0"));
+    }
 }

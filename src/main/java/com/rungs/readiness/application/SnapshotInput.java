@@ -55,6 +55,9 @@ public record SnapshotInput(
     /** Prefix of the positional label given to a debt with a blank label, {@code Debt N}. */
     private static final String DEFAULT_LABEL_PREFIX = "Debt ";
 
+    /** The display default for a blank money or percentage value ({@link #forForm()}). */
+    private static final String ZERO_TEXT = "0";
+
     /**
      * Applies the PRD FR-4 rules and builds the domain snapshot. In order: blank or null money and percentages become
      * zero and a null {@code emergencyFundMonths} becomes 3; null flags, a null {@code householdFlags}, and null
@@ -94,6 +97,41 @@ public record SnapshotInput(
                 mortgage == null ? null : new Mortgage(money(mortgage.balance()), money(mortgage.monthlyPayment()),
                         money(mortgage.homeValue()), percent(mortgage.annualInterestRate())),
                 flags());
+    }
+
+    /**
+     * Returns a copy normalized for display after a server render (027 REQ-007): a blank or null money or percentage
+     * becomes {@code "0"}, a null {@code emergencyFundMonths} becomes 3, a null {@code mortgage} becomes one with
+     * every value {@code "0"}, null flags become {@code false}, and a blank debt label becomes {@code Debt N} by
+     * position. A debt with a zero balance is kept, unlike {@link #toSnapshot()}.
+     */
+    public SnapshotInput forForm() {
+        List<DebtInput> suppliedDebts = debts == null ? List.of() : debts;
+        List<DebtInput> normalizedDebts = new ArrayList<>();
+        for (int index = 0; index < suppliedDebts.size(); index++) {
+            DebtInput debt = suppliedDebts.get(index);
+            String label = InputText.isBlank(debt.label()) ? DEFAULT_LABEL_PREFIX + (index + 1) : debt.label();
+            normalizedDebts.add(new DebtInput(label, debt.type(), formMoney(debt.balance()),
+                    formPercent(debt.annualInterestRate()), formMoney(debt.minimumPayment())));
+        }
+        MortgageInput formMortgage = mortgage == null
+                ? new MortgageInput(ZERO_TEXT, ZERO_TEXT, ZERO_TEXT, ZERO_TEXT)
+                : new MortgageInput(formMoney(mortgage.balance()), formPercent(mortgage.annualInterestRate()),
+                        formMoney(mortgage.monthlyPayment()), formMoney(mortgage.homeValue()));
+        HouseholdFlags flags = flags();
+        return new SnapshotInput(formMoney(monthlyTakeHomeIncome), formMoney(monthlyEssentialExpenses),
+                formMoney(starterEmergencyFund), formMoney(fullEmergencyFund), formMoney(monthlyCollegeContribution),
+                formPercent(retirementContributionPercent),
+                emergencyFundMonths == null ? DEFAULT_EMERGENCY_FUND_MONTHS : emergencyFundMonths, normalizedDebts,
+                formMortgage, new HouseholdFlagsInput(flags.rents(), flags.retired(), flags.intendsToFundCollege()));
+    }
+
+    private static String formMoney(String text) {
+        return InputText.isBlank(text) ? ZERO_TEXT : text;
+    }
+
+    private static String formPercent(String text) {
+        return InputText.isBlank(text) ? ZERO_TEXT : text;
     }
 
     private HouseholdFlags flags() {

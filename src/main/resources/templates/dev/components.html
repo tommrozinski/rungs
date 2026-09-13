@@ -29,16 +29,17 @@
         <div class="gallery-row">
             <div th:replace="~{fragments/text-field :: textField(id='income', name='income',
                     label=${samples.field.label}, value=${samples.field.value}, state='', errorId='',
-                    errorMessage='')}">Field</div>
+                    errorMessage='', blurValidated=false)}">Field</div>
             <div th:replace="~{fragments/text-field :: textField(id='income-focus', name='incomeFocus',
                     label=${samples.field.label}, value=${samples.field.value}, state='focus', errorId='',
-                    errorMessage='')}">Field</div>
+                    errorMessage='', blurValidated=false)}">Field</div>
             <div th:replace="~{fragments/text-field :: textField(id='income-invalid', name='incomeInvalid',
                     label=${samples.field.label}, value=${samples.field.invalidValue}, state='error',
-                    errorId='income-invalid-error', errorMessage=${samples.field.errorMessage})}">Field</div>
+                    errorId='income-invalid-error', errorMessage=${samples.field.errorMessage},
+                    blurValidated=false)}">Field</div>
             <div th:replace="~{fragments/text-field :: textField(id='income-readonly', name='incomeReadonly',
                     label=${samples.field.label}, value=${samples.field.value}, state='readonly', errorId='',
-                    errorMessage='')}">Field</div>
+                    errorMessage='', blurValidated=false)}">Field</div>
         </div>
     </section>
 
