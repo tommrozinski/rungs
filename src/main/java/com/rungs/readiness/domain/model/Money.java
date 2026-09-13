@@ -33,6 +33,12 @@ public record Money(long cents) implements Comparable<Money> {
     /** Cents are zero-padded to at least one whole-dollar digit plus the fraction digits. */
     private static final int MIN_DIGITS = FRACTION_DIGITS + 1;
 
+    /** Base of the decimal digits {@link #parse} accumulates. */
+    private static final int RADIX = 10;
+
+    /** Longest text {@link #parse} inspects, counted before trimming, so oversized input is rejected cheaply. */
+    private static final int MAX_TEXT_LENGTH = 32;
+
     /** Whole-dollar digits between comma separators in the display format. */
     private static final int GROUP_SIZE = 3;
 
@@ -59,6 +65,142 @@ public record Money(long cents) implements Comparable<Money> {
     /** Returns the amount of {@code dollars} whole dollars; throws ArithmeticException on overflow. */
     public static Money ofDollars(long dollars) {
         return new Money(Math.multiplyExact(dollars, CENTS_PER_DOLLAR));
+    }
+
+    /**
+     * Parses {@code text} as an amount, independent of the default locale.
+     *
+     * <p>Leading and trailing characters that are Java whitespace or Unicode space separators (including
+     * non-breaking spaces) are ignored. What remains is an optional {@code -}, then an optional {@code $}, then
+     * whole dollars written with ASCII digits 0-9, optionally grouped by commas into a first group of one to three
+     * digits followed by groups of exactly three, then optionally a {@code .} and one or two digits. Leading zeros
+     * are allowed, and a negative zero such as {@code -0} or {@code -$0.00} parses to {@link #ZERO}. Every amount
+     * from {@code Long.MIN_VALUE} to {@code Long.MAX_VALUE} cents is accepted, so {@code parse(m.toBareString())}
+     * and {@code parse(m.toDisplayString())} both return {@code m}.
+     *
+     * <p>When text has several problems, the reason is decided in this order: {@code BLANK} for null;
+     * {@code TOO_LONG} for more than 32 characters, counted before trimming; {@code BLANK} for nothing left after
+     * trimming; {@code INVALID_CHARACTER} for any other character, a sign or symbol out of place, or a second
+     * {@code .}; then the whole dollars ({@code MISSING_DIGITS} if absent, {@code MISPLACED_SEPARATOR} for bad
+     * commas); then the cents ({@code MISPLACED_SEPARATOR}, {@code MISSING_DIGITS}, {@code TOO_MANY_DECIMALS});
+     * and finally {@code OUT_OF_RANGE}.
+     *
+     * @param text the text to parse; may be null
+     * @return the amount the text denotes
+     * @throws MoneyFormatException if the text is not an amount; its message never contains the text and it has
+     *     no cause
+     */
+    public static Money parse(String text) {
+        if (text == null) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.BLANK);
+        }
+        if (text.length() > MAX_TEXT_LENGTH) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.TOO_LONG);
+        }
+        String stripped = trim(text);
+        if (stripped.isEmpty()) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.BLANK);
+        }
+        boolean negative = stripped.startsWith("-");
+        int start = negative ? 1 : 0;
+        if (stripped.startsWith("$", start)) {
+            start++;
+        }
+        String number = stripped.substring(start);
+        int point = -1;
+        for (int index = 0; index < number.length(); index++) {
+            char symbol = number.charAt(index);
+            if (symbol == '.' && point < 0) {
+                point = index;
+            } else if (!isAsciiDigit(symbol) && symbol != ',') {
+                throw new MoneyFormatException(MoneyFormatException.Reason.INVALID_CHARACTER);
+            }
+        }
+        String whole = point < 0 ? number : number.substring(0, point);
+        String fraction = point < 0 ? "" : number.substring(point + 1);
+        checkWholeDollars(whole);
+        if (point >= 0) {
+            checkCents(fraction);
+        }
+        String digits = whole + fraction + "0".repeat(FRACTION_DIGITS - fraction.length());
+        try {
+            // Accumulate on the negative side, where a long reaches one further than on the positive side.
+            long negativeCents = 0;
+            for (int index = 0; index < digits.length(); index++) {
+                char digit = digits.charAt(index);
+                if (digit != ',') {
+                    negativeCents = Math.subtractExact(Math.multiplyExact(negativeCents, RADIX), digit - '0');
+                }
+            }
+            return new Money(negative ? negativeCents : Math.negateExact(negativeCents));
+        } catch (ArithmeticException overflow) {
+            // Not chained as a cause, so nothing derived from the text travels with the failure.
+            throw new MoneyFormatException(MoneyFormatException.Reason.OUT_OF_RANGE);
+        }
+    }
+
+    /** Removes leading and trailing characters that are Java whitespace or Unicode space separators. */
+    private static String trim(String text) {
+        int start = 0;
+        int end = text.length();
+        while (start < end && isSpace(text.charAt(start))) {
+            start++;
+        }
+        while (end > start && isSpace(text.charAt(end - 1))) {
+            end--;
+        }
+        return text.substring(start, end);
+    }
+
+    /**
+     * Rejects whole dollars that are empty, or whose commas do not split them into a first group of one to three
+     * digits followed by groups of exactly three.
+     */
+    private static void checkWholeDollars(String whole) {
+        if (whole.isEmpty()) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.MISSING_DIGITS);
+        }
+        int firstComma = whole.indexOf(',');
+        if (firstComma < 0) {
+            return;
+        }
+        if (firstComma == 0 || firstComma > GROUP_SIZE) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.MISPLACED_SEPARATOR);
+        }
+        // From the first comma on, the text repeats ",ddd": a comma exactly every GROUP_SIZE + 1 characters.
+        int period = GROUP_SIZE + 1;
+        if ((whole.length() - firstComma) % period != 0) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.MISPLACED_SEPARATOR);
+        }
+        for (int index = firstComma; index < whole.length(); index++) {
+            boolean commaExpected = (index - firstComma) % period == 0;
+            if ((whole.charAt(index) == ',') != commaExpected) {
+                throw new MoneyFormatException(MoneyFormatException.Reason.MISPLACED_SEPARATOR);
+            }
+        }
+    }
+
+    /** Rejects digits after a decimal point that contain a comma, are missing, or number more than two. */
+    private static void checkCents(String fraction) {
+        if (fraction.indexOf(',') >= 0) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.MISPLACED_SEPARATOR);
+        }
+        if (fraction.isEmpty()) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.MISSING_DIGITS);
+        }
+        if (fraction.length() > FRACTION_DIGITS) {
+            throw new MoneyFormatException(MoneyFormatException.Reason.TOO_MANY_DECIMALS);
+        }
+    }
+
+    /** Returns whether {@code symbol} is one of the ASCII digits 0-9; other Unicode digits are not accepted. */
+    private static boolean isAsciiDigit(char symbol) {
+        return symbol >= '0' && symbol <= '9';
+    }
+
+    /** Returns whether {@code symbol} is whitespace or a space separator, including non-breaking spaces. */
+    private static boolean isSpace(char symbol) {
+        return Character.isWhitespace(symbol) || Character.isSpaceChar(symbol);
     }
 
     /** Returns this amount plus {@code other}; throws ArithmeticException on overflow. */
