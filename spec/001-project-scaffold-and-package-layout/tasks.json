@@ -49,7 +49,7 @@
             "src/main/resources/static/.gitkeep"
           ],
           "dependencies": ["2.2"],
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "3.2",
@@ -65,7 +65,7 @@
             "src/main/java/com/rungs/readiness/adapter/out/ai/package-info.java"
           ],
           "dependencies": ["2.2"],
-          "status": "pending"
+          "status": "complete"
         }
       ]
     },
@@ -78,28 +78,28 @@
           "description": "Add RungsApplicationTests with a @SpringBootTest contextLoads test",
           "files": ["src/test/java/com/rungs/readiness/RungsApplicationTests.java"],
           "dependencies": ["3.1"],
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "4.2",
           "description": "Add ActuatorExposureTests (@SpringBootTest, @AutoConfigureMockMvc, MockMvcTester) asserting /actuator/health returns 200 with body exactly {\"status\":\"UP\"}, /actuator/env returns 404, and /actuator _links keys are exactly self, health, and health-path",
           "files": ["src/test/java/com/rungs/readiness/ActuatorExposureTests.java"],
           "dependencies": ["3.1"],
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "4.3",
           "description": "Add NeutralVocabularyTests, a plain JUnit test that scans every repo file except .git/, target/, IDE folders, prd/, backlog/, and its own source for the PRD §1 trademark terms and owner name (any case; space, hyphen, underscore, or no separator) and fails listing each path:line",
           "files": ["src/test/java/com/rungs/readiness/NeutralVocabularyTests.java"],
           "dependencies": ["2.2"],
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "4.4",
           "description": "Run ./mvnw verify and fix any failures, including Enforcer rule misconfiguration and Thymeleaf template-location warnings",
           "files": ["pom.xml"],
           "dependencies": ["3.2", "4.1", "4.2", "4.3"],
-          "status": "pending"
+          "status": "complete"
         }
       ]
     },

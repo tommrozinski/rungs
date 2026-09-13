@@ -39,22 +39,22 @@ the success metrics. Commits go straight to `main`.
 
 ## Phase 3: Application skeleton
 
-- [ ] Add RungsApplication main class, application.properties (application name, health-only exposure, show-details never, probes disabled), and templates/.gitkeep and static/.gitkeep
+- [x] Add RungsApplication main class, application.properties (application name, health-only exposure, show-details never, probes disabled), and templates/.gitkeep and static/.gitkeep
   - ID 3.1 · Depends on: 2.2
-- [ ] Add package-info.java with the design's one-line Javadoc to each of the eight architecture packages
+- [x] Add package-info.java with the design's one-line Javadoc to each of the eight architecture packages
   - ID 3.2 · Depends on: 2.2
 
 ## Phase 4: Tests
 
-- [ ] Add RungsApplicationTests with a @SpringBootTest contextLoads test
+- [x] Add RungsApplicationTests with a @SpringBootTest contextLoads test
   - ID 4.1 · Depends on: 3.1
-- [ ] Add ActuatorExposureTests (@SpringBootTest, @AutoConfigureMockMvc, MockMvcTester) asserting /actuator/health returns 200 with body exactly {"status":"UP"}, /actuator/env returns 404, and /actuator _links keys are exactly self, health, and health-path
+- [x] Add ActuatorExposureTests (@SpringBootTest, @AutoConfigureMockMvc, MockMvcTester) asserting /actuator/health returns 200 with body exactly {"status":"UP"}, /actuator/env returns 404, and /actuator _links keys are exactly self, health, and health-path
   - ID 4.2 · Depends on: 3.1
   - Note: import `AutoConfigureMockMvc` from `org.springframework.boot.webmvc.test.autoconfigure`. The exact body holds only while probes stay disabled (task 3.1).
-- [ ] Add NeutralVocabularyTests, a plain JUnit test that scans every repo file except .git/, target/, IDE folders, prd/, backlog/, and its own source for the PRD §1 trademark terms and owner name (any case; space, hyphen, underscore, or no separator) and fails listing each path:line
+- [x] Add NeutralVocabularyTests, a plain JUnit test that scans every repo file except .git/, target/, IDE folders, prd/, backlog/, and its own source for the PRD §1 trademark terms and owner name (any case; space, hyphen, underscore, or no separator) and fails listing each path:line
   - ID 4.3 · Depends on: 2.2
   - ⚠️ Risk: local untracked folders can cause false failures; keep the skip list tight and add to it only for generated or untracked folders.
-- [ ] Run ./mvnw verify and fix any failures, including Enforcer rule misconfiguration and Thymeleaf template-location warnings
+- [x] Run ./mvnw verify and fix any failures, including Enforcer rule misconfiguration and Thymeleaf template-location warnings
   - ID 4.4 · Depends on: 3.2, 4.1, 4.2, 4.3
 
 ## Phase 5: README and supporting files
