@@ -1,11 +1,17 @@
 ---
-status: proposed
+status: approved
 ---
 
 # S-03 Projection screen
 
 The extra-payment slider, the strategy toggle, three outcome stats, and the
 month-by-month schedule.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/030-projection-screen/requirements.md](../spec/030-projection-screen/requirements.md).
+> Decided: slider $0–$2,000 in $25 steps; outcome stats are debt-free in, total
+> interest, first debt paid off; first 24 months shown with "show all"; live region
+> for results. No submit-button fallback (JavaScript required).
 
 ## Description
 

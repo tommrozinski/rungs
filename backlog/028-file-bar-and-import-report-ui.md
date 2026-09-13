@@ -1,11 +1,16 @@
 ---
-status: proposed
+status: approved
 ---
 
 # File bar and import report UI
 
 The load/save bar and the three-state import report — the UI over CSV
 import/export, and the thing standing between a user and losing their work.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/028-file-bar-and-import-report-ui/requirements.md](../spec/028-file-bar-and-import-report-ui/requirements.md).
+> Decided: multipart load re-renders the form; save requires a valid snapshot; a small
+> script tracks edits and confirms before loading; a partial import counts as loaded.
 
 ## Description
 

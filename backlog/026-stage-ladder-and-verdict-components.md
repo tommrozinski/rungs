@@ -1,11 +1,17 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Stage ladder and verdict components
 
 The status chip, stage row, progress bar, and verdict block — the components the
 whole design hangs on.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/026-stage-ladder-and-verdict-components/requirements.md](../spec/026-stage-ladder-and-verdict-components/requirements.md).
+> Decided: verdict = current stage's blocker, fixed copy when stage 7 is satisfied;
+> display type 34px; call to action "See the payoff plan" at stage 2, "Change my
+> numbers" otherwise.
 
 ## Description
 

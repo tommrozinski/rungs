@@ -32,7 +32,7 @@ changes the status in the story file itself.
 | [017](017-observability-actuator-and-metrics.md) | Observability: health probes and metrics | approved | Actuator probes and Micrometer metrics including a stage-verdict counter. |
 | [018](018-structured-logging-with-redaction.md) | Structured logging with money redaction | approved | JSON logs with correlation IDs and provably no figures or CSV row content. |
 | [019](019-ci-pipeline-with-quality-gates.md) | CI pipeline with coverage and architecture gates | approved | A thin wrapper around `mvn verify` that gates coverage, architecture, fixtures. |
-| [037](037-container-image.md) | Container image | proposed | Multi-stage Dockerfile, non-root, read-only filesystem, built and run with Podman. |
+| [037](037-container-image.md) | Container image | approved | Multi-stage Dockerfile, non-root, read-only filesystem, built and run with Podman. |
 
 ## CSV snapshot import/export — increment 3.5a
 
@@ -47,17 +47,17 @@ changes the status in the story file itself.
 
 | ID | Title | Status | Summary |
 | --- | --- | --- | --- |
-| [024](024-design-tokens-and-css-foundation.md) | Design tokens and CSS foundation | proposed | The `:root` token block, type scale, spacing, and the semantic color rule. |
-| [025](025-core-component-library.md) | Core component library | proposed | Buttons, fields, toggles, stat cards, warning banners, schedule table. |
-| [026](026-stage-ladder-and-verdict-components.md) | Stage ladder and verdict components | proposed | The status chip, stage row, progress bar, and verdict block. |
-| [027](027-snapshot-form-screen.md) | S-01 Snapshot form screen | proposed | The only input screen, with inline validation bound to the API's problem details. |
-| [028](028-file-bar-and-import-report-ui.md) | File bar and import report UI | proposed | Load/save with a visible saved-vs-working distinction, and the 3-state report. |
-| [029](029-assessment-screen.md) | S-02 Assessment screen | proposed | Verdict, stats, warnings, then the seven-stage ladder. |
-| [030](030-projection-screen.md) | S-03 Projection screen | proposed | Slider and strategy toggle re-rendering live via htmx, debounced 250ms. |
-| [031](031-comparison-screen.md) | S-04 Comparison screen | proposed | Two aligned columns, green header on the cheaper strategy, delta block. |
-| [032](032-responsive-mobile-layout.md) | S-05 Responsive mobile layout | proposed | 375pt: stacked content, compressed stage rows, sticky primary action. |
-| [033](033-accessibility-acceptance-suite.md) | Accessibility acceptance suite | proposed | Contrast, non-color status, table semantics, reduced motion, keyboard operation. |
-| [034](034-progressive-enhancement-no-javascript.md) | Progressive enhancement and no-JavaScript operation | proposed | Every screen works with scripting disabled; the slider degrades to a number input. |
+| [024](024-design-tokens-and-css-foundation.md) | Design tokens and CSS foundation | approved | The `:root` token block, type scale, spacing, and the semantic color rule. |
+| [025](025-core-component-library.md) | Core component library | approved | Buttons, fields, toggles, stat cards, warning banners, schedule table. |
+| [026](026-stage-ladder-and-verdict-components.md) | Stage ladder and verdict components | approved | The status chip, stage row, progress bar, and verdict block. |
+| [027](027-snapshot-form-screen.md) | S-01 Snapshot form screen | approved | The only input screen, with inline validation bound to the API's problem details. |
+| [028](028-file-bar-and-import-report-ui.md) | File bar and import report UI | approved | Load/save with a visible saved-vs-working distinction, and the 3-state report. |
+| [029](029-assessment-screen.md) | S-02 Assessment screen | approved | Verdict, stats, warnings, then the seven-stage ladder. |
+| [030](030-projection-screen.md) | S-03 Projection screen | approved | Slider and strategy toggle re-rendering live via htmx, debounced 250ms. |
+| [031](031-comparison-screen.md) | S-04 Comparison screen | approved | Two aligned columns, green header on the cheaper strategy, delta block. |
+| [032](032-responsive-mobile-layout.md) | S-05 Responsive mobile layout | approved | 375pt: stacked content, compressed stage rows, sticky primary action. |
+| [033](033-accessibility-acceptance-suite.md) | Accessibility acceptance suite | approved | Contrast, non-color status, table semantics, reduced motion, keyboard operation. |
+| [034](034-progressive-enhancement-no-javascript.md) | htmx integration and JavaScript policy (formerly "Progressive enhancement and no-JavaScript operation") | approved | Vendored htmx, strict CSP, ~200-line JS budget, hidden-field page state; JavaScript required. |
 
 ## Stretch — increment 4
 
@@ -101,6 +101,12 @@ rather than details.
   Hand-written JS in external `static/js` files, page state only, no arithmetic,
   formatting, or JSON fetching, roughly 200 lines. File System Access API
   save-in-place is cut (stories 015, 028, 034).
+- ~~Must every screen work without JavaScript?~~ **Resolved** (2026-09-13). No:
+  JavaScript is required, kept to vendored htmx plus the ~200-line budget. Story 034
+  is retitled "htmx integration and JavaScript policy" (design spec §7).
+- ~~How does page state travel between screens?~~ **Resolved** (2026-09-13). In
+  hidden form fields on POSTs: no session, no cookies, no figures in URLs; results
+  pages are not bookmarkable by design (design spec §7, PRD NFR-1).
 - ~~Whether htmx and live slider re-render ship.~~ **Resolved** (design spec
   section 7). htmx is part of 3.5b, vendored, driving the live slider and on-blur
   validation (stories 027, 030, 034).

@@ -1,11 +1,16 @@
 ---
-status: proposed
+status: approved
 ---
 
 # S-02 Assessment screen
 
 The primary screen: verdict block, three stat cards, warnings, then the
 seven-stage ladder.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/029-assessment-screen/requirements.md](../spec/029-assessment-screen/requirements.md).
+> Decided: stat cards are monthly surplus, total debt, and emergency fund; reached by
+> posting the form; figures-match test against the API.
 
 ## Description
 

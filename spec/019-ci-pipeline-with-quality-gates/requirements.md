@@ -49,7 +49,7 @@ frontend toolchain. Increment 3 is done when this pipeline enforces its gates.
   (the standing PR guidance minimum). Thresholds are gates, not warnings.
 - **REQ-003**: All suites run inside `verify`: unit, property (014), architecture (015),
   contract, golden-file (008, 010, 013), OpenAPI drift (016), logging leak (018), and
-  later accessibility (033) and no-JavaScript (034) tests.
+  later accessibility (033) and htmx/JavaScript-policy (034) tests.
 - **REQ-004**: No Node.js setup or frontend step exists in the workflow (AC-H).
 - **REQ-005**: The JaCoCo report (`target/site/jacoco/`) is uploaded as an artifact on
   every run, including failed runs.

@@ -110,7 +110,7 @@ touches disk (story 022).
 - Row content and filename travel only in the response (PRD NFR-2).
 
 ### Accessibility / Browser Support
-- Plain HTML file-upload forms post this request without JavaScript (story 034).
+- A plain HTML file-upload form posts this request.
 
 ## Constraints and Assumptions
 

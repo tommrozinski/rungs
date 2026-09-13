@@ -1,11 +1,17 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Progressive enhancement and no-JavaScript operation
 
 Every screen renders and works with JavaScript disabled, with the slider
 degrading to a number input.
+
+> **Approved 2026-09-13 and retitled "htmx integration and JavaScript policy".** The
+> no-JavaScript requirement was dropped on 2026-09-13: JavaScript is now required
+> (vendored htmx plus a ~200-line hand-written budget), and page state travels in
+> hidden form fields. Everything below about operating without JavaScript is
+> superseded. Full requirements: [spec/034-progressive-enhancement-no-javascript/requirements.md](../spec/034-progressive-enhancement-no-javascript/requirements.md).
 
 ## Description
 

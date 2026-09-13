@@ -1,11 +1,16 @@
 ---
-status: proposed
+status: approved
 ---
 
 # S-04 Comparison screen
 
 Two aligned columns, a green header on the cheaper strategy, and a dark delta
 block stating the difference in plain sentences.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/031-comparison-screen/requirements.md](../spec/031-comparison-screen/requirements.md).
+> Decided: no chart; closing line is fixed copy (no threshold); the screen has its own
+> extra-payment control; delta block on `navy-900`.
 
 ## Description
 

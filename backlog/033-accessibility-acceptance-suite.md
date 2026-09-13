@@ -1,11 +1,17 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Accessibility acceptance suite
 
 The design spec's accessibility rules, built and verified — "treated as
 acceptance criteria, not aspiration."
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/033-accessibility-acceptance-suite/requirements.md](../spec/033-accessibility-acceptance-suite/requirements.md).
+> Decided: JVM-only checks in `verify` (token contrast test and Jsoup markup tests);
+> axe via Selenium as an opt-in local profile, not in CI; WCAG 2.2 AA; manual
+> keyboard and VoiceOver passes; live region on projection results.
 
 ## Description
 

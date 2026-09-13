@@ -1,11 +1,16 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Container image
 
 A hand-written multi-stage Dockerfile that packages the application as a small,
 non-root container image, built and run with free tooling (Podman).
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/037-container-image/requirements.md](../spec/037-container-image/requirements.md).
+> Decided: pinned Eclipse Temurin 25 JDK/JRE base images; local builds only (no
+> registry, not built in CI); JVM container-aware memory defaults.
 
 ## Description
 

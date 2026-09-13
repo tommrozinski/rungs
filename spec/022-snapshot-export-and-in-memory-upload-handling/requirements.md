@@ -82,8 +82,7 @@ upload, rather than trusting configuration.
 - No upload or export content appears in logs (story 018).
 
 ### Accessibility / Browser Support
-- The download works as a normal form post and file download without JavaScript
-  (story 034).
+- The download works as a normal form post and browser file download.
 
 ## Constraints and Assumptions
 

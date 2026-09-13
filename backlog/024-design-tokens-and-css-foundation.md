@@ -1,11 +1,15 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Design tokens and CSS foundation
 
 The `:root` token block, type scale, spacing, and reset — the one place any color
 or measurement is defined.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/024-design-tokens-and-css-foundation/requirements.md](../spec/024-design-tokens-and-css-foundation/requirements.md).
+> Decided: Inter self-hosted; rem sizes; display size 34px; no dark-mode structuring.
 
 ## Description
 

@@ -1,11 +1,17 @@
 ---
-status: proposed
+status: approved
 ---
 
 # S-05 Responsive mobile layout
 
 The 375pt layout: stacked content, compressed stage rows, and a sticky primary
 action.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/032-responsive-mobile-layout/requirements.md](../spec/032-responsive-mobile-layout/requirements.md).
+> Decided: breakpoints at 480px and 960px; non-current reasons behind a "Why?"
+> disclosure rather than removed; tables scroll in their own container; file bar
+> actions stack.
 
 ## Description
 

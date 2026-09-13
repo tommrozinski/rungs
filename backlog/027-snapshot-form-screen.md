@@ -1,11 +1,17 @@
 ---
-status: proposed
+status: approved
 ---
 
 # S-01 Snapshot form screen
 
 The only input screen: three cards covering money in and out, debts, and
 household, with inline validation bound to the API's problem details.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/027-snapshot-form-screen/requirements.md](../spec/027-snapshot-form-screen/requirements.md).
+> Decided: JavaScript required (htmx add/remove rows and on-blur validation); mortgage
+> section shown when not renting; three example households; page state in hidden
+> fields.
 
 ## Description
 

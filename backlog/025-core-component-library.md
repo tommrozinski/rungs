@@ -1,11 +1,17 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Core component library
 
 Buttons, fields, toggles, checkboxes, stat cards, warning banners, and the
 schedule table — the general-purpose components every screen composes from.
+
+> **Approved 2026-09-13.** Full requirements, which supersede the criteria and open
+> questions below: [spec/025-core-component-library/requirements.md](../spec/025-core-component-library/requirements.md).
+> Decided: parameterized Thymeleaf fragments; gallery only in the `dev` profile; red
+> banner only for validation and failed imports. JavaScript is now required, so
+> "renders with JavaScript disabled" no longer applies.
 
 ## Description
 
