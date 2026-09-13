@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # CI pipeline with coverage and architecture gates
@@ -50,15 +50,13 @@ M
 
 ## Open Questions
 
-- Which CI platform — GitHub Actions, Azure Pipelines? The standing workflow
-  references ADO tickets, but the repo host is not stated and this project is not
-  currently a git repository at all.
-- Is the coverage gate 85% (PRD section 9) or the standing 80%-minimum /
-  100%-desired guidance? They conflict.
-- Should coverage be gated on `domain` only, or the whole module? With the
-  Thymeleaf view controllers now in the same module as everything else, a
-  module-wide gate would include them.
-- Is accessibility testing (story 033) and the no-JS pass (story 034) part of the
-  pipeline or a manual gate? If automated, it runs in `mvn verify` with a JVM
-  browser driver, not a Node-based tool.
-- Is a release or publish step in scope, or build-and-verify only?
+- ~~CI platform?~~ **Resolved.** GitHub Actions (repo at
+  `github.com/tommrozinski/rungs`).
+- ~~85% or 80%?~~ **Resolved.** Both: ≥ 85% line coverage on `domain` (PRD §9)
+  and ≥ 80% on the whole module (PR guidance minimum).
+- ~~Domain only or whole module?~~ **Resolved.** Both gates, as above.
+- ~~Accessibility and no-JS in the pipeline?~~ **Resolved.** Yes, inside
+  `./mvnw verify`.
+- ~~Release step?~~ **Resolved.** No; build and verify only.
+
+Full requirements: [spec/019-ci-pipeline-with-quality-gates/requirements.md](../spec/019-ci-pipeline-with-quality-gates/requirements.md).

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # ArchUnit architecture constraint suite
@@ -80,16 +80,16 @@ M
 
 ## Open Questions
 
-- Does AC-A's ban extend to `jakarta.validation` annotations on domain records,
-  or only to the Spring and Jackson halves? The PRD says validation happens at
-  the adapter boundary, which implies a full ban.
-- Are test classes exempt from AC-F's `double` ban?
-- Is `java.util.Random` or any other nondeterminism worth banning in `domain`
-  alongside the float ban, given NFR-4?
+- ~~Does AC-A ban `jakarta.validation`?~~ **Resolved.** Yes, all of `jakarta..`;
+  constraints live in `application`.
+- ~~Are tests exempt from AC-F?~~ **Resolved.** Rules apply to main classes only.
+- ~~Ban nondeterminism in `domain`?~~ **Resolved.** Yes: no `now()`, system clocks,
+  random sources, or `UUID.randomUUID`.
 - ~~Review or automation for the client-side ban?~~ **Resolved.** Automated
-  (PRD AC-G; design spec section 0 amended). Remaining detail: a JUnit test that
-  scans template and static files, or a Maven Enforcer step? ESLint and
-  stylelint are unavailable without Node.
+  (PRD AC-G; design spec section 0 amended), via JUnit scans of template and
+  static files, with committed violation fixtures proving each rule fires.
+
+Full requirements: [spec/015-archunit-architecture-suite/requirements.md](../spec/015-archunit-architecture-suite/requirements.md).
 - ~~Is hand-written JavaScript allowed beyond htmx?~~ **Resolved.** Design spec
   section 7: yes, in external `static/js` files, page state only, no arithmetic,
   formatting, or JSON fetching, roughly 200 lines total.

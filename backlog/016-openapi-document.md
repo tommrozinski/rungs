@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # OpenAPI 3.1 document generation
@@ -57,8 +57,10 @@ S
 
 ## Open Questions
 
-- Is a rendered Swagger UI wanted now that a real client exists, or is the
-  committed document enough?
-- Where do ADRs live — `docs/adr/`? Is a specific template expected?
-- The PRD and design spec now agree on NG-3 in writing. Is a separate ADR still
-  wanted recording why the "no front end" non-goal was reversed?
+- ~~Swagger UI?~~ **Resolved.** No; the committed document is enough, and the
+  running app exposes no docs endpoint.
+- ~~ADR location and template?~~ **Resolved.** `docs/adr/NNNN-title.md` with
+  context / decision / alternatives / consequences.
+- ~~ADR for the NG-3 reversal?~~ **Resolved.** Yes, ADR 0008.
+
+Full requirements: [spec/016-openapi-document/requirements.md](../spec/016-openapi-document/requirements.md).

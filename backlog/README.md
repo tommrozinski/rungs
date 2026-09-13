@@ -26,12 +26,12 @@ changes the status in the story file itself.
 | [011](011-request-validation-and-problem-details.md) | Request validation and RFC 9457 problem details | approved | Boundary validation whose error copy the client renders verbatim. |
 | [012](012-assessment-warnings.md) | Non-fatal warnings | approved | The four conditions that qualify an assessment without failing it. |
 | [013](013-strategy-comparison-endpoint.md) | Compare strategies endpoint | approved | `POST /v1/projections/comparison` with a delta derived from both projections. |
-| [014](014-property-based-invariant-suite.md) | Property-based invariant test suite | proposed | jqwik generator plus the projection invariants across all inputs. |
-| [015](015-archunit-architecture-suite.md) | ArchUnit architecture constraint suite | proposed | Section 8's eight constraints, including AC-G (no client logic) and AC-H (one module). |
-| [016](016-openapi-document.md) | OpenAPI 3.1 document generation | proposed | Generated and committed contract covering all five endpoints, plus ADRs. |
-| [017](017-observability-actuator-and-metrics.md) | Observability: health probes and metrics | proposed | Actuator probes and Micrometer metrics including a stage-verdict counter. |
-| [018](018-structured-logging-with-redaction.md) | Structured logging with money redaction | proposed | JSON logs with correlation IDs and provably no figures or CSV row content. |
-| [019](019-ci-pipeline-with-quality-gates.md) | CI pipeline with coverage and architecture gates | proposed | A thin wrapper around `mvn verify` that gates coverage, architecture, fixtures. |
+| [014](014-property-based-invariant-suite.md) | Property-based invariant test suite | approved | jqwik generator plus the projection invariants across all inputs. |
+| [015](015-archunit-architecture-suite.md) | ArchUnit architecture constraint suite | approved | Section 8's eight constraints, including AC-G (no client logic) and AC-H (one module). |
+| [016](016-openapi-document.md) | OpenAPI 3.1 document generation | approved | Generated and committed contract covering all five endpoints, plus ADRs. |
+| [017](017-observability-actuator-and-metrics.md) | Observability: health probes and metrics | approved | Actuator probes and Micrometer metrics including a stage-verdict counter. |
+| [018](018-structured-logging-with-redaction.md) | Structured logging with money redaction | approved | JSON logs with correlation IDs and provably no figures or CSV row content. |
+| [019](019-ci-pipeline-with-quality-gates.md) | CI pipeline with coverage and architecture gates | approved | A thin wrapper around `mvn verify` that gates coverage, architecture, fixtures. |
 | [037](037-container-image.md) | Container image | proposed | Multi-stage Dockerfile, non-root, read-only filesystem, built and run with Podman. |
 
 ## CSV snapshot import/export — increment 3.5a
@@ -123,8 +123,8 @@ rather than details.
   visible in the form showing $0; the 50-debt limit counts only debts above $0;
   an import that only skipped paid-off debts is clean; a blank debt label is
   named "Debt N" by position (stories 011, 020, 021, 023, 027, 028).
-- **Coverage threshold.** PRD section 9 says 85% on `domain`; the standing PR
-  guidance says 80% minimum, 100% desired (story 019).
+- ~~Coverage threshold.~~ **Resolved** (spec 019). Two gates: ≥ 85% line coverage
+  on `domain` (PRD §9) and ≥ 80% on the whole module (PR guidance minimum).
 - ~~Client-side constraint enforcement.~~ **Resolved.** Automated in
   `mvn verify` under PRD AC-G; design spec section 0 no longer says "enforced by
   review" (story 015).

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Structured logging with money redaction
@@ -47,7 +47,9 @@ M
 
 ## Open Questions
 
-- Is debt *count* safe to log? It is a household attribute, if a weak one.
-- Does the correlation ID come from an inbound header (`X-Request-Id`,
-  `traceparent`) or is it always generated?
-- Is there a target log aggregator whose schema conventions should be followed?
+- ~~Is debt count safe to log?~~ **Resolved.** Yes, as an aggregate.
+- ~~Inbound or generated correlation id?~~ **Resolved.** A well-formed inbound
+  `X-Request-Id` is reused; otherwise one is generated. Always echoed.
+- ~~Log aggregator conventions?~~ **Resolved.** None targeted; ECS structured format.
+
+Full requirements: [spec/018-structured-logging-with-redaction/requirements.md](../spec/018-structured-logging-with-redaction/requirements.md).

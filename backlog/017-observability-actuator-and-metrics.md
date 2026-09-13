@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Observability: health probes and metrics
@@ -38,8 +38,9 @@ S
 
 ## Open Questions
 
-- Which metrics backend is the target (a Prometheus scrape endpoint, or just the
-  Actuator metrics endpoint)?
-- Should probes be exposed on a separate management port?
-- Is an import success/failure counter wanted, and can its failure-reason tag stay
-  bounded?
+- ~~Metrics backend?~~ **Resolved.** Prometheus scrape endpoint.
+- ~~Separate management port?~~ **Resolved.** No, same port.
+- ~~Import counter?~~ **Resolved.** Yes, tagged by `outcome` (`CLEAN`, `PARTIAL`,
+  `FAILED`) only.
+
+Full requirements: [spec/017-observability-actuator-and-metrics/requirements.md](../spec/017-observability-actuator-and-metrics/requirements.md).

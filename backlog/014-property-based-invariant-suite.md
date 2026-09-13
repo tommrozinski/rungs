@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 ---
 
 # Property-based invariant test suite
@@ -48,7 +48,10 @@ M
 
 ## Open Questions
 
-- Do the principal and interest invariants need to exclude negative-amortizing
-  debts (which never complete) and truncated schedules?
-- What seed policy — fixed for reproducibility in CI, or random with the failing
-  seed reported?
+- ~~Exclusions?~~ **Resolved.** The per-debt accounting invariant holds for every
+  schedule; full-payoff principal applies only to non-truncated plans with no
+  unpayable debts.
+- ~~Seed policy?~~ **Resolved.** Random each run; failing seeds printed and replayed
+  from jqwik's local database, and pinned as example tests.
+
+Full requirements: [spec/014-property-based-invariant-suite/requirements.md](../spec/014-property-based-invariant-suite/requirements.md).
