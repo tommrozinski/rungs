@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* C-01 button. variant: primary | secondary | quiet. state: '' | hover | focus (gallery-only forced states). */-->
+<button th:fragment="button(label, type, variant, state, disabled)"
+        th:type="${type}"
+        th:class="${variant == 'secondary'} ? 'btn btn-secondary' : (${variant == 'quiet'} ? 'btn btn-quiet' : 'btn btn-primary')"
+        th:classappend="${state == 'hover'} ? 'is-hover' : (${state == 'focus'} ? 'is-focus' : '')"
+        th:disabled="${disabled}"
+        th:text="${label}">Label</button>
+</body>
+</html>

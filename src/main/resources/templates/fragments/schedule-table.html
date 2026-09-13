@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* C-10 schedule table. columns: header strings, month column first. rows: ScheduleRowView list. */-->
+<table th:fragment="scheduleTable(caption, columns, rows)" class="schedule">
+    <caption th:text="${caption}">Caption</caption>
+    <thead>
+    <tr>
+        <th scope="col" th:each="column : ${columns}" th:text="${column}">Month</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="row : ${rows}" th:classappend="${row.retired} ? 'is-retired' : ''">
+        <th scope="row"><span th:text="${row.month}">Month 1</span><span class="visually-hidden"
+                th:if="${row.retired}"> debt retired</span></th>
+        <td class="num" th:each="cell : ${row.cells}" th:text="${cell}">$0.00</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

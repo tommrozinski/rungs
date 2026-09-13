@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* Stage ladder: all seven rows in order. Callers may also pass hiddenFields=~{...} for the call-to-action form. */-->
+<ol th:fragment="stageLadder(rows)" class="ladder">
+    <th:block th:each="row : ${rows}">
+        <li th:replace="~{fragments/stage-row :: stageRow(row=${row})}">Row</li>
+    </th:block>
+</ol>
+</body>
+</html>

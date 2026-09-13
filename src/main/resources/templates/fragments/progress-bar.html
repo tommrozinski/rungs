@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* C-07 progress bar. percent: "40.0"; width: the fill width attribute, "40.0%"; both come from the server. */-->
+<div th:fragment="progressBar(percent, width, complete, label)" class="progress"
+     th:classappend="${complete} ? 'is-complete' : ''"
+     role="progressbar" aria-valuemin="0" aria-valuemax="100"
+     th:aria-valuenow="${percent}" th:aria-label="${label}">
+    <svg class="progress-track" width="100%" height="8" aria-hidden="true" focusable="false">
+        <rect class="progress-fill" x="0" y="0" height="8" rx="4" th:width="${width}"></rect>
+    </svg>
+</div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* C-02 text field. state: '' | focus | error | readonly. errorId is built server-side, e.g. "monthly-income-error". */-->
+<div th:fragment="textField(id, name, label, value, state, errorId, errorMessage)" class="field">
+    <label th:for="${id}" th:text="${label}">Label</label>
+    <input class="input" type="text"
+           th:id="${id}" th:name="${name}" th:value="${value}"
+           th:classappend="${state == 'focus'} ? 'is-focus' : (${state == 'error'} ? 'is-error' : '')"
+           th:readonly="${state == 'readonly'}"
+           th:aria-invalid="${state == 'error'} ? 'true'"
+           th:aria-describedby="${state == 'error'} ? ${errorId}">
+    <p class="field-error" th:if="${state == 'error'}" th:id="${errorId}" th:text="${errorMessage}">Message</p>
+</div>
+</body>
+</html>

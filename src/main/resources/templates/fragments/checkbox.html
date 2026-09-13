@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* C-04 checkbox: on or off. */-->
+<label th:fragment="checkbox(id, name, label, checked)" class="check" th:for="${id}">
+    <input type="checkbox" value="true" th:id="${id}" th:name="${name}" th:checked="${checked}">
+    <span th:text="${label}">Label</span>
+</label>
+</body>
+</html>

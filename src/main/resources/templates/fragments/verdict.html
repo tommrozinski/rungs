@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* C-11 verdict block. view: VerdictView. */-->
+<section th:fragment="verdict(view)" class="verdict">
+    <p class="verdict-line" th:text="${view.text}">Verdict</p>
+</section>
+</body>
+</html>

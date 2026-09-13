@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+<!--/* C-03 toggle group: two radios in a fieldset; selected holds the checked option's value. */-->
+<fieldset th:fragment="toggleGroup(name, legend, firstValue, firstLabel, secondValue, secondLabel, selected)"
+          class="toggle-group">
+    <legend class="visually-hidden" th:text="${legend}">Legend</legend>
+    <label class="toggle">
+        <input type="radio" th:name="${name}" th:value="${firstValue}" th:checked="${selected == firstValue}">
+        <span th:text="${firstLabel}">First</span>
+    </label>
+    <label class="toggle">
+        <input type="radio" th:name="${name}" th:value="${secondValue}" th:checked="${selected == secondValue}">
+        <span th:text="${secondLabel}">Second</span>
+    </label>
+</fieldset>
+</body>
+</html>
