@@ -1,0 +1,24 @@
+# Implementation progress: 003–006 + 015 (combined spec)
+
+Mode: TDD; lean process (one implementer per phase, one code-reviewer per story group,
+parallel worktrees for independent phases)
+Started: 2026-09-13
+
+## Story 003 — Snapshot model (task 2.1)
+- 2026-09-13. implementation-engineer in a worktree; files copied into main.
+- Files: domain/model DebtType, HouseholdFlags, Mortgage, Debt, FinancialSnapshot,
+  Invariants (pkg-private; percent normalization per design §2); tests DebtTypeTests,
+  HouseholdFlagsTests, InvariantsTests, MortgageTests, DebtTests, FinancialSnapshotTests;
+  fixture FinancialSnapshotBuilder.
+- Tests: 182 new (every REQ-008 invariant rejected, 7.25/7.250/7.2500 equality, over-precision
+  rejected, pathological BigDecimal exponents under 1 s timeouts, defensive copy, order,
+  duplicate ids). 100% line/branch on the new types.
+- Review: no Critical/High/Medium. Lows acted on: Invariants Javadoc no longer overstates
+  stripTrailingZeros cost (digit count is bounded by callers); builder documents positional
+  ids. Lows deferred to story 011: one shared "blank" predicate (String.isBlank accepts an
+  NBSP-only label while Money.parse trims NBSP) — 011, 020, 023 must use one definition.
+  Lows accepted: List.copyOf null-element NPE doesn't name "debts"; totalDebtBalance can
+  overflow only past validation limits.
+- Environment fix: agent worktrees live under .claude/worktrees/ (now git-ignored);
+  NeutralVocabularyTests skips .claude directories, since the worktree copies contain prd/.
+- Security: pure domain, no I/O; messages never contain values.

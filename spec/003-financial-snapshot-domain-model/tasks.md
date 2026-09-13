@@ -13,7 +13,7 @@
 
 ## Phase 2: Snapshot model (003)
 
-- [ ] Add DebtType, HouseholdFlags, Mortgage, Debt, FinancialSnapshot with Invariants (percent normalization per design §2), hasMortgage, totalDebtBalance, and FinancialSnapshotBuilder, with tests for every invariant, scale equality (7.25/7.250/7.2500), over-precision rejection, and debt order
+- [x] Add DebtType, HouseholdFlags, Mortgage, Debt, FinancialSnapshot with Invariants (percent normalization per design §2), hasMortgage, totalDebtBalance, and FinancialSnapshotBuilder, with tests for every invariant, scale equality (7.25/7.250/7.2500), over-precision rejection, and debt order
   - ID 2.1 · Depends on: none
 
 ## Phase 3: Stage framework (004)
