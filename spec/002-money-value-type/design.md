@@ -210,7 +210,8 @@ specific reason and the work is linear in an input capped at 32 characters.
 ```text
 1. null                                   → BLANK
 2. raw length > 32                        → TOO_LONG
-3. s = text.strip(); empty                → BLANK
+3. s = text trimmed of leading/trailing chars where Character.isWhitespace
+   or Character.isSpaceChar is true; empty → BLANK
 4. optional "-" then optional "$"         (only in that order)
 5. remainder: every char must be ASCII 0-9, "," or "."; at most one "."
                                           → otherwise INVALID_CHARACTER
@@ -230,8 +231,10 @@ specific reason and the work is linear in an input capped at 32 characters.
   so `parse(toBareString(m))` holds for every `long`, not only down to `MIN_VALUE + 1`.
 - `-0`, `-$0.00` parse to `ZERO` naturally, because `long` has no negative zero (REQ-007).
 - Leading zeros (`007`) are accepted; `toBareString` writes the canonical form back.
-- `strip()` removes Unicode whitespace, so a non-breaking space pasted from a spreadsheet is
-  tolerated at the ends but rejected inside the number.
+- The trim covers `Character.isSpaceChar` as well as `isWhitespace`, because `String.strip()`
+  keeps non-breaking spaces (U+00A0, U+2007, U+202F). So a non-breaking space pasted from a
+  spreadsheet is tolerated at the ends but rejected inside the number (decided 2026-09-13
+  during task 4.2).
 - No `double`, `float`, `Double.parseDouble`, or `new BigDecimal(String)` is used.
 
 ## 7. Tests

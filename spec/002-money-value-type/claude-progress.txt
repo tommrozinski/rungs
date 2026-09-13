@@ -85,3 +85,45 @@ Local JDK: OpenJDK 26 via JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jd
   (longest 27 chars). Low notes: zero-sign test duplicates the 0 row (negative zero matters
   for parse in 4.2); JVM-default rows alone would miss String.format on an en-US machine,
   the non-US rows cover it. review-changes: no blockers.
+
+## Task 4.1 — Add MoneyFormatException extending IllegalArgumentException with a Reason enum, a reason() accessor, and one fixed message per reason that never includes the input, with tests in MoneyParsingTests
+- Completed: 2026-09-13
+- Files changed: src/main/java/com/rungs/readiness/domain/model/MoneyFormatException.java (new;
+  final, only constructor takes a Reason, messages stored on the enum, requireNonNull,
+  serialVersionUID), src/test/java/com/rungs/readiness/domain/model/MoneyParsingTests.java (new;
+  @Nested FormatException)
+- Tests: 23 (reason round trip, IAE subtype, fixed non-blank sentence per reason, distinct
+  messages, null reason rejected). `./mvnw clean verify`: 249 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD). Correctness review: no Critical/High/Medium. Low (folded
+  into 4.2): pin the exact message per reason (a swap of two sentences passes today); assert
+  parse failures' message and cause never contain the input. review-changes: no blockers.
+
+## Task 4.2 — Add Money.parse as the single left-to-right scan in design §6.4, with MoneyParsingTests for every accepted example, at least one rejected input per Reason, and pinned precedence cases
+- Completed: 2026-09-13
+- Files changed: Money.java (parse; private trim, checkWholeDollars, checkCents, isAsciiDigit,
+  isSpace; constants RADIX, MAX_TEXT_LENGTH), MoneyParsingTests.java (@Nested Parse with an
+  assertRejected helper; FormatException gains an exact-message table),
+  design.md §6.4 (step 3 trim amended, see notes)
+- Tests: Parse 63 cases + 7 exact-message rows (accepted amounts incl. both long extremes, -0,
+  -$0.00, leading zeros; Unicode/NBSP trim at ends, NBSP inside rejected; BLANK incl. null;
+  32 accepted / 33 and 40 spaces TOO_LONG; every design §4 reason example; all pinned
+  precedence cases; OUT_OF_RANGE both sides). Every rejection asserts reason, message omits
+  input, cause null. `./mvnw clean verify`: 319 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD). Design contradiction found: String.strip() keeps
+  U+00A0/U+2007/U+202F, so the "NBSP tolerated at the ends" bullet was false. User decided:
+  tolerate at the ends — trim chars where Character.isWhitespace || isSpaceChar; design
+  updated. Mutations (comma skip, sign, fraction padding) each caught. Correctness review:
+  one Medium — the per-character comma-placement loop in checkWholeDollars was unreached by
+  any test ("1,,23" and "1,2,3" would parse to 12300 without it); orchestrator added both
+  rows. No other findings. review-changes: no blockers. Low (not acted on):
+  messageIsAFixedSentence is now subsumed by the exact-message table.
+
+## Task 4.3 — Add round-trip tests that parse(m.toBareString()) and parse(m.toDisplayString()) equal m for 0, ±1, ±50, ±123456, Long.MAX_VALUE, Long.MIN_VALUE, and Long.MIN_VALUE + 1
+- Completed: 2026-09-13
+- Files changed: MoneyParsingTests.java (@Nested RoundTrip with edgeCents() method source)
+- Tests: 20 (10 values × bare and display); passed on first run, as expected for a pinning
+  task. `./mvnw clean verify`: 339 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer. Mutations caught: parse ignoring the sign (8 failures, 2
+  errors), formatters dropping the sign (same), wrong display grouping (3 errors, extremes
+  only); Money.java restored and confirmed identical with cmp. Correctness review: no findings
+  (the 20 cases confirmed in the surefire report). review-changes: no blockers.

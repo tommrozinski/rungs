@@ -34,7 +34,7 @@
       "tasks": [
         {
           "id": "2.1",
-          "description": "Add the Money record (long cents) with ZERO, ofCents, ofDollars (multiplyExact), and plus, minus, negate using Math.*Exact, with MoneyArithmeticTests for zero, ±1 cent, mixed signs, and overflow including negate of Long.MIN_VALUE",
+          "description": "Add the Money record (long cents) with ZERO, ofCents, ofDollars (multiplyExact), and plus, minus, negate using Math.*Exact, with MoneyArithmeticTests for zero, \u00b11 cent, mixed signs, and overflow including negate of Long.MIN_VALUE",
           "files": [
             "src/main/java/com/rungs/readiness/domain/model/Money.java",
             "src/test/java/com/rungs/readiness/domain/model/MoneyArithmeticTests.java"
@@ -58,7 +58,7 @@
         },
         {
           "id": "2.3",
-          "description": "Add times(BigDecimal) per design §6.2 (ArithmeticException for a factor over 64 significant digits, exact multiply, ZERO when the leading-digit exponent is below -1, ArithmeticException above 18, HALF_EVEN setScale, longValueExact), with tests for 100 cents × .005/.015/.025 and negatives (0, 2, 2 and 0, -2, -2 cents), .0051, zero and negative factors, extreme exponents, guard edges (products of 0.1 and 0.09 cents, 1E18 and 1E19 cents, 64- and 65-digit factors), and overflow",
+          "description": "Add times(BigDecimal) per design \u00a76.2 (ArithmeticException for a factor over 64 significant digits, exact multiply, ZERO when the leading-digit exponent is below -1, ArithmeticException above 18, HALF_EVEN setScale, longValueExact), with tests for 100 cents \u00d7 .005/.015/.025 and negatives (0, 2, 2 and 0, -2, -2 cents), .0051, zero and negative factors, extreme exponents, guard edges (products of 0.1 and 0.09 cents, 1E18 and 1E19 cents, 64- and 65-digit factors), and overflow",
           "files": [
             "src/main/java/com/rungs/readiness/domain/model/Money.java",
             "src/test/java/com/rungs/readiness/domain/model/MoneyArithmeticTests.java"
@@ -102,11 +102,11 @@
           "dependencies": [
             "1.1"
           ],
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "4.2",
-          "description": "Add Money.parse as the single left-to-right scan in design §6.4 (null or blank, 32-character bound before strip, optional - then $, ASCII digits only, comma groups, one or two decimals, negative-side accumulation), with MoneyParsingTests for every accepted example and at least one rejected input per Reason asserting the message omits the input, plus pinned precedence cases: \"1,23.456\" MISPLACED_SEPARATOR, \"$-5\" INVALID_CHARACTER, 40 spaces TOO_LONG, \"-\" MISSING_DIGITS, \"1.2,3\" MISPLACED_SEPARATOR",
+          "description": "Add Money.parse as the single left-to-right scan in design \u00a76.4 (null or blank, 32-character bound before strip, optional - then $, ASCII digits only, comma groups, one or two decimals, negative-side accumulation), with MoneyParsingTests for every accepted example and at least one rejected input per Reason asserting the message omits the input, plus pinned precedence cases: \"1,23.456\" MISPLACED_SEPARATOR, \"$-5\" INVALID_CHARACTER, 40 spaces TOO_LONG, \"-\" MISSING_DIGITS, \"1.2,3\" MISPLACED_SEPARATOR",
           "files": [
             "src/main/java/com/rungs/readiness/domain/model/Money.java",
             "src/test/java/com/rungs/readiness/domain/model/MoneyParsingTests.java"
@@ -115,11 +115,11 @@
             "2.1",
             "4.1"
           ],
-          "status": "pending"
+          "status": "complete"
         },
         {
           "id": "4.3",
-          "description": "Add round-trip tests that parse(m.toBareString()) and parse(m.toDisplayString()) equal m for 0, ±1, ±50, ±123456, Long.MAX_VALUE, Long.MIN_VALUE, and Long.MIN_VALUE + 1",
+          "description": "Add round-trip tests that parse(m.toBareString()) and parse(m.toDisplayString()) equal m for 0, \u00b11, \u00b150, \u00b1123456, Long.MAX_VALUE, Long.MIN_VALUE, and Long.MIN_VALUE + 1",
           "files": [
             "src/test/java/com/rungs/readiness/domain/model/MoneyParsingTests.java"
           ],
@@ -127,7 +127,7 @@
             "3.1",
             "4.2"
           ],
-          "status": "pending"
+          "status": "complete"
         }
       ]
     },

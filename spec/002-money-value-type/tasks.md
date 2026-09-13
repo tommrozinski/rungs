@@ -50,12 +50,12 @@ check. Commits go straight to `main`.
 
 ## Phase 4: Parsing
 
-- [ ] Add MoneyFormatException extending IllegalArgumentException with a Reason enum (BLANK, TOO_LONG, INVALID_CHARACTER, MISSING_DIGITS, MISPLACED_SEPARATOR, TOO_MANY_DECIMALS, OUT_OF_RANGE), a reason() accessor, and one fixed message per reason that never includes the input, with tests in MoneyParsingTests
+- [x] Add MoneyFormatException extending IllegalArgumentException with a Reason enum (BLANK, TOO_LONG, INVALID_CHARACTER, MISSING_DIGITS, MISPLACED_SEPARATOR, TOO_MANY_DECIMALS, OUT_OF_RANGE), a reason() accessor, and one fixed message per reason that never includes the input, with tests in MoneyParsingTests
   - ID 4.1 · Depends on: 1.1
-- [ ] Add Money.parse as the single left-to-right scan in design §6.4 (null or blank, 32-character bound before strip, optional - then $, ASCII digits only, comma groups, one or two decimals, negative-side accumulation), with MoneyParsingTests for every accepted example and at least one rejected input per Reason asserting the message omits the input, plus pinned precedence cases: "1,23.456" MISPLACED_SEPARATOR, "$-5" INVALID_CHARACTER, 40 spaces TOO_LONG, "-" MISSING_DIGITS, "1.2,3" MISPLACED_SEPARATOR
+- [x] Add Money.parse as the single left-to-right scan in design §6.4 (null or blank, 32-character bound before strip, optional - then $, ASCII digits only, comma groups, one or two decimals, negative-side accumulation), with MoneyParsingTests for every accepted example and at least one rejected input per Reason asserting the message omits the input, plus pinned precedence cases: "1,23.456" MISPLACED_SEPARATOR, "$-5" INVALID_CHARACTER, 40 spaces TOO_LONG, "-" MISSING_DIGITS, "1.2,3" MISPLACED_SEPARATOR
   - ID 4.2 · Depends on: 2.1, 4.1
   - ⚠️ Risk: reason precedence follows the design §6.4 step order; the pinned precedence cases and the design §4 examples guard it.
-- [ ] Add round-trip tests that parse(m.toBareString()) and parse(m.toDisplayString()) equal m for 0, ±1, ±50, ±123456, Long.MAX_VALUE, Long.MIN_VALUE, and Long.MIN_VALUE + 1
+- [x] Add round-trip tests that parse(m.toBareString()) and parse(m.toDisplayString()) equal m for 0, ±1, ±50, ±123456, Long.MAX_VALUE, Long.MIN_VALUE, and Long.MIN_VALUE + 1
   - ID 4.3 · Depends on: 3.1, 4.2
 
 ## Phase 5: Verification
