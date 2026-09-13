@@ -1,5 +1,7 @@
 # Rungs
 
+[![CI](https://github.com/tommrozinski/rungs/actions/workflows/ci.yml/badge.svg)](https://github.com/tommrozinski/rungs/actions/workflows/ci.yml)
+
 Rungs is a stateless engine that assesses a household's finances against a seven-stage
 debt-elimination and wealth-building framework, reports which stage the household is on and
 what stands between it and the next, and projects the debt payoff path. It is an independent
@@ -33,8 +35,10 @@ Build and run the tests:
 On Windows, use `.\mvnw.cmd verify` instead (works in PowerShell and Command Prompt).
 
 The build enforces JDK 25 or newer, Maven 3.9.16 or newer (which the wrapper provides), no
-`SNAPSHOT` dependencies, and a repository-wide check that the codebase uses only neutral
-vocabulary.
+`SNAPSHOT` dependencies, a repository-wide check that the codebase uses only neutral
+vocabulary, and line coverage of at least 80% for the module and 85% for each `domain`
+package. The coverage report is written to `target/site/jacoco/index.html`. CI runs exactly
+this command on every push and pull request.
 
 Start the application:
 
