@@ -27,14 +27,14 @@ class CollegeEvaluatorTests {
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
     void isSkippedWithTheNoPlansReasonWithoutCollegePlansEvenWhenRetired(boolean retired) {
-        StageEvaluation result = evaluate(new HouseholdFlags(false, retired, false), Money.ofDollars(200));
+        StageEvaluation result = evaluate(new HouseholdFlags(retired, false), Money.ofDollars(200));
 
         assertThat(result).isEqualTo(StageEvaluation.skipped(5, NO_PLANS_REASON));
     }
 
     @Test
     void isSkippedWithTheRetiredReasonWhenRetiredWithCollegePlans() {
-        StageEvaluation result = evaluate(new HouseholdFlags(false, true, true), Money.ofDollars(200));
+        StageEvaluation result = evaluate(new HouseholdFlags(true, true), Money.ofDollars(200));
 
         assertThat(result).isEqualTo(StageEvaluation.skipped(5, RETIRED_REASON));
     }
@@ -42,14 +42,14 @@ class CollegeEvaluatorTests {
     @ParameterizedTest
     @ValueSource(longs = {1, 20_000})
     void isSatisfiedByAnyContributionAboveZeroWithCollegePlans(long contributionCents) {
-        StageEvaluation result = evaluate(new HouseholdFlags(false, false, true), Money.ofCents(contributionCents));
+        StageEvaluation result = evaluate(new HouseholdFlags(false, true), Money.ofCents(contributionCents));
 
         assertThat(result).isEqualTo(StageEvaluation.satisfied(5));
     }
 
     @Test
     void isNotStartedWithNoRemainingAmountWhenPlanningButNotContributing() {
-        StageEvaluation result = evaluate(new HouseholdFlags(false, false, true), Money.ZERO);
+        StageEvaluation result = evaluate(new HouseholdFlags(false, true), Money.ZERO);
 
         assertThat(result).isEqualTo(StageEvaluation.notStarted(
                 5, null, "You plan to fund college but aren't contributing to it yet."));

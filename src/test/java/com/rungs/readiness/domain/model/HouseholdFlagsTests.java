@@ -9,18 +9,16 @@ class HouseholdFlagsTests {
 
     @ParameterizedTest
     @CsvSource({
-        "false, false, false",
-        "true, false, false",
-        "false, true, false",
-        "false, false, true",
-        "true, true, true"
+        "false, false",
+        "true, false",
+        "false, true",
+        "true, true"
     })
-    void exposesEachFlagAsSuppliedAndComparesByValue(boolean rents, boolean retired, boolean intendsToFundCollege) {
-        HouseholdFlags flags = new HouseholdFlags(rents, retired, intendsToFundCollege);
+    void exposesEachFlagAsSuppliedAndComparesByValue(boolean retired, boolean intendsToFundCollege) {
+        HouseholdFlags flags = new HouseholdFlags(retired, intendsToFundCollege);
 
-        assertThat(flags.rents()).isEqualTo(rents);
         assertThat(flags.retired()).isEqualTo(retired);
         assertThat(flags.intendsToFundCollege()).isEqualTo(intendsToFundCollege);
-        assertThat(flags).isEqualTo(new HouseholdFlags(rents, retired, intendsToFundCollege));
+        assertThat(flags).isEqualTo(new HouseholdFlags(retired, intendsToFundCollege));
     }
 }

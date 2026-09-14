@@ -3,11 +3,15 @@ package com.rungs.readiness.web;
 import com.rungs.readiness.domain.model.Debt;
 import com.rungs.readiness.domain.model.DebtType;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
+import com.rungs.readiness.domain.model.Housing;
 import com.rungs.readiness.domain.model.HouseholdFlags;
 import com.rungs.readiness.domain.model.Money;
 import com.rungs.readiness.domain.model.MoneyFormatException;
+import com.rungs.readiness.domain.model.Mortgage;
+import com.rungs.readiness.domain.model.Rent;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -20,13 +24,22 @@ import java.util.regex.Pattern;
  * 1-based position as submitted), and an unrecognized debt type becomes {@link DebtType#OTHER}. Nothing here
  * rejects input or throws; every bad case resolves to a plain default instead, so a submission can never 500.
  *
- * <p>The v0 form collects no mortgage and no college contribution amount, so the snapshot always has a null
- * mortgage, a $0 monthly college contribution, and a fixed 3-month emergency-fund target.
+ * <p>The v0 form collects no mortgage and no college contribution amount, so the snapshot always has a $0 monthly
+ * college contribution and a fixed 3-month emergency-fund target.
+ *
+ * <p><b>Story 039 phase 2 stopgap:</b> the form still only has the old {@code rents} checkbox, not the real housing
+ * fields (story 039 phase 3 adds those). Until then, {@code rents} maps to {@link Rent} at $0, and unchecked maps to
+ * a {@link Mortgage} with every amount at $0 and an unknown maturity — either way housing costs nothing, matching
+ * the v0 behavior this mapper had before story 039. {@code asOf} is likewise a fixed placeholder, not the real
+ * clock-backed value phase 3 will use.
  */
 final class SnapshotFormMapper {
 
     /** The v0 form has no field for this; the snapshot always targets a 3-month fund. */
     private static final int EMERGENCY_FUND_MONTHS = 3;
+
+    /** Story 039 phase 2 stopgap: the form has no assessment-month field yet, so every snapshot uses this month. */
+    private static final YearMonth PLACEHOLDER_AS_OF = YearMonth.of(2026, 9);
 
     /** Decimal places {@link FinancialSnapshot#retirementContributionPercent()} is normalized to. */
     private static final int RETIREMENT_PERCENT_SCALE = 2;
@@ -84,8 +97,19 @@ final class SnapshotFormMapper {
                 percent(form.getRetirementContributionPercent(), RETIREMENT_PERCENT_SCALE),
                 EMERGENCY_FUND_MONTHS,
                 debts,
-                null,
-                new HouseholdFlags(form.isRents(), form.isRetired(), form.isIntendsToFundCollege()));
+                housing(form),
+                new HouseholdFlags(form.isRetired(), form.isIntendsToFundCollege()),
+                PLACEHOLDER_AS_OF);
+    }
+
+    /**
+     * Story 039 phase 2 stopgap (see the class Javadoc): {@code rents} becomes {@link Rent} at $0, else a
+     * {@link Mortgage} with every amount at $0 and an unknown maturity.
+     */
+    private static Housing housing(SnapshotForm form) {
+        return form.isRents()
+                ? new Rent(Money.ZERO)
+                : new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null);
     }
 
     /**

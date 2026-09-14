@@ -212,7 +212,7 @@ class ResultViewsTests {
     @Test
     void stage4SkippedForARetiredHousehold() {
         FinancialSnapshot snapshot = aSnapshot()
-                .withHouseholdFlags(new HouseholdFlags(false, true, false))
+                .withHouseholdFlags(new HouseholdFlags(true, false))
                 .build();
 
         StageView view = stage(build(snapshot), 4);
@@ -226,7 +226,7 @@ class ResultViewsTests {
     @Test
     void stage5DoneWhenContributingToCollege() {
         FinancialSnapshot snapshot = aSnapshot()
-                .withHouseholdFlags(new HouseholdFlags(false, false, true))
+                .withHouseholdFlags(new HouseholdFlags(false, true))
                 .withMonthlyCollegeContribution(Money.ofDollars(200))
                 .build();
 
@@ -238,7 +238,7 @@ class ResultViewsTests {
     @Test
     void stage5NotStartedWhenPlanningButNotYetContributing() {
         FinancialSnapshot snapshot = aSnapshot()
-                .withHouseholdFlags(new HouseholdFlags(false, false, true))
+                .withHouseholdFlags(new HouseholdFlags(false, true))
                 .build();
 
         StageView view = stage(build(snapshot), 5);
@@ -249,7 +249,7 @@ class ResultViewsTests {
     @Test
     void stage5SkippedWithNoCollegePlans() {
         FinancialSnapshot snapshot = aSnapshot()
-                .withHouseholdFlags(new HouseholdFlags(false, false, false))
+                .withHouseholdFlags(new HouseholdFlags(false, false))
                 .build();
 
         StageView view = stage(build(snapshot), 5);
@@ -260,7 +260,7 @@ class ResultViewsTests {
     @Test
     void stage5SkippedForARetiredHouseholdThatPlannedToFundCollege() {
         FinancialSnapshot snapshot = aSnapshot()
-                .withHouseholdFlags(new HouseholdFlags(false, true, true))
+                .withHouseholdFlags(new HouseholdFlags(true, true))
                 .build();
 
         StageView view = stage(build(snapshot), 5);
@@ -271,17 +271,18 @@ class ResultViewsTests {
     // Stage 6: mortgage
 
     @Test
-    void stage6DoneWithNoMortgage() {
-        FinancialSnapshot snapshot = aSnapshot().withHouseholdFlags(new HouseholdFlags(false, false, false)).build();
+    void stage6DoneWithAPaidOffMortgage() {
+        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null);
+        FinancialSnapshot snapshot = aSnapshot().withHousing(paidOff).build();
 
         StageView view = stage(build(snapshot), 6);
 
-        assertThat(view.line()).isEqualTo("No mortgage to pay down.");
+        assertThat(view.line()).isEqualTo("Your house is paid off.");
     }
 
     @Test
     void stage6SkippedForARenter() {
-        FinancialSnapshot snapshot = aSnapshot().withHouseholdFlags(new HouseholdFlags(true, false, false)).build();
+        FinancialSnapshot snapshot = aSnapshot().build();
 
         StageView view = stage(build(snapshot), 6);
 
@@ -295,7 +296,6 @@ class ResultViewsTests {
         FinancialSnapshot snapshot = aSnapshot()
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
                 .withRetirementContributionPercent("15")
-                .withHouseholdFlags(new HouseholdFlags(true, false, false))
                 .build();
 
         ResultView result = build(snapshot);
@@ -345,7 +345,6 @@ class ResultViewsTests {
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
                 .withMonthlyEssentialExpenses(Money.ofDollars(1_000))
                 .withDebt("Store card", DebtType.CREDIT_CARD, Money.ofDollars(500), "10", Money.ofDollars(20))
-                .withHouseholdFlags(new HouseholdFlags(true, false, false))
                 .build();
 
         ResultView result = build(snapshot);
@@ -458,7 +457,7 @@ class ResultViewsTests {
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
                 .withMonthlyEssentialExpenses(Money.ZERO)
                 .withRetirementContributionPercent("15")
-                .withHouseholdFlags(new HouseholdFlags(false, false, true))
+                .withHouseholdFlags(new HouseholdFlags(false, true))
                 .build();
 
         ResultView result = build(snapshot);
@@ -472,10 +471,11 @@ class ResultViewsTests {
         FinancialSnapshot snapshot = aSnapshot()
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
                 .withMonthlyEssentialExpenses(Money.ZERO)
+                .withFullEmergencyFund(Money.ofDollars(3_600))
                 .withRetirementContributionPercent("15")
-                .withHouseholdFlags(new HouseholdFlags(false, false, false))
-                .withMortgage(new Mortgage(
-                        Money.ofDollars(100_000), Money.ofDollars(1_200), Money.ofDollars(300_000), new BigDecimal("6.125")))
+                .withHouseholdFlags(new HouseholdFlags(false, false))
+                .withHousing(new Mortgage(
+                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(1_200), Money.ZERO, null))
                 .build();
 
         ResultView result = build(snapshot);
@@ -492,7 +492,6 @@ class ResultViewsTests {
         FinancialSnapshot snapshot = aSnapshot()
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
                 .withRetirementContributionPercent("15")
-                .withHouseholdFlags(new HouseholdFlags(true, false, false))
                 .build();
 
         ResultView result = build(snapshot);

@@ -1,0 +1,43 @@
+Implementation progress: 039 housing and samples
+
+Phase 2 — housing domain
+- Added the `Housing` sealed interface (domain.model) with `Rent(Money monthlyRent)` and a rewritten `Mortgage`
+  (balance, annualInterestRate, monthlyPayment, annualPropertyTaxes, nullable maturity), replacing the old
+  home-value `Mortgage`. `Mortgage.monthlyPropertyTaxes()` gives annual taxes / 12, rounded half-even to the cent.
+- `HouseholdFlags` dropped `rents` (now just `retired`, `intendsToFundCollege`).
+- `FinancialSnapshot` gained `Housing housing` (non-null) and `YearMonth asOf` (non-null), and adds
+  `monthlyHousingCost()`, `monthlyEssentialCosts()`; `monthlySurplus()` now subtracts housing cost too.
+  `hasMortgage()` removed (housing is always present). Constructor argument order: ...debts, housing,
+  householdFlags, asOf.
+- `FullEmergencyFundEvaluator` (stage 3) targets `months * monthlyEssentialCosts()` (was essential expenses only).
+- Added `MortgagePayoff` (record) and `MortgagePayoffCalculator.payoff(Mortgage, YearMonth asOf)`: computes
+  principal & interest, first-month interest, coverage, month-by-month cent amortization capped at 600 months,
+  and a `MaturityComparison` (UNKNOWN/MATCHES/AHEAD/BEHIND ± monthsDifference) against the loan's maturity.
+- Rewrote `MortgageEvaluator` (stage 6): Rent -> skipped; $0 balance -> satisfied; otherwise always Not started
+  with remaining = balance and a blocker built from the payoff calculator (not-covered sentence, the payoff +
+  maturity-comparison sentence, or the 600-month cap sentence). The old home-equity/in-progress behavior is gone.
+
+Web stopgaps (phase 3 replaces these properly)
+- `SnapshotFormMapper`: the v0 form still only has the old `rents` checkbox (no new housing fields yet), so it
+  maps `rents=true` -> `Rent($0)` and `rents=false` -> `Mortgage` with every amount $0 and unknown maturity;
+  housing cost is $0 either way, matching prior v0 behavior. `asOf` is a fixed placeholder
+  (`YearMonth.of(2026, 9)`), not the real clock-backed value.
+- `ResultViews`: stage 3's line now targets `monthlyEssentialCosts()` (was essential expenses only, matching the
+  evaluator change); stage 6's Done line changed from "No mortgage to pay down." to "Your house is paid off."
+  (the only housing semantics change visible in existing web copy, since a $0 mortgage balance is now the only
+  way to reach Done — "no mortgage" no longer exists as a concept).
+
+Design ambiguity resolved
+- Housing modeled as three separate top-level files (Housing.java marker interface + permits clause, Rent.java,
+  Mortgage.java) rather than nested records, matching the codebase's one-type-per-file convention.
+- `MortgagePayoff.monthsDifference` stores the absolute month gap between payoff and maturity (0 when
+  UNKNOWN/no maturity); `MaturityComparison` and the gap live together on the one calculator result record, which
+  both `MortgageEvaluator` and (later) the result-page view model can read.
+- `MortgagePayoffCalculator` lives in domain.model (alongside `Mortgage`) since it is a pure function of a
+  `Mortgage` and a `YearMonth`, with no dependency on `domain.stage`.
+- `FinancialSnapshotBuilder`'s default housing is `Rent(Money.ZERO)` and default `asOf` is a fixed
+  `YearMonth.of(2024, 1)`; this changed several existing tests that relied on "no mortgage" (`HouseholdFlags`
+  first boolean `true`) to mean "renter" — those now rely on the builder's renter-by-default housing instead.
+
+Verify: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B -ntp clean verify`
+-> BUILD SUCCESS, Tests run: 781, Failures: 0, Errors: 0, Skipped: 0.

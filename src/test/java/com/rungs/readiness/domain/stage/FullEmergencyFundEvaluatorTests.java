@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.model.FinancialSnapshotBuilder;
 import com.rungs.readiness.domain.model.Money;
+import com.rungs.readiness.domain.model.Rent;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -67,6 +68,37 @@ class FullEmergencyFundEvaluatorTests {
         StageEvaluation result = evaluate(350_000, 3, fundCents);
 
         assertThat(result).isEqualTo(StageEvaluation.notStarted(3, Money.ofCents(remainingCents), blocker));
+    }
+
+    // Housing (design.md 039 section 2): the target is months of monthlyEssentialCosts(), which includes housing.
+
+    @Test
+    void theTargetIncludesTheMonthlyHousingCost() {
+        FinancialSnapshot snapshot = FinancialSnapshotBuilder.aSnapshot()
+                .withMonthlyEssentialExpenses(Money.ofDollars(2_600))
+                .withHousing(new Rent(Money.ofDollars(1_400)))
+                .withFullEmergencyFund(Money.ofDollars(11_999))
+                .build();
+
+        StageEvaluation result = evaluator.evaluate(snapshot, List.of());
+
+        // Target is 3 * (2,600 + 1,400) = 12,000; a $11,999 fund is $1 short of it.
+        assertThat(result).isEqualTo(StageEvaluation.inProgress(
+                3, new BigDecimal("99.9"), Money.ofCents(100),
+                "Your emergency fund is $1.00 short of a 3-month target of $12,000.00."));
+    }
+
+    @Test
+    void isSatisfiedWhenTheFundMeetsATargetThatIncludesHousing() {
+        FinancialSnapshot snapshot = FinancialSnapshotBuilder.aSnapshot()
+                .withMonthlyEssentialExpenses(Money.ofDollars(2_600))
+                .withHousing(new Rent(Money.ofDollars(1_400)))
+                .withFullEmergencyFund(Money.ofDollars(12_000))
+                .build();
+
+        StageEvaluation result = evaluator.evaluate(snapshot, List.of());
+
+        assertThat(result).isEqualTo(StageEvaluation.satisfied(3));
     }
 
     private StageEvaluation evaluate(long expensesCents, int months, long fundCents) {

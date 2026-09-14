@@ -25,7 +25,7 @@ class RetirementEvaluatorTests {
     void isSkippedWhenRetiredWhateverTheContribution() {
         FinancialSnapshot snapshot = FinancialSnapshotBuilder.aSnapshot()
                 .withRetirementContributionPercent("20")
-                .withHouseholdFlags(new HouseholdFlags(false, true, false))
+                .withHouseholdFlags(new HouseholdFlags(true, false))
                 .build();
 
         StageEvaluation result = evaluator.evaluate(snapshot, List.of());

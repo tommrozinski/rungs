@@ -6,9 +6,9 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Stage 3: a full emergency fund of the household's months of essential expenses, capped at six months. Satisfied at
- * the target or above, including a $0 target; below it, progress is the fund as a share of the target and the
- * remaining amount is the shortfall.
+ * Stage 3: a full emergency fund of the household's months of essential costs, including housing, capped at six
+ * months. Satisfied at the target or above, including a $0 target; below it, progress is the fund as a share of the
+ * target and the remaining amount is the shortfall.
  */
 public final class FullEmergencyFundEvaluator implements StageEvaluator {
 
@@ -28,7 +28,7 @@ public final class FullEmergencyFundEvaluator implements StageEvaluator {
     public StageEvaluation evaluate(FinancialSnapshot snapshot, List<StageEvaluation> lowerStages) {
         int months = Math.min(snapshot.emergencyFundMonths(), MAX_MONTHS);
         // Exact: the factor is a whole number, so no rounding happens.
-        Money target = snapshot.monthlyEssentialExpenses().times(BigDecimal.valueOf(months));
+        Money target = snapshot.monthlyEssentialCosts().times(BigDecimal.valueOf(months));
         Money fund = snapshot.fullEmergencyFund();
         // Also covers a $0 target, so Percentages is never asked for a share of zero.
         if (fund.compareTo(target) >= 0) {

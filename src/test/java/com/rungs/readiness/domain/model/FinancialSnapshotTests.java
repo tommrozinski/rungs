@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +23,9 @@ class FinancialSnapshotTests {
     private static final Debt CLINIC = new Debt(
             "debt-3", "Clinic", DebtType.MEDICAL, Money.ofCents(80_050), BigDecimal.ZERO, Money.ZERO);
 
+    private static final Mortgage MORTGAGE = new Mortgage(
+            Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800), Money.ZERO, null);
+
     @Test
     void builderDefaultIsAValidEmptyHousehold() {
         FinancialSnapshot snapshot = aSnapshot().build();
@@ -34,15 +38,15 @@ class FinancialSnapshotTests {
         assertThat(snapshot.retirementContributionPercent()).isEqualTo(new BigDecimal("0.00"));
         assertThat(snapshot.emergencyFundMonths()).isEqualTo(3);
         assertThat(snapshot.debts()).isEmpty();
-        assertThat(snapshot.mortgage()).isNull();
-        assertThat(snapshot.householdFlags()).isEqualTo(new HouseholdFlags(false, false, false));
+        assertThat(snapshot.housing()).isEqualTo(new Rent(Money.ZERO));
+        assertThat(snapshot.householdFlags()).isEqualTo(new HouseholdFlags(false, false));
+        assertThat(snapshot.asOf()).isEqualTo(FinancialSnapshotBuilder.DEFAULT_AS_OF);
     }
 
     @Test
     void exposesEveryComponentAsSupplied() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(150_000), Money.ofDollars(1_200), Money.ofDollars(300_000),
-                new BigDecimal("5.5"));
-        HouseholdFlags flags = new HouseholdFlags(false, true, true);
+        HouseholdFlags flags = new HouseholdFlags(true, true);
+        YearMonth asOf = YearMonth.of(2026, 9);
 
         FinancialSnapshot snapshot = aSnapshot()
                 .withMonthlyTakeHomeIncome(Money.ofDollars(6_000))
@@ -53,8 +57,9 @@ class FinancialSnapshotTests {
                 .withRetirementContributionPercent("15")
                 .withEmergencyFundMonths(6)
                 .withDebt("Car", DebtType.AUTO, Money.ofDollars(9_000), "4.9", Money.ofDollars(310))
-                .withMortgage(mortgage)
+                .withHousing(MORTGAGE)
                 .withHouseholdFlags(flags)
+                .withAsOf(asOf)
                 .build();
 
         assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ofDollars(6_000));
@@ -67,8 +72,9 @@ class FinancialSnapshotTests {
         assertThat(snapshot.debts()).containsExactly(
                 new Debt("debt-1", "Car", DebtType.AUTO, Money.ofDollars(9_000), new BigDecimal("4.9"),
                         Money.ofDollars(310)));
-        assertThat(snapshot.mortgage()).isEqualTo(mortgage);
+        assertThat(snapshot.housing()).isEqualTo(MORTGAGE);
         assertThat(snapshot.householdFlags()).isEqualTo(flags);
+        assertThat(snapshot.asOf()).isEqualTo(asOf);
     }
 
     @Test
@@ -88,7 +94,8 @@ class FinancialSnapshotTests {
         List<Debt> source = new ArrayList<>(List.of(CARD, LOAN));
         // Constructed directly, not through the builder, so the record's own copy is what is tested.
         FinancialSnapshot snapshot = new FinancialSnapshot(Money.ZERO, Money.ZERO, Money.ZERO, Money.ZERO, Money.ZERO,
-                BigDecimal.ZERO, 3, source, null, new HouseholdFlags(false, false, false));
+                BigDecimal.ZERO, 3, source, new Rent(Money.ZERO), new HouseholdFlags(false, false),
+                FinancialSnapshotBuilder.DEFAULT_AS_OF);
 
         source.add(CLINIC);
         source.set(0, LOAN);
@@ -218,6 +225,24 @@ class FinancialSnapshotTests {
                 .hasMessage("householdFlags");
     }
 
+    @Test
+    void rejectsNullHousing() {
+        FinancialSnapshotBuilder builder = aSnapshot().withHousing(null);
+
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("housing");
+    }
+
+    @Test
+    void rejectsANullAsOf() {
+        FinancialSnapshotBuilder builder = aSnapshot().withAsOf(null);
+
+        assertThatThrownBy(builder::build)
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("asOf");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"12.5", "12.50", "12.500"})
     void retirementPercentsDifferingOnlyInTrailingZerosConstructEqualSnapshots(String percent) {
@@ -267,18 +292,6 @@ class FinancialSnapshotTests {
     }
 
     @Test
-    void hasMortgageIsFalseWithoutAMortgage() {
-        assertThat(aSnapshot().build().hasMortgage()).isFalse();
-    }
-
-    @Test
-    void hasMortgageIsTrueWithAMortgageEvenWhenPaidOff() {
-        Mortgage paidOff = new Mortgage(Money.ZERO, Money.ZERO, Money.ofDollars(250_000), BigDecimal.ZERO);
-
-        assertThat(aSnapshot().withMortgage(paidOff).build().hasMortgage()).isTrue();
-    }
-
-    @Test
     void totalDebtBalanceIsZeroWithoutDebts() {
         assertThat(aSnapshot().build().totalDebtBalance()).isEqualTo(Money.ZERO);
     }
@@ -289,30 +302,77 @@ class FinancialSnapshotTests {
     }
 
     @Test
-    void totalDebtBalanceSumsEveryDebtAndIgnoresTheMortgage() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(90_000), Money.ofDollars(800), Money.ofDollars(200_000),
-                new BigDecimal("3.75"));
-        FinancialSnapshot snapshot = aSnapshot().withDebts(List.of(CARD, LOAN, CLINIC)).withMortgage(mortgage).build();
+    void totalDebtBalanceSumsEveryDebtAndIgnoresTheHousing() {
+        FinancialSnapshot snapshot =
+                aSnapshot().withDebts(List.of(CARD, LOAN, CLINIC)).withHousing(MORTGAGE).build();
 
         assertThat(snapshot.totalDebtBalance()).isEqualTo(Money.ofCents(50_000 + 1_200_000 + 80_050));
     }
 
+    // monthlyHousingCost (design.md 039 section 2)
+
     @Test
-    void monthlySurplusSubtractsExpensesAndEveryMinimumPaymentButNotTheMortgagePayment() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(90_000), Money.ofDollars(800), Money.ofDollars(200_000),
-                new BigDecimal("3.75"));
+    void monthlyHousingCostIsTheRentWhenRenting() {
+        FinancialSnapshot snapshot = aSnapshot().withHousing(new Rent(Money.ofDollars(1_250))).build();
+
+        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ofDollars(1_250));
+    }
+
+    @Test
+    void monthlyHousingCostIsThePaymentWhenTheMortgagePaymentIsAboveZero() {
+        Mortgage mortgage = new Mortgage(Money.ofDollars(180_000), new BigDecimal("6.5"), Money.ofDollars(1_800),
+                Money.ofDollars(4_800), null);
+        FinancialSnapshot snapshot = aSnapshot().withHousing(mortgage).build();
+
+        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ofDollars(1_800));
+    }
+
+    @Test
+    void monthlyHousingCostIsTaxesDividedByTwelveWhenThePaymentIsZero() {
+        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ofDollars(6_300), null);
+        FinancialSnapshot snapshot = aSnapshot().withHousing(paidOff).build();
+
+        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ofDollars(525));
+    }
+
+    @Test
+    void monthlyHousingCostRoundsTaxesDividedByTwelveHalfEvenToTheCentWhenThePaymentIsZero() {
+        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ofDollars(1_000), null);
+        FinancialSnapshot snapshot = aSnapshot().withHousing(paidOff).build();
+
+        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ofCents(8_333));
+    }
+
+    // monthlyEssentialCosts
+
+    @Test
+    void monthlyEssentialCostsAddsHousingToEssentialExpenses() {
+        FinancialSnapshot snapshot = aSnapshot()
+                .withMonthlyEssentialExpenses(Money.ofDollars(2_600))
+                .withHousing(new Rent(Money.ofDollars(1_400)))
+                .build();
+
+        assertThat(snapshot.monthlyEssentialCosts()).isEqualTo(Money.ofDollars(4_000));
+    }
+
+    // monthlySurplus
+
+    @Test
+    void monthlySurplusSubtractsExpensesHousingAndEveryMinimumPayment() {
+        Mortgage mortgage = new Mortgage(Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800),
+                Money.ZERO, null);
         FinancialSnapshot snapshot = aSnapshot()
                 .withMonthlyTakeHomeIncome(Money.ofDollars(5_000))
                 .withMonthlyEssentialExpenses(Money.ofDollars(3_000))
                 .withDebts(List.of(CARD, LOAN, CLINIC))
-                .withMortgage(mortgage)
+                .withHousing(mortgage)
                 .build();
 
-        assertThat(snapshot.monthlySurplus()).isEqualTo(Money.ofDollars(5_000 - 3_000 - 25 - 140));
+        assertThat(snapshot.monthlySurplus()).isEqualTo(Money.ofDollars(5_000 - 3_000 - 800 - 25 - 140));
     }
 
     @Test
-    void monthlySurplusIsIncomeMinusExpensesWithoutDebts() {
+    void monthlySurplusIsIncomeMinusExpensesWithoutDebtsOrHousing() {
         FinancialSnapshot snapshot = aSnapshot()
                 .withMonthlyTakeHomeIncome(Money.ofCents(400_050))
                 .withMonthlyEssentialExpenses(Money.ofDollars(1_000))

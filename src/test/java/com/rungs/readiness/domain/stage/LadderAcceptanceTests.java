@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.rungs.readiness.domain.model.DebtType;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.model.FinancialSnapshotBuilder;
-import com.rungs.readiness.domain.model.HouseholdFlags;
 import com.rungs.readiness.domain.model.Money;
 import java.math.BigDecimal;
 import java.util.List;
@@ -50,7 +49,6 @@ class LadderAcceptanceTests {
                 .withEmergencyFundMonths(3)
                 .withFullEmergencyFund(Money.ofDollars(9_000))
                 .withRetirementContributionPercent("15")
-                .withHouseholdFlags(new HouseholdFlags(true, false, false))
                 .build();
 
         LadderResult result = ladder.assess(snapshot);

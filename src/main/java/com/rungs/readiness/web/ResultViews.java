@@ -158,7 +158,7 @@ final class ResultViews {
     }
 
     private static String stage3Line(FinancialSnapshot snapshot) {
-        Money target = snapshot.monthlyEssentialExpenses().times(EMERGENCY_FUND_MONTHS);
+        Money target = snapshot.monthlyEssentialCosts().times(EMERGENCY_FUND_MONTHS);
         return formatMoney(snapshot.fullEmergencyFund()) + " of " + formatMoney(target) + ".";
     }
 
@@ -188,13 +188,13 @@ final class ResultViews {
 
     private static String stage6Line(StageEvaluation evaluation) {
         if (evaluation.status() == StageStatus.SATISFIED) {
-            return "No mortgage to pay down.";
+            return "Your house is paid off.";
         }
         if (evaluation.status() == StageStatus.SKIPPED) {
             return "You rent, so there's no mortgage to pay down.";
         }
-        // Unreachable in v0 (the form collects no mortgage, so this stage is always satisfied or skipped);
-        // kept only so a future mortgage never lands on a missing case.
+        // Unreachable in story 039 phase 2 (SnapshotFormMapper always maps to a $0 mortgage or a $0 rent, so this
+        // stage is always satisfied or skipped); story 039 phase 3 wires the payoff copy into this line.
         return evaluation.blocker();
     }
 

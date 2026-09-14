@@ -1,15 +1,20 @@
 package com.rungs.readiness.domain.stage;
 
 import com.rungs.readiness.domain.model.FinancialSnapshot;
-import com.rungs.readiness.domain.model.Money;
 import com.rungs.readiness.domain.model.Mortgage;
-import java.math.BigDecimal;
+import com.rungs.readiness.domain.model.MortgagePayoff;
+import com.rungs.readiness.domain.model.MortgagePayoffCalculator;
+import com.rungs.readiness.domain.model.Rent;
+import java.time.YearMonth;
+import java.time.format.TextStyle;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * Stage 6: the home mortgage paid off. Renters skip it, even when a mortgage is supplied; no mortgage or a $0 balance
- * satisfies it. Otherwise progress is home equity as a share of home value and the balance remains. It reads only the
- * mortgage, never the debts or the monthly payment.
+ * Stage 6: the home mortgage paid off. Renters skip it. A $0 balance satisfies it. Otherwise the stage is always Not
+ * started, with the balance remaining and a blocker describing whether the payment even covers the interest and,
+ * when it does, when the loan pays off at this payment and how that compares to its stated maturity
+ * (design.md 039 section 2). It reads only the housing and the assessment month, never the debts.
  */
 public final class MortgageEvaluator implements StageEvaluator {
 
@@ -17,7 +22,22 @@ public final class MortgageEvaluator implements StageEvaluator {
 
     private static final String RENTS_REASON = "You rent, so there's no mortgage to pay down.";
 
-    private static final String BLOCKER = "You have %s left on your mortgage.";
+    private static final String NOT_COVERED =
+            "After property taxes, your %s payment doesn't cover the %s monthly interest.";
+
+    private static final String CAPPED = "This payment won't pay the loan off within 50 years.";
+
+    private static final String PAYOFF_LINE = "Paid off in %s at this payment, %s from now.";
+
+    private static final String MATCHES_LINE = "That matches your loan's %s maturity.";
+
+    private static final String AHEAD_LINE = "That's %s ahead of your %s maturity.";
+
+    private static final String BEHIND_LINE = "That's later than your %s maturity, so check the balance, rate, or payment.";
+
+    private static final String[] MONTH_WORD = {"month", "months"};
+
+    private static final String[] YEAR_WORD = {"year", "years"};
 
     @Override
     public int stage() {
@@ -26,25 +46,64 @@ public final class MortgageEvaluator implements StageEvaluator {
 
     @Override
     public StageEvaluation evaluate(FinancialSnapshot snapshot, List<StageEvaluation> lowerStages) {
-        if (snapshot.householdFlags().rents()) {
-            return StageEvaluation.skipped(STAGE, RENTS_REASON);
-        }
-        Mortgage mortgage = snapshot.mortgage();
-        if (mortgage == null || mortgage.balance().isZero()) {
+        return switch (snapshot.housing()) {
+            case Rent ignored -> StageEvaluation.skipped(STAGE, RENTS_REASON);
+            case Mortgage mortgage -> evaluateMortgage(mortgage, snapshot.asOf());
+        };
+    }
+
+    private static StageEvaluation evaluateMortgage(Mortgage mortgage, YearMonth asOf) {
+        if (mortgage.balance().isZero()) {
             return StageEvaluation.satisfied(STAGE);
         }
-        Money balance = mortgage.balance();
-        Money homeValue = mortgage.homeValue();
-        String blocker = BLOCKER.formatted(balance.toDisplayString());
-        // No equity: checked first, since Percentages rejects the negative part an underwater home would give.
-        if (homeValue.compareTo(balance) <= 0) {
-            return StageEvaluation.notStarted(STAGE, balance, blocker);
+        MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, asOf);
+        String blocker = blocker(payoff, mortgage.maturity());
+        return StageEvaluation.notStarted(STAGE, mortgage.balance(), blocker);
+    }
+
+    private static String blocker(MortgagePayoff payoff, YearMonth maturity) {
+        if (!payoff.covered()) {
+            return NOT_COVERED.formatted(
+                    payoff.principalAndInterest().toDisplayString(), payoff.firstMonthInterest().toDisplayString());
         }
-        BigDecimal equity = Percentages.of(homeValue.minus(balance), homeValue);
-        // Story 004 REQ-005: status follows progress, so equity that rounds to 0.0 is NOT_STARTED.
-        if (equity.signum() == 0) {
-            return StageEvaluation.notStarted(STAGE, balance, blocker);
+        if (payoff.monthsToPayoff() == null) {
+            return CAPPED;
         }
-        return StageEvaluation.inProgress(STAGE, equity, balance, blocker);
+        String payoffLine =
+                PAYOFF_LINE.formatted(monthYear(payoff.payoffMonth()), duration(payoff.monthsToPayoff()));
+        String follow = maturityFollowUp(payoff, maturity);
+        return follow == null ? payoffLine : payoffLine + " " + follow;
+    }
+
+    private static String maturityFollowUp(MortgagePayoff payoff, YearMonth maturity) {
+        return switch (payoff.maturityComparison()) {
+            case UNKNOWN -> null;
+            case MATCHES -> MATCHES_LINE.formatted(monthYear(maturity));
+            case AHEAD -> AHEAD_LINE.formatted(duration(payoff.monthsDifference()), monthYear(maturity));
+            case BEHIND -> BEHIND_LINE.formatted(monthYear(maturity));
+        };
+    }
+
+    /** Returns {@code month} as e.g. "March 2041". */
+    private static String monthYear(YearMonth month) {
+        return month.getMonth().getDisplayName(TextStyle.FULL, Locale.US) + " " + month.getYear();
+    }
+
+    /** Returns {@code totalMonths} as "Y years M months", omitting a zero part, singular for exactly one. */
+    private static String duration(int totalMonths) {
+        int years = totalMonths / 12;
+        int months = totalMonths % 12;
+        if (years == 0) {
+            return months + " " + word(MONTH_WORD, months);
+        }
+        if (months == 0) {
+            return years + " " + word(YEAR_WORD, years);
+        }
+        return years + " " + word(YEAR_WORD, years) + " " + months + " " + word(MONTH_WORD, months);
+    }
+
+    /** Returns {@code words[0]} for exactly one, else {@code words[1]}. */
+    private static String word(String[] words, int count) {
+        return count == 1 ? words[0] : words[1];
     }
 }

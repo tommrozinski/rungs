@@ -1,15 +1,19 @@
 package com.rungs.readiness.domain.model;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Test fixture that builds a {@link FinancialSnapshot}, starting from a valid default: every amount $0, retirement
- * contribution 0%, 3 emergency-fund months, no debts, no mortgage, and every household flag false. Tests set only
- * the components they care about.
+ * contribution 0%, 3 emergency-fund months, no debts, renting at $0 a month, every household flag false, and a
+ * fixed {@code asOf}. Tests set only the components they care about.
  */
 public final class FinancialSnapshotBuilder {
+
+    /** The default {@code asOf}; tests that care about a particular month set it explicitly. */
+    public static final YearMonth DEFAULT_AS_OF = YearMonth.of(2024, 1);
 
     private Money monthlyTakeHomeIncome = Money.ZERO;
     private Money monthlyEssentialExpenses = Money.ZERO;
@@ -19,8 +23,9 @@ public final class FinancialSnapshotBuilder {
     private BigDecimal retirementContributionPercent = BigDecimal.ZERO;
     private int emergencyFundMonths = 3;
     private List<Debt> debts = new ArrayList<>();
-    private Mortgage mortgage;
-    private HouseholdFlags householdFlags = new HouseholdFlags(false, false, false);
+    private Housing housing = new Rent(Money.ZERO);
+    private HouseholdFlags householdFlags = new HouseholdFlags(false, false);
+    private YearMonth asOf = DEFAULT_AS_OF;
 
     /** Returns a builder holding the valid default snapshot. */
     public static FinancialSnapshotBuilder aSnapshot() {
@@ -85,13 +90,18 @@ public final class FinancialSnapshotBuilder {
         return this;
     }
 
-    public FinancialSnapshotBuilder withMortgage(Mortgage mortgage) {
-        this.mortgage = mortgage;
+    public FinancialSnapshotBuilder withHousing(Housing housing) {
+        this.housing = housing;
         return this;
     }
 
     public FinancialSnapshotBuilder withHouseholdFlags(HouseholdFlags flags) {
         householdFlags = flags;
+        return this;
+    }
+
+    public FinancialSnapshotBuilder withAsOf(YearMonth asOf) {
+        this.asOf = asOf;
         return this;
     }
 
@@ -106,7 +116,8 @@ public final class FinancialSnapshotBuilder {
                 retirementContributionPercent,
                 emergencyFundMonths,
                 debts,
-                mortgage,
-                householdFlags);
+                housing,
+                householdFlags,
+                asOf);
     }
 }

@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import com.rungs.readiness.domain.model.Debt;
 import com.rungs.readiness.domain.model.DebtType;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
+import com.rungs.readiness.domain.model.Mortgage;
 import com.rungs.readiness.domain.model.Money;
+import com.rungs.readiness.domain.model.Rent;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -190,8 +192,29 @@ class SnapshotFormMapperTests {
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
 
         assertThat(snapshot.emergencyFundMonths()).isEqualTo(3);
-        assertThat(snapshot.mortgage()).isNull();
         assertThat(snapshot.monthlyCollegeContribution()).isEqualTo(Money.ZERO);
+    }
+
+    @Test
+    void unrentedFormMapsToAZeroMortgageWithHousingCostZero() {
+        SnapshotForm form = new SnapshotForm();
+        form.setRents(false);
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+
+        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null));
+        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
+    }
+
+    @Test
+    void rentedFormMapsToRentAtZero() {
+        SnapshotForm form = new SnapshotForm();
+        form.setRents(true);
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+
+        assertThat(snapshot.housing()).isEqualTo(new Rent(Money.ZERO));
+        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
     }
 
     @Test
@@ -243,13 +266,11 @@ class SnapshotFormMapperTests {
     @Test
     void householdFlagsMapDirectlyFromTheForm() {
         SnapshotForm form = new SnapshotForm();
-        form.setRents(true);
         form.setRetired(true);
         form.setIntendsToFundCollege(true);
 
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
 
-        assertThat(snapshot.householdFlags().rents()).isTrue();
         assertThat(snapshot.householdFlags().retired()).isTrue();
         assertThat(snapshot.householdFlags().intendsToFundCollege()).isTrue();
     }

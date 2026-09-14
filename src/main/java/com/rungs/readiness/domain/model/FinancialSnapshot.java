@@ -1,16 +1,17 @@
 package com.rungs.readiness.domain.model;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
  * A household's finances at a point in time. Always valid once constructed, and compared by value across the whole
- * graph, including the debt list in order and the mortgage.
+ * graph, including the debt list in order and the housing.
  *
  * @param monthlyTakeHomeIncome income after taxes per month; at least zero
- * @param monthlyEssentialExpenses essential spending per month; at least zero
+ * @param monthlyEssentialExpenses essential spending per month, not counting housing; at least zero
  * @param starterEmergencyFund cash set aside as the starter emergency fund; at least zero
  * @param fullEmergencyFund cash set aside as the full emergency fund; at least zero
  * @param monthlyCollegeContribution amount saved for college per month; at least zero
@@ -19,8 +20,9 @@ import java.util.Set;
  * @param emergencyFundMonths months of essential expenses the full emergency fund should cover; at least 3, stored
  *     as supplied with no upper clamp
  * @param debts the consumer debts in the order supplied, with unique ids; an unmodifiable copy
- * @param mortgage the home mortgage, or null when the household has none
+ * @param housing how the household pays for its home; never null
  * @param householdFlags yes-or-no facts about the household
+ * @param asOf the month the assessment is made as of; never null
  */
 public record FinancialSnapshot(
         Money monthlyTakeHomeIncome,
@@ -31,8 +33,9 @@ public record FinancialSnapshot(
         BigDecimal retirementContributionPercent,
         int emergencyFundMonths,
         List<Debt> debts,
-        Mortgage mortgage,
-        HouseholdFlags householdFlags) {
+        Housing housing,
+        HouseholdFlags householdFlags,
+        YearMonth asOf) {
 
     /** Decimal places the retirement contribution percentage is normalized to. */
     private static final int RETIREMENT_PERCENT_SCALE = 2;
@@ -42,8 +45,7 @@ public record FinancialSnapshot(
 
     /**
      * Validates every component, normalizes the percentage, and copies the debts; throws NullPointerException for a
-     * null component other than {@code mortgage} or a null debt, and IllegalArgumentException for any other broken
-     * rule.
+     * null component or a null debt, and IllegalArgumentException for any other broken rule.
      */
     public FinancialSnapshot {
         Invariants.nonNegative(monthlyTakeHomeIncome, "monthlyTakeHomeIncome");
@@ -63,16 +65,13 @@ public record FinancialSnapshot(
                 throw new IllegalArgumentException("debts must have unique ids");
             }
         }
+        Invariants.nonNull(housing, "housing");
         Invariants.nonNull(householdFlags, "householdFlags");
-    }
-
-    /** Returns whether the household has a mortgage, including one with a $0 balance. */
-    public boolean hasMortgage() {
-        return mortgage != null;
+        Invariants.nonNull(asOf, "asOf");
     }
 
     /**
-     * Returns the sum of every debt's balance, or {@link Money#ZERO} with no debts; the mortgage is not included.
+     * Returns the sum of every debt's balance, or {@link Money#ZERO} with no debts; the housing is not included.
      * Throws ArithmeticException if the total does not fit in {@link Money}.
      */
     public Money totalDebtBalance() {
@@ -80,12 +79,29 @@ public record FinancialSnapshot(
     }
 
     /**
-     * Returns income minus essential expenses minus the sum of every debt's minimum payment; the result may be
-     * negative. The mortgage payment is not subtracted, since it is already part of the essential expenses. Throws
-     * ArithmeticException if the result does not fit in {@link Money}.
+     * Returns the household's monthly housing cost: the rent when renting, or the mortgage payment, or when that
+     * payment is $0, the annual property taxes divided by 12, rounded half-even to the cent.
+     */
+    public Money monthlyHousingCost() {
+        return switch (housing) {
+            case Rent rent -> rent.monthlyRent();
+            case Mortgage mortgage -> mortgage.monthlyPayment().isZero()
+                    ? mortgage.monthlyPropertyTaxes()
+                    : mortgage.monthlyPayment();
+        };
+    }
+
+    /** Returns {@link #monthlyEssentialExpenses()} plus {@link #monthlyHousingCost()}. */
+    public Money monthlyEssentialCosts() {
+        return monthlyEssentialExpenses.plus(monthlyHousingCost());
+    }
+
+    /**
+     * Returns income minus essential costs (including housing) minus the sum of every debt's minimum payment; the
+     * result may be negative. Throws ArithmeticException if the result does not fit in {@link Money}.
      */
     public Money monthlySurplus() {
         Money minimumPayments = Money.sum(debts.stream().map(Debt::minimumPayment).toList());
-        return monthlyTakeHomeIncome.minus(monthlyEssentialExpenses).minus(minimumPayments);
+        return monthlyTakeHomeIncome.minus(monthlyEssentialCosts()).minus(minimumPayments);
     }
 }
