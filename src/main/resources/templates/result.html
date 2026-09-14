@@ -15,87 +15,40 @@
 
   <div class="screen">
 
-    <!-- STATIC EXAMPLE — this is the board's sample household, not a live calculation.
-         Real stage math replaces everything below the note once StageEvaluator exists. -->
-
     <div class="verdict">
-      <p class="eyebrow">You're on stage 2 of 7</p>
-      <p class="line">$12,480 stands between you and debt freedom.</p>
-      <p class="sub">At your current surplus of $2,243 a month, that's about 6 months of work.</p>
+      <p class="eyebrow" th:utext="${result.eyebrow}"></p>
+      <p class="line" th:utext="${result.verdictLine}"></p>
+      <p class="sub" th:utext="${result.verdictSub}"></p>
     </div>
 
     <div class="stat-grid">
-      <div class="stat"><div class="k">Monthly surplus</div><div class="v num pos">$2,243</div></div>
-      <div class="stat"><div class="k">Non-mortgage debt</div><div class="v num">$12,480</div></div>
-      <div class="stat"><div class="k">Stages complete</div><div class="v num">1 of 7</div></div>
+      <div class="stat"><div class="k">Monthly surplus</div><div class="v num" th:classappend="${result.surplusPositive} ? 'pos' : null" th:text="${result.monthlySurplus}"></div></div>
+      <div class="stat"><div class="k">Non-mortgage debt</div><div class="v num" th:text="${result.nonMortgageDebt}"></div></div>
+      <div class="stat"><div class="k">Stages complete</div><div class="v num" th:text="${result.stagesComplete}"></div></div>
     </div>
 
     <h2 class="h2" style="margin-bottom:14px;">Your seven stages</h2>
     <div class="ladder">
 
-      <div class="stage">
-        <div class="disc done">✓</div>
-        <div class="stage-body">
-          <div class="stage-title"><span>Save $1,000 to start</span><span class="chip chip-done">Done</span></div>
-          <div class="small">$1,000 of $1,000.</div>
-        </div>
-      </div>
+      <div class="stage" th:each="s : ${result.stages}">
+        <div class="disc" th:classappend="${s.discClass}" th:text="${s.discContent}"></div>
 
-      <div class="stage">
-        <div class="disc active">2</div>
-        <div class="stage-body" style="padding-top:0">
+        <div class="stage-body" th:unless="${s.open}">
+          <div class="stage-title"><span th:utext="${s.title}"></span><span class="chip" th:classappend="${s.chipClass}" th:utext="${s.chipLabel}"></span></div>
+          <div class="bar" th:if="${s.showBar}"><i th:style="'width:' + ${s.barWidthPercent} + '%'"></i></div>
+          <div class="small" th:style="${s.showBar} ? 'margin-top:6px;' : null" th:utext="${s.line}"></div>
+        </div>
+
+        <div class="stage-body" style="padding-top:0" th:if="${s.open}">
           <div class="stage-open">
-            <div class="stage-title"><span>Pay off everything but the house</span><span class="chip chip-active">In progress</span></div>
-            <p class="blocker">Three debts remain, totalling <b>$12,480</b>. Smallest first, the store card clears in <b>one month</b>.</p>
+            <div class="stage-title"><span th:utext="${s.title}"></span><span class="chip" th:classappend="${s.chipClass}" th:utext="${s.chipLabel}"></span></div>
+            <p class="blocker" th:classappend="${s.showBar} ? null : 'last'" th:utext="${s.line}"></p>
+            <div class="bar" th:if="${s.showBar}"><i th:style="'width:' + ${s.barWidthPercent} + '%'"></i></div>
           </div>
         </div>
       </div>
 
-      <div class="stage">
-        <div class="disc">3</div>
-        <div class="stage-body">
-          <div class="stage-title"><span>Save three months of expenses</span><span class="chip chip-waiting">Not started</span></div>
-          <div class="small">$0 of $10,500.</div>
-        </div>
-      </div>
-
-      <div class="stage">
-        <div class="disc active">4</div>
-        <div class="stage-body">
-          <div class="stage-title"><span>Put 15% toward retirement</span><span class="chip chip-active">In progress</span></div>
-          <div class="bar"><i style="width:40%"></i></div>
-          <div class="small" style="margin-top:6px;">You're at 6%. Nine points to go.</div>
-        </div>
-      </div>
-
-      <div class="stage">
-        <div class="disc skipped">–</div>
-        <div class="stage-body">
-          <div class="stage-title"><span>Save for college</span><span class="chip chip-skipped">Skipped</span></div>
-          <div class="small">You told us you're not funding college.</div>
-        </div>
-      </div>
-
-      <div class="stage">
-        <div class="disc skipped">–</div>
-        <div class="stage-body">
-          <div class="stage-title"><span>Pay off the house</span><span class="chip chip-skipped">Skipped</span></div>
-          <div class="small">You rent, so there's no mortgage to pay down.</div>
-        </div>
-      </div>
-
-      <div class="stage">
-        <div class="disc">7</div>
-        <div class="stage-body">
-          <div class="stage-title"><span>Build wealth and give</span><span class="chip chip-waiting">Not started</span></div>
-          <div class="small">Opens once stages 1 through 6 are done or skipped.</div>
-        </div>
-      </div>
-
     </div>
-
-    <h2 class="h2" style="margin:24px 0 10px;">What you actually submitted</h2>
-    <pre th:text="${echo}"></pre>
 
   </div>
 

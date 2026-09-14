@@ -193,3 +193,233 @@ inspected by curl and match the expected literal markup with the allowed substit
 
 Not committed: implementer role does not run `git commit`; the orchestrator commits this
 change set.
+
+## Phase 3 — real result page
+
+Implemented the real seven-stage assessment on the result page per design.md 038 section 4,
+replacing the phase-2 echo. TDD throughout: one failing test at a time for the lenient
+conversion and the copy rules, then the controller checkpoint tests.
+
+New main sources (package com.rungs.readiness.web):
+- SnapshotFormMapper: package-private final class, one static method
+  `toSnapshot(SnapshotForm)` -> FinancialSnapshot. Lenient per design.md section 3 and the
+  addendum: money fields parsed as BigDecimal (not Money.parse, so a value with more than two
+  decimal places rounds half-up to the cent instead of being rejected); blank, unparseable,
+  negative, or overflowing amounts become $0. Percent fields (retirement contribution, each
+  debt's annual interest rate) parsed the same lenient way, then clamped to 0-100 and rounded
+  half-up to the scale the domain requires (2 for retirement, 3 for interest rate), so an
+  over-precise value never trips the domain's Invariants.percent rejection. A debt row whose
+  parsed balance is exactly $0 is dropped before it reaches the domain. A blank label becomes
+  "Debt N", where N is the row's 1-based position in the submitted list (before any rows are
+  dropped). An unrecognized or blank debt type becomes DebtType.OTHER. Kept debts get
+  positional ids ("debt-1", "debt-2", ...) counted among the kept rows only, matching the
+  convention in FinancialSnapshotBuilder. emergencyFundMonths is fixed at 3, mortgage is
+  always null, and monthlyCollegeContribution is fixed at $0 — the v0 form collects none of
+  these. HouseholdFlags map directly from the three checkboxes.
+- StageView (record): one ladder row's rendering data — stage number, title, chip
+  label/class, disc class/content, whether this is the open/current stage, the line shown
+  either as the small text or (when open) the blocker paragraph, and whether/how wide the
+  progress bar is.
+- ResultView (record): the whole result page's view model — eyebrow, verdict line/sub, the
+  three formatted stats (with a surplusPositive flag for the green stat), and the seven
+  StageViews in order.
+- ResultViews: package-private final class, one static method
+  `build(LadderResult, FinancialSnapshot)` -> ResultView. Builds every piece of copy in
+  design.md section 4's table from the ladder's StageEvaluations (status, percentComplete,
+  remainingAmount) plus a few raw snapshot figures the evaluators don't expose (the actual
+  starter/full-emergency-fund balances, the 3-month expense target, the retirement percent,
+  and the household flags for stage 5's two skip variants). None of the seven evaluators
+  were changed; their own blocker/skip-reason strings are superseded by this class's copy
+  (reused as-is only for stage 6's "You rent..." skip line, which already matched verbatim).
+  Money is formatted with no cents when whole ("$12,480") and two decimals otherwise
+  ("$500.50"). Counts and point gaps of one to ten are spelled out ("Three debts remain...",
+  "Nine points to go."); above ten, or non-whole, they fall back to digits. Singular/plural
+  agreement covers "debt"/"debts", "remains"/"remain", and "month"/"months". The disc/chip
+  mapping is generic by StageStatus (SATISFIED -> done/Done, SKIPPED -> skipped/Skipped,
+  IN_PROGRESS -> active/In progress, NOT_STARTED -> plain/Not started, except the current
+  stage's disc is always "active" even when NOT_STARTED). The progress bar renders only for
+  stages 1, 3, and 4 while IN_PROGRESS, at the evaluator's own percentComplete truncated to a
+  whole percent.
+- SnapshotController: constructs the real StageLadder (all seven evaluators) once, in the
+  constructor. POST /assess now builds a FinancialSnapshot via SnapshotFormMapper, runs
+  `ladder.assess(snapshot)`, builds the ResultView via ResultViews.build, and renders
+  "result" with that as the "result" model attribute. The `echo` model attribute and
+  SnapshotEcho.java are removed entirely.
+
+Template (src/main/resources/templates/result.html): the static example ladder and the echo
+section are both gone. Markup, classes, and inline `style="..."` attributes are otherwise
+unchanged from the literal board copy — only `th:` attributes were added:
+- `th:utext` (not `th:text`) for the eyebrow, verdict line/sub, stage titles, and chip
+  labels, because Thymeleaf's `th:text` HTML-escapes apostrophes as `&#39;` in text nodes,
+  which would have broken copy like "You're..."; none of this text is user-supplied, so
+  rendering it unescaped is safe. Stage 2's line additionally needs `th:utext` because its
+  bold amount is written as a literal `<b>...</b>` substring the view model produces, per
+  the checkpoint's exact expected markup `totalling <b>$12,480</b>.`.
+- The stat grid's "Monthly surplus" value keeps its base classes `class="v num"` and adds
+  `th:classappend="${result.surplusPositive} ? 'pos' : null"`, rendering identically to the
+  old hardcoded `class="v num pos"` when positive, and without the modifier otherwise.
+- The ladder is one `th:each="s : ${result.stages}"` over the seven StageViews. Each stage's
+  disc keeps `class="disc"` and adds `th:classappend="${s.discClass}"` (null for a plain
+  disc, so no stray trailing space is added, matching the original mock's bare
+  `class="disc"` for a not-started, not-current stage). `th:if="${s.open}"` /
+  `th:unless="${s.open}"` pick between the plain `.stage-body` (small text, optional bar)
+  and the `.stage-open` card (blocker paragraph), reproducing the two body shapes already in
+  the literal markup. The bar's inline `style="width:NN%"` is rendered via
+  `th:style="'width:' + ${s.barWidthPercent} + '%'"`, matching the mock's exact
+  no-space-after-colon format.
+
+Wording decisions beyond the design.md section 4 table (none of the checkpoint text
+depends on these; they cover cases the table leaves implicit or that are unreachable in v0):
+- Stage 6 (mortgage) IN_PROGRESS/NOT_STARTED has no table entry (the v0 form never collects
+  a mortgage, so MortgageEvaluator can only return SATISFIED or SKIPPED here). Kept a
+  fallback to the evaluator's own blocker text ("You have $X left on your mortgage.") so a
+  future mortgage field would never hit a missing case, but this path is unreachable today
+  and untested for that reason.
+- "All seven stages are done or skipped" turns out to be the only possible eyebrow whenever
+  the current stage is 7: the ladder's current stage is the lowest stage that is neither
+  SATISFIED nor SKIPPED, so stage 7 can only become "current" once stages 1-6 are all
+  SATISFIED/SKIPPED, at which point WealthBuildingEvaluator itself always reports SATISFIED.
+  So the stage-7 verdict line/sub ("Build wealth and give." / "Every earlier stage is done
+  or skipped.") and the "all done" eyebrow always appear together in practice; there is no
+  separate "stage 7 is current but unsatisfied" case to word.
+- The small-text line's `style="margin-top:6px;"` (seen in the board mock only on stage 4,
+  the one in-progress-with-bar example available) is applied generically whenever a stage's
+  bar is shown, for stages 1 and 3 as well as 4, since no other convention is given.
+
+Tests:
+- src/test/java/com/rungs/readiness/web/SnapshotFormMapperTests.java (15 tests): blank,
+  unparseable, and negative money fields all become $0; a valid amount parses exactly
+  (including cents); blank, negative, and over-100 percent fields become 0/0/100; an
+  over-precise percent rounds instead of being rejected; a zero-balance debt row is dropped;
+  a blank label becomes "Debt N" by the row's 1-based submitted position; an unknown debt
+  type becomes OTHER; kept debt ids are positional among kept rows only (skipping a dropped
+  row does not leave a gap or shift); emergencyFundMonths/mortgage/college contribution are
+  always fixed; household flags map straight through.
+- src/test/java/com/rungs/readiness/web/ResultViewsTests.java (34 tests): one test per
+  status per stage row of the section 4 table (done/in-progress/not-started/skipped, as each
+  applies), covering singular vs. plural debt wording, spelled-out counts and point gaps
+  (including the "more than ten" digit fallback), cents kept only when non-zero, the bar's
+  width and its presence only for stages 1/3/4 while in progress, each of the seven current-
+  stage verdict line/sub pairs (including the surplus alternate sentence at zero and below,
+  and the singular "1 month of work"), "stages complete" counting SATISFIED only, and the
+  all-done eyebrow/verdict pairing.
+- src/test/java/com/rungs/readiness/web/SnapshotControllerTests.java: replaced the phase-2
+  echo test (assessEchoesSubmittedValuesAndCheckboxStates) with
+  assessRunsTheRealSevenStageAssessmentForTheBoardHousehold, which posts the exact board
+  household (6200/3500/1000/0/6%, rents, the three board debts) and asserts every checkpoint
+  string from the task (verdict, stats, all seven stage titles, every stage's line text, all
+  four chip labels, and the 40% retirement bar width), plus that the banner, the "Smallest
+  first" sentence, "41% paid down", and "See the payoff plan" are gone. Added
+  assessReportsStageOneForAHouseholdThatHasNotYetSavedTheStarterFund (a stage-1 household)
+  and assessReportsAllStagesDoneForAHouseholdThatHasClearedEveryStage (rents + every other
+  stage satisfied, landing on the all-done eyebrow) as the two other controller-level
+  households the task asked for. The other five phase-2 tests (form rendering, add/remove,
+  the two malformed-index guards, the CSS route) are unchanged.
+
+Build: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home &&
+./mvnw -B -ntp clean verify` -> BUILD SUCCESS. Tests run: 722, Failures: 0, Errors: 0,
+Skipped: 0 (665 domain tests + 7 phase-2 web tests carried over, plus 15 + 34 + 2 new tests
+this phase, and the 2 phase-2 controller tests that were updated in place rather than added).
+
+Not committed: implementer role does not run `git commit`; the orchestrator commits this
+change set.
+
+Review fixes:
+- src/main/java/com/rungs/readiness/web/SnapshotFormMapper.java: fixed the CRITICAL crash
+  (`percent()` called `BigDecimal.setScale` outside any try/catch, so
+  `retirementContributionPercent=1e-999999999` or a debt's `annualInterestRate` of the same
+  threw ArithmeticException "BigInteger would overflow supported range" straight through
+  `toSnapshot`, 500-ing POST /assess). `parseDecimal` now rejects anything that is not a
+  plain, non-scientific decimal (regex `-?\d+(\.\d+)?`) or is longer than 32 characters
+  (mirroring `Money.parse`'s own MAX_TEXT_LENGTH) before any `BigDecimal` is built, which
+  removes the scientific-notation and 5000-digit cases at the source; `percent()`'s
+  `setScale` and `money()`'s fallback `setScale`/`movePointRight`/`longValueExact` are all
+  now additionally wrapped in try/catch resolving to zero as a last resort, so nothing in
+  this class can throw even if a future caller bypasses `parseDecimal`. Also fixed the LOW
+  finding: `money()` now tries `Money.parse` first (which accepts a leading `$` and comma-
+  grouped thousands per its own javadoc), only falling back to the lenient
+  `parseDecimal`-based path for the one thing `Money.parse` is stricter about than this
+  mapper wants to be — more than two decimal places (e.g. "12.345") — which the fallback
+  rounds half-up to the cent rather than rejecting, the more forgiving of the two options
+  the task raised.
+- src/test/java/com/rungs/readiness/web/SnapshotFormMapperTests.java: added
+  hostilePercentTextNeverThrowsAndBecomesZero (reproduces the exact crash, now zero, not
+  throw), hostileNumericTextNeverThrowsForAnyNumericField (parameterized over "1e-999999999",
+  "1e999999999", "NaN", "Infinity", "-0", "  12.5  ", "100.0001", "9".repeat(5000),
+  "0.000000000000000000001", "1,234.56", "$1,234.56", "", and null, fed to every numeric
+  field of SnapshotForm including a debt row, asserting toSnapshot never throws),
+  dollarSignAndCommaGroupedMoneyFieldParsesExactly ("$1,234.56" -> $1,234.56, not $0), and
+  overPreciseMoneyFieldRoundsInsteadOfRejecting ("12.345" -> $12.35 half-up).
+- src/test/java/com/rungs/readiness/web/SnapshotControllerTests.java: added
+  assessWithHostileScientificNotationInputsStillReturnsOk, a MEDIUM-severity controller-level
+  reproduction posting retirementContributionPercent=1e-999999999 and a debt
+  annualInterestRate of the same, asserting 200 rather than the prior 500.
+- src/test/java/com/rungs/readiness/web/ResultViewsTests.java: added
+  stage2InProgressUsesDigitsFallbackAboveTenDebts (LOW), 11 debts at $100 each, asserting
+  "11 debts remain, totalling <b>$1,100</b>." — the digit fallback in `spellNumber` (already
+  correct; this only adds the missing coverage the review asked for).
+
+Build: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home &&
+./mvnw -B -ntp clean verify` -> BUILD SUCCESS. Tests run: 740, Failures: 0, Errors: 0,
+Skipped: 0 (722 carried over + 13 hostile-string cases + 5 new named tests: the two crash
+repros, the two money-forgiveness tests, the controller test, and the 11-debt fallback test).
+
+Not committed: implementer role does not run `git commit`; the orchestrator commits this
+change set.
+
+## Visual check fixes
+
+A real-browser screenshot check of `POST /assess` against `prd/assessment-result.html`
+found three display bugs the tests missed. Fixed with TDD, one behavior at a time.
+
+1. **Stage 7 falsely showed "active"/"In progress".** `WealthBuildingEvaluator` reports
+   IN_PROGRESS once some (but not all) of stages 1-6 are done or skipped, which
+   `ResultViews.stageView` mapped straight to the active disc and "In progress" chip. The
+   board only ever shows stage 7 as Not started (plain disc, chip-waiting) until every
+   earlier stage clears — there is no "in progress" presentation for stage 7. Fixed by
+   forcing `displayStatus` to NOT_STARTED for stage 7 whenever the evaluator's status isn't
+   SATISFIED, before the disc/chip switch; the evaluator itself is unchanged. Added
+   `stage7ShowsTheNotStartedPresentationWhileSomeButNotAllEarlierStagesAreDone` to
+   ResultViewsTests (stage 1 satisfied, everything else outstanding -> stage 7 IN_PROGRESS
+   in the domain, asserts chipLabel/chipClass/discClass render as Not started). Extended the
+   board-household checkpoint test in SnapshotControllerTests with a `stageBlock` helper that
+   isolates the stage 7 row's own markup and asserts `chip-waiting">Not started` and no
+   `disc active` there specifically, not just page-wide.
+
+2. **The open card had no progress bar.** Phase 2 removed the board's bar from stage 2's
+   open card (which never has one), which incidentally removed the only bar markup that
+   existed inside the open-card branch of result.html, so stages 1, 3, and 4 never got a bar
+   in their open card either. Added `<div class="bar" th:if="${s.showBar}">...</div>` after
+   the blocker in the open-card block, reusing the existing `StageView.showBar` /
+   `barWidthPercent` fields (no model change needed — they already covered stages 1, 3, 4
+   while in progress). Added `assessShowsTheProgressBarInsideTheOpenCardForAnInProgressCurrentStage`
+   (stage 1 at $250 of $1,000 -> 25% bar) using a new `openCardHtml` test helper that isolates
+   the `.stage-open` block.
+
+3. **Empty gap at the bottom of a barless open card.** `.blocker`'s `margin: 8px 0 14px` left
+   dead space where the (removed) board bar/button used to sit. Added `.blocker.last {
+   margin-bottom: 0; }` to rungs.css and `th:classappend="${s.showBar} ? null : 'last'"` on
+   the blocker so it only applies when the open card has no bar. Covered by the same two new
+   assertions above (board household, stage 2, no bar -> `blocker last`; stage-1-in-progress
+   household -> bar present, no `blocker last`).
+
+Checked but already correct: the non-current in-progress row for stages 1 and 3 already
+rendered the bar followed by the small line (mirroring the board's stage 4 row) — that
+markup was untouched by phase 2 since it lives in the `th:unless="${s.open}"` branch, not
+the open-card branch that lost its bar.
+
+Files changed:
+- src/main/java/com/rungs/readiness/web/ResultViews.java
+- src/main/resources/templates/result.html
+- src/main/resources/static/css/rungs.css
+- src/test/java/com/rungs/readiness/web/ResultViewsTests.java
+- src/test/java/com/rungs/readiness/web/SnapshotControllerTests.java
+
+Build: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home &&
+./mvnw -B -ntp clean verify` -> BUILD SUCCESS. Tests run: 742, Failures: 0, Errors: 0,
+Skipped: 0 (740 carried over + 2 new named tests: the stage-7 not-started test and the
+open-card bar test; the board-household checkpoint test gained three more assertions in
+place rather than new test methods).
+
+Not committed: implementer role does not run `git commit`; the orchestrator commits this
+change set.

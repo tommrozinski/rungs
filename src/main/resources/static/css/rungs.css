@@ -100,6 +100,7 @@ table.debts td.rm { text-align: center; width: 30px; }
 .stage-open { background: var(--white); border: 1px solid var(--gold-500); border-radius: var(--r-md);
   padding: 15px 17px; margin-top: 4px; box-shadow: var(--shadow-card); }
 .blocker { font-size: 13.5px; line-height: 1.55; color: var(--ink-700); margin: 8px 0 14px; }
+.blocker.last { margin-bottom: 0; }
 .blocker b { color: var(--navy-900); }
 .btn-sm-primary { display: inline-flex; background: var(--blue-600); color: var(--white); font-weight: 600;
   font-size: 13px; padding: 8px 16px; border-radius: var(--r-pill); border: none; cursor: default; }

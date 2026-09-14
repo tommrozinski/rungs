@@ -1,5 +1,16 @@
 package com.rungs.readiness.web;
 
+import com.rungs.readiness.domain.model.FinancialSnapshot;
+import com.rungs.readiness.domain.stage.CollegeEvaluator;
+import com.rungs.readiness.domain.stage.DebtFreeEvaluator;
+import com.rungs.readiness.domain.stage.FullEmergencyFundEvaluator;
+import com.rungs.readiness.domain.stage.LadderResult;
+import com.rungs.readiness.domain.stage.MortgageEvaluator;
+import com.rungs.readiness.domain.stage.RetirementEvaluator;
+import com.rungs.readiness.domain.stage.StageLadder;
+import com.rungs.readiness.domain.stage.StarterFundEvaluator;
+import com.rungs.readiness.domain.stage.WealthBuildingEvaluator;
+import java.util.List;
 import org.springframework.beans.InvalidPropertyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,14 +25,27 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 /**
- * Renders the snapshot form (S-01) and, for this phase, echoes the posted values back onto
- * a static copy of the result page (S-02). Phase 3 replaces the echo with a real assessment.
+ * Renders the snapshot form (S-01) and, from the posted values, a real seven-stage assessment on the result page
+ * (S-02).
  */
 @Controller
 public class SnapshotController {
 
     private static final String FORM_VIEW = "form";
     private static final String RESULT_VIEW = "result";
+
+    private final StageLadder ladder;
+
+    public SnapshotController() {
+        this.ladder = new StageLadder(List.of(
+                new StarterFundEvaluator(),
+                new DebtFreeEvaluator(),
+                new FullEmergencyFundEvaluator(),
+                new RetirementEvaluator(),
+                new CollegeEvaluator(),
+                new MortgageEvaluator(),
+                new WealthBuildingEvaluator()));
+    }
 
     @InitBinder
     void initBinder(WebDataBinder binder) {
@@ -53,7 +77,9 @@ public class SnapshotController {
 
     @PostMapping("/assess")
     String assess(@ModelAttribute("form") SnapshotForm form, Model model) {
-        model.addAttribute("echo", SnapshotEcho.render(form));
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        LadderResult ladderResult = ladder.assess(snapshot);
+        model.addAttribute("result", ResultViews.build(ladderResult, snapshot));
         return RESULT_VIEW;
     }
 
