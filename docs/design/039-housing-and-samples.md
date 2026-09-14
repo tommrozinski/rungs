@@ -1,6 +1,6 @@
 # Design: 039 — Rent or mortgage, and sample households
 
-<!-- Source: user request 2026-09-14; prd/v0-scope-addendum.md (build order) -->
+<!-- Source: user request 2026-09-14; docs/scope.md (build order) -->
 <!-- Ticket: none (backlog story 039) -->
 <!-- Date: 2026-09-14 -->
 
@@ -8,7 +8,7 @@ The "We rent our home" checkbox becomes a two-option toggle: **Mortgage** (the d
 option collects its own housing costs. Housing then feeds the stage logic. A "Load sample data" control
 fills the form with one of five households.
 
-The addendum's build order still applies. The static mock `prd/snapshot-form.html` changes first and is
+The addendum's build order still applies. The static mock `docs/mockups/snapshot-form.html` changes first and is
 checked in a browser. The template is updated only after that, by carrying the new markup forward.
 
 ## 1. Form
@@ -124,7 +124,7 @@ intended, and tests pin each household's stage.
 
 | Phase | Work |
 | --- | --- |
-| 1 | Static mock: `prd/snapshot-form.html` gets the toggle, the fields, the hints, and the sample control (CSS only, no JS); screenshot check |
+| 1 | Static mock: `docs/mockups/snapshot-form.html` gets the toggle, the fields, the hints, and the sample control (CSS only, no JS); screenshot check |
 | 2 | Domain: `Housing`, `asOf`, surplus and stage 3 changes, payoff calculator, `MortgageEvaluator`, tests |
 | 3 | Web: carry the mock markup into `form.html`, mapping, `Clock`, samples, stage 6 copy and verdict, tests; screenshot check |
 

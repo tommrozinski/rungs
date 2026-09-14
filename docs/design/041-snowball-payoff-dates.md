@@ -66,10 +66,10 @@
 ## 4. Build order
 
 1. **Mocks** (phase 1):
-   - `prd/snapshot-form.html`: remove the maturity fields and rebalance the mortgage block.
-   - `prd/payoff-schedule.html`: re-run the scratchpad rules script with snowball order and update the
+   - `docs/mockups/snapshot-form.html`: remove the maturity fields and rebalance the mortgage block.
+   - `docs/mockups/payoff-schedule.html`: re-run the rules with snowball order and update the
      figures, title, and subtitle.
-   - `prd/assessment-result.html`: the board verdict sub becomes the schedule-based sentence (its months
+   - `docs/mockups/assessment-result.html`: the board verdict sub becomes the schedule-based sentence (its months
      computed with snowball order for the board renter). Add a stage 6 example line in the build note.
    - Take screenshots.
 2. **Domain** (phase 2, in parallel with 1): snowball ordering, the schedule helpers, maturity removal,

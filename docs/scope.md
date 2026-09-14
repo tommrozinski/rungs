@@ -1,7 +1,7 @@
 # PRD Addendum: v0 Scope (the few-days build)
 
-**Supersedes:** delivery increments in `readiness-engine-prd.md` section 10, for the
-current build window only. That document is not wrong, it's sized for a month. This one
+**Supersedes:** the delivery increments in the original full PRD, since retired, for the
+current build window only. That document was not wrong, it was sized for a month. This one
 is sized for a few days.
 
 **Rule for this pass: if it's not listed under "In," it does not get built, no matter how
@@ -11,10 +11,11 @@ easy an agent makes it look.**
 
 ## In scope
 
-1. **One domain concept.** The seven-stage evaluator. `FinancialSnapshot` in,
-   `ReadinessAssessment` out. PRD sections 5.1–5.3 and FR-1 only.
-2. **One form, one result page.** S-01 (snapshot) and S-02 (assessment) from the design
-   board. Nothing else — no projection, no comparison, no CSV, no file bar.
+1. **One domain concept.** The seven-stage evaluator. `FinancialSnapshot` in, a stage
+   ladder result out. PRD sections 5.1–5.3 and FR-1 only.
+2. **One form, one result page.** The snapshot form and the assessment result, per the
+   static mockups in `docs/mockups/`. Nothing else — no projection, no comparison, no CSV,
+   no file bar.
 3. **Plain server-rendered HTML.** One Maven module. A form that POSTs to a controller
    that builds the domain object, runs the evaluator, and renders the result template.
    No JavaScript required for this to work end to end.
@@ -45,15 +46,15 @@ In this order, stop whenever you run out of days:
 5. ArchUnit and the architecture constraints in PRD section 8.
 
 Do not start item N+1 before item N is working and visually correct. A half-built
-projection screen is worse than no projection screen — it invites the exact question you
-don't want in a demo: "what happens if I click this?"
+projection screen is worse than no projection screen — it invites "what happens if I
+click this?"
 
 ## Build order for v0
 
 This is the part that actually prevents a repeat of what just happened.
 
-1. Copy the literal markup and CSS from `design-board.html` frames S-01 and S-02 into two
-   static HTML files. No Spring, no templates, no backend. Confirm in a browser that they
+1. Build the literal markup and CSS for the snapshot form and result page as two static
+   HTML files. No Spring, no templates, no backend. Confirm in a browser that they
    look right.
 2. Add real `name` attributes to every input and a real `<form method="post" action="/assess">`.
    Still no backend — this file is the contract the controller will match.
@@ -68,13 +69,13 @@ This is the part that actually prevents a repeat of what just happened.
 
 Step 5 is the specific fix for what went wrong: templates were generated from the PRD's
 description of the screens, in parallel with a controller, without a visual check against
-the actual board markup at any point. This order removes that failure mode by construction
+the actual mockup markup at any point. This order removes that failure mode by construction
 — there is never a moment where template and controller are written from two different
 descriptions of the same thing.
 
 ## Definition of done for v0
 
-You can open a browser, fill in the form exactly as pictured in board frame S-01, submit
-it, and see the seven-stage ladder from S-02 rendered correctly with the right stage
-marked current and the right blockers shown — using real Java domain logic, not an echo.
-That's it. That's the whole demo if the clock runs out.
+You can open a browser, fill in the form exactly as pictured in the snapshot form mockup,
+submit it, and see the seven-stage ladder from the result mockup rendered correctly with
+the right stage marked current and the right blockers shown — using real Java domain
+logic, not an echo. That's it. That's the whole demo if the clock runs out.

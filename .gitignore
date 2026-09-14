@@ -12,11 +12,8 @@ target/
 # Logs
 *.log
 
-# jqwik
-.jqwik-database
-
 # Claude Code agent worktrees
 .claude/worktrees/
 
-# Personal workbooks used only as format references
-prd/*.xlsx
+# Local reference files
+prd/

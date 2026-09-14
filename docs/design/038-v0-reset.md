@@ -1,18 +1,18 @@
 # Design: 038 — v0 reset (one form, one result page)
 
-<!-- Source: prd/v0-scope-addendum.md, prd/snapshot-form.html, prd/assessment-result.html -->
+<!-- Source: docs/scope.md, docs/mockups/snapshot-form.html, docs/mockups/assessment-result.html -->
 <!-- Ticket: none (backlog story 038) -->
 <!-- Date: 2026-09-13 -->
 
 The app shrinks to the v0 scope: the seven-stage evaluator, a form at `GET /`, and a result page from
-`POST /assess`. Pages are plain server-rendered HTML that work without JavaScript. The two prd HTML files
-are the markup contract. Templates are those files with `th:` attributes added, never rewritten from a
-description.
+`POST /assess`. Pages are plain server-rendered HTML that work without JavaScript. The two mockup HTML
+files are the markup contract. Templates are those files with `th:` attributes added, never rewritten from
+a description.
 
 ## 1. Decisions (user, 2026-09-13)
 
 - Strip everything outside v0 (list in §2). Git history keeps it.
-- Use `prd/snapshot-form.html` as it stands:
+- Use `docs/mockups/snapshot-form.html` as it stands:
   - money fields;
   - a debts table (Name, Type, Balance, Rate %, Minimum, ✕);
   - checkboxes for rent, college, and retired.
@@ -117,7 +117,7 @@ The current stage renders inside `.stage-open` with the blocker paragraph.
 | 7 | "Every earlier stage is done or skipped." | "Opens once stages 1 through 6 are done or skipped." | — |
 
 **Checkpoint.** The board household (6200, 3500, 1000, 0, 6%, rents, the three board debts) must
-reproduce `prd/assessment-result.html` text exactly, except the removed banner, the stage 2
+reproduce `docs/mockups/assessment-result.html` text exactly, except the removed banner, the stage 2
 payoff line, the bar, and the button.
 
 ## 5. Tests (basic, per addendum item 4)

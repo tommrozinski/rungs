@@ -2,15 +2,12 @@
 
 [![CI](https://github.com/tommrozinski/rungs/actions/workflows/ci.yml/badge.svg)](https://github.com/tommrozinski/rungs/actions/workflows/ci.yml)
 
-Rungs assesses a household's finances against a seven-stage debt-elimination and
-wealth-building framework, and reports which stage the household is on and what stands
-between it and the next. It is an independent implementation of a widely published
-personal-finance framework and is not affiliated with, or endorsed by, the framework's
-author. It is built with Java 25 and Spring Boot 4.1.
-
-This is a v0 build: the seven-stage domain evaluator and its tests exist today. A
-one-page form and a matching result page, served with server-rendered Thymeleaf
-templates, are coming next.
+A household enters take-home pay, expenses, emergency funds, a retirement savings
+percentage, debts, and mortgage or rent. Rungs reports which of seven stages the
+household is on, what's blocking the next one, and a month-by-month debt snowball
+payoff schedule that includes the mortgage. It is an independent implementation of a
+widely published personal-finance framework and is not affiliated with, or endorsed by,
+the framework's author. It is built with Java 25 and Spring Boot 4.1.
 
 ## Nothing is stored
 
@@ -19,43 +16,68 @@ database, sets no cookies, and keeps no sessions. Household figures travel in th
 and nowhere else: requests are processed in memory and discarded, and money values and
 snapshot contents are never written to logs.
 
-## Prerequisites
+## Run it
 
-- JDK 25 or newer, from any vendor.
+Prerequisite: JDK 25 or newer, from any vendor.
 
-Nothing else. The Maven Wrapper downloads the correct Maven version on first use, so the
-first build needs an internet connection. If `java` is not on your `PATH`, set `JAVA_HOME`
-to the JDK's installation directory.
+```sh
+./mvnw spring-boot:run
+```
 
-## Build and run
+Then open <http://localhost:8080>.
 
-Build and run the tests:
+Run the tests:
 
 ```sh
 ./mvnw verify
 ```
 
-On Windows, use `.\mvnw.cmd verify` instead (works in PowerShell and Command Prompt).
+On Windows, use `.\mvnw.cmd` instead of `./mvnw` (works in PowerShell and Command
+Prompt). The Maven Wrapper downloads the correct Maven version on first use, so the
+first run needs an internet connection.
 
-The build enforces JDK 25 or newer, and Maven 3.9.16 or newer (which the wrapper
-provides). CI runs exactly this command on every push and pull request.
+## How it works
 
-## Deliberately not included
+**Package map:**
 
-Each of these is a legitimate concern for a production system. Leaving them out is a
-conscious deferral, not an oversight.
+- `domain/model` — `Money` (exact cents), `FinancialSnapshot`, and the sealed `Housing`
+  type (`Rent` or `Mortgage`).
+- `domain/stage` — the seven stage evaluators and `StageLadder`, which runs them in
+  order and reports the current stage.
+- `domain/projection` — the debt snowball payoff schedule and mortgage payoff
+  calculations.
+- `web` — the controller, lenient form-to-domain mapping, view models, and the
+  Thymeleaf templates.
 
-- **Authentication.**
-- **Rate limiting.**
-- **Persistence.** Rungs stores nothing; see above.
-- **Multi-tenancy.**
-- **Internationalization.**
-- **Saved households.** Rungs stores nothing, so a household lasts only as long as a request.
+**Request flow:** `GET /` renders the form. `POST /assess` builds a snapshot from the
+submitted values and renders the result. Hidden fields on the result page carry every
+submitted value back onto the page, so "Change my numbers" and "Show payoff schedule"
+both work with no session, no cookies, and no JavaScript.
 
-## Project documents
+## Key design decisions
 
-- [`prd/`](prd/): the product requirements
-  ([`readiness-engine-prd.md`](prd/readiness-engine-prd.md)) and the web client design
-  specification ([`design-spec.md`](prd/design-spec.md)).
-- [`backlog/`](backlog/): the backlog of user stories drawn from the requirements.
-- [`spec/`](spec/): per-story requirements, designs, and task lists.
+- Money is exact cents throughout, with half-even rounding at every calculation
+  boundary — no floating point.
+- The domain is pure and takes an injected `Clock`; nothing in `domain` reads the
+  system clock directly.
+- Form input parsing is lenient: a blank or invalid field becomes 0 rather than a
+  validation error, amounts are capped at $1B, and a household can enter up to 20
+  debts.
+- The app is stateless and ships no JavaScript.
+- Templates are built from static HTML mockups in `docs/mockups/` first, then carried
+  forward with Thymeleaf attributes, so template and controller are never written from
+  two different descriptions of the same screen.
+
+## Testing
+
+JUnit 5 and MockMvc cover the web layer; domain rules are tested at their boundaries
+(the exact dollar and percentage thresholds each stage evaluates). CI runs the full
+suite on every push.
+
+## Project history
+
+An earlier, larger version of this project scoped out APIs, payoff projections, CSV
+import/export, and an architecture test suite; that scope was deliberately cut back to
+the focused version described above. Design notes for the current version live in
+[`docs/design/`](docs/design/) and [`docs/scope.md`](docs/scope.md); the rest of the
+history is in git.

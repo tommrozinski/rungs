@@ -1,7 +1,7 @@
 # Design: 040 — Change my numbers, payoff schedule, simpler mortgage fields
 
-<!-- Source: user request 2026-09-14; prd/Flip_Snowball_Tracker_v6.xlsx sheet "Debt Avalanche" (format only);
-     prd/v0-scope-addendum.md (build order) -->
+<!-- Source: user request 2026-09-14; a reference spreadsheet's "Debt Avalanche" sheet (format only);
+     docs/scope.md (build order) -->
 <!-- Ticket: none (backlog story 040) -->
 <!-- Date: 2026-09-14 -->
 
@@ -9,26 +9,26 @@
 
 1. **Change my numbers.** The result page gets a button that returns to the form with every value kept.
 2. **Show payoff schedule.** A second button shows the month-by-month paydown of every debt and the mortgage
-   in an iframe below the seven stages. The layout follows the workbook's "Debt Avalanche" sheet.
+   in an iframe below the seven stages. The layout follows the reference spreadsheet's layout.
 3. **Simpler mortgage fields.** Remove "Annual property taxes". The monthly payment is the whole payment,
    taxes included.
 
    Note text: "Paid off? Enter 0 for the remaining balance, and enter your property taxes and insurance as
    the monthly payment, since those still come out of your take-home pay each month."
 
-The workbook is personal. It is used only as a format reference and is git-ignored. No figures from it
+The reference spreadsheet is used only as a format reference and is git-ignored. No figures from it
 enter the repo.
 
 ## 2. Build order (addendum)
 
 Static mocks come first and are checked in a browser. Templates carry them forward.
 
-- `prd/snapshot-form.html`: remove the taxes field and update the note and the payment hint (the hint
+- `docs/mockups/snapshot-form.html`: remove the taxes field and update the note and the payment hint (the hint
   becomes "Your full monthly payment, including taxes and insurance.").
-- `prd/assessment-result.html`: an actions row under the ladder with `Change my numbers` (secondary) and
+- `docs/mockups/assessment-result.html`: an actions row under the ladder with `Change my numbers` (secondary) and
   `Show payoff schedule` (primary), and a `<section id="breakdown">` below it holding
   `<iframe title="Payoff schedule" class="breakdown-frame" src="payoff-schedule.html">`.
-- `prd/payoff-schedule.html`: new standalone page with made-up figures (the board household plus a
+- `docs/mockups/payoff-schedule.html`: new standalone page with made-up figures (the board household plus a
   mortgage), laid out like the sheet.
   - Title in bold 14px: "🏦 Payoff schedule — highest rate first, with cascade".
   - Italic subtitle: "Your surplus goes to the highest-rate debt; each paid-off debt's minimum rolls to the
