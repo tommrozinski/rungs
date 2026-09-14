@@ -5,18 +5,12 @@ import com.rungs.readiness.domain.projection.LoanMonth;
 import com.rungs.readiness.domain.projection.PayoffSchedule;
 import com.rungs.readiness.domain.projection.ScheduleLoan;
 import com.rungs.readiness.domain.projection.ScheduleMonth;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.YearMonth;
-import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
- * Builds the payoff schedule page's view model (design.md 040 sections 2 and 3) from a {@link PayoffSchedule},
- * formatting every figure as money (a zero amount shown as {@code "-"}) or a two-decimal percentage, and each
- * month's calendar label as e.g. "Sep 2026".
+ * Builds the payoff schedule page's view model from a {@link PayoffSchedule}, formatting every figure as money (a
+ * zero amount shown as {@code "-"}) or a two-decimal percentage, and each month's calendar label as e.g. "Sep 2026".
  */
 final class ScheduleViews {
 
@@ -36,7 +30,10 @@ final class ScheduleViews {
         Money totalMinimum = Money.ZERO;
         for (ScheduleLoan loan : loans) {
             loanSummaries.add(new LoanSummaryView(
-                    loan.name(), money(loan.startingBalance()), percent(loan.annualRate()), money(loan.minimumPayment())));
+                    loan.name(),
+                    Formats.moneyOrDash(loan.startingBalance()),
+                    Formats.fixedPercent(loan.annualRate()),
+                    Formats.moneyOrDash(loan.minimumPayment())));
             loanNames.add(loan.name());
             totalBalance = totalBalance.plus(loan.startingBalance());
             totalMinimum = totalMinimum.plus(loan.minimumPayment());
@@ -47,18 +44,18 @@ final class ScheduleViews {
             months.add(monthView(month));
         }
 
-        List<String> totalPaidPerLoan = schedule.totalPaidPerLoan().stream().map(ScheduleViews::money).toList();
+        List<String> totalPaidPerLoan = schedule.totalPaidPerLoan().stream().map(Formats::moneyOrDash).toList();
 
         return new ScheduleView(
                 true,
                 loanSummaries,
                 loanNames,
-                money(totalBalance),
-                money(totalMinimum),
+                Formats.moneyOrDash(totalBalance),
+                Formats.moneyOrDash(totalMinimum),
                 months,
-                money(schedule.totalExtraCash()),
+                Formats.moneyOrDash(schedule.totalExtraCash()),
                 totalPaidPerLoan,
-                money(schedule.totalInterest()),
+                Formats.moneyOrDash(schedule.totalInterest()),
                 schedule.truncated());
     }
 
@@ -67,35 +64,23 @@ final class ScheduleViews {
         boolean closed = false;
         for (LoanMonth loanMonth : month.loanMonths()) {
             loanMonths.add(new LoanMonthView(
-                    money(loanMonth.open()), money(loanMonth.interest()), money(loanMonth.payment()), money(loanMonth.end())));
+                    Formats.moneyOrDash(loanMonth.open()),
+                    Formats.moneyOrDash(loanMonth.interest()),
+                    Formats.moneyOrDash(loanMonth.payment()),
+                    Formats.moneyOrDash(loanMonth.end())));
             if (loanMonth.payment().isPositive() && loanMonth.end().isZero()) {
                 closed = true;
             }
         }
         return new ScheduleMonthView(
-                monthLabel(month.month()),
-                money(month.extraCash()),
-                money(month.cascade()),
-                money(month.totalAvailable()),
+                Formats.monthShort(month.month()),
+                Formats.moneyOrDash(month.extraCash()),
+                Formats.moneyOrDash(month.cascade()),
+                Formats.moneyOrDash(month.totalAvailable()),
                 loanMonths,
-                money(month.monthInterest()),
-                money(month.totalBalance()),
-                money(month.cumulativeInterest()),
+                Formats.moneyOrDash(month.monthInterest()),
+                Formats.moneyOrDash(month.totalBalance()),
+                Formats.moneyOrDash(month.cumulativeInterest()),
                 closed);
-    }
-
-    /** Returns {@code month} as e.g. "Sep 2026". */
-    private static String monthLabel(YearMonth month) {
-        return month.getMonth().getDisplayName(TextStyle.SHORT, Locale.US) + " " + month.getYear();
-    }
-
-    /** Returns {@code amount} formatted as money, or {@code "-"} when it is zero. */
-    private static String money(Money amount) {
-        return amount.isZero() ? "-" : amount.toDisplayString();
-    }
-
-    /** Returns {@code rate} formatted as a percentage with exactly two decimal places, e.g. "26.99%". */
-    private static String percent(BigDecimal rate) {
-        return rate.setScale(2, RoundingMode.HALF_UP).toPlainString() + "%";
     }
 }

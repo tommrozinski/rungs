@@ -13,9 +13,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Computes the debt snowball payoff schedule for a household's debts and mortgage (design.md 040 section 3 for the
- * month-by-month pool mechanics; design.md 041 section 1 for the order): every debt smallest starting balance
- * first (ties in supplied order), then the mortgage last when it has a balance. Each month the household's
+ * Computes the debt snowball payoff schedule for a household's debts and mortgage: every debt smallest starting
+ * balance first (ties in supplied order), then the mortgage last when it has a balance. Each month the household's
  * surplus, plus the minimum payments of loans already closed, goes to the loan at the front of the line; the rest
  * of every open loan gets at least its own minimum. Pure and deterministic: every fact comes from the supplied
  * {@link FinancialSnapshot}; nothing here reads a clock.
@@ -48,8 +47,8 @@ public final class PayoffScheduleCalculator {
 
     /**
      * Returns every debt ordered by starting balance ascending (ties in supplied order, a stable sort), followed by
-     * the mortgage when the household has one with a balance above $0 (design.md 041 section 1: the mortgage
-     * always comes last, regardless of its own balance).
+     * the mortgage when the household has one with a balance above $0: the mortgage always comes last, regardless
+     * of its own balance.
      */
     private static List<ScheduleLoan> orderedLoans(FinancialSnapshot snapshot) {
         List<ScheduleLoan> loans = new ArrayList<>();
@@ -66,9 +65,8 @@ public final class PayoffScheduleCalculator {
         return loans;
     }
 
-    /** Runs the month-by-month simulation described in design.md 040 section 3 until every loan closes or the
-     * schedule is capped at {@link #MAX_MONTHS}; any arithmetic overflow along the way is treated the same as
-     * hitting the cap, rather than propagating. */
+    /** Runs the month-by-month simulation until every loan closes or the schedule is capped at {@link #MAX_MONTHS};
+     * any arithmetic overflow along the way is treated the same as hitting the cap, rather than propagating. */
     private static PayoffSchedule simulate(List<ScheduleLoan> loans, Money extraCash, YearMonth asOf) {
         int loanCount = loans.size();
         Money[] balances = new Money[loanCount];
@@ -103,19 +101,18 @@ public final class PayoffScheduleCalculator {
                         continue;
                     }
                     Money open = balances[i];
-                    Money interest = open.times(monthlyRates[i]);
-                    Money owed = open.plus(interest);
                     Money cap = loan.minimumPayment().plus(pool);
-                    Money payment = owed.min(cap);
-                    Money end = owed.minus(payment);
+                    LoanMonth step = Amortization.step(open, monthlyRates[i], cap);
+                    Money payment = step.payment();
+                    Money end = step.end();
 
                     // pmt never exceeds minimum + pool, so this is never negative: an unused minimum (pmt below
                     // minimum, e.g. a small payoff) flows forward to the next loan this same month, and money
                     // taken above the minimum is subtracted from what is left.
                     pool = pool.plus(loan.minimumPayment()).minus(payment);
 
-                    loanMonths.add(new LoanMonth(open, interest, payment, end));
-                    monthInterest = monthInterest.plus(interest);
+                    loanMonths.add(step);
+                    monthInterest = monthInterest.plus(step.interest());
                     totalBalance = totalBalance.plus(end);
                     paidPerLoan[i] = paidPerLoan[i].plus(payment);
                     balances[i] = end;

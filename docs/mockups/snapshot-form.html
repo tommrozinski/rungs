@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gazelle — Snapshot (v0 static)</title>
+<style>
+  :root {
+    --blue-700: #08467F; --blue-600: #0B5CAB; --blue-100: #D6E7F5; --blue-50: #EFF6FC;
+    --navy-900: #10263B; --ink-700: #3C4A57; --ink-500: #6B7A88;
+    --gold-600: #C98600; --gold-500: #F2A900; --gold-100: #FDF0D2;
+    --green-700: #146842; --green-600: #1E8E5A; --green-100: #DCF2E7;
+    --red-600: #C4312B; --red-100: #FBE3E2;
+    --slate-200: #DDE3E9; --slate-100: #EDF1F4; --surface: #F6F8FA; --white: #FFFFFF;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-pill: 999px;
+    --shadow-card: 0 1px 2px rgba(16,38,59,.06), 0 4px 12px rgba(16,38,59,.06);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font); color: var(--navy-900); background: var(--surface); }
+  .appbar { background: var(--white); border-bottom: 1px solid var(--slate-200); padding: 14px 22px;
+    display: flex; align-items: center; justify-content: space-between; }
+  .wordmark { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
+  .glyph { width: 24px; height: 24px; border-radius: 7px; background: var(--blue-600);
+    display: grid; place-items: center; color: var(--white); font-size: 13px; font-weight: 700; }
+  .appbar nav { display: flex; gap: 18px; font-size: 13px; color: var(--ink-500); }
+  .appbar nav .on { color: var(--blue-600); font-weight: 600; }
+  .screen { max-width: 620px; margin: 0 auto; padding: 24px 22px 60px; }
+  .h1 { font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 6px; }
+  .body { font-size: 14px; line-height: 1.6; color: var(--ink-700); margin: 0 0 20px; max-width: 56ch; }
+  .h2 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+  .small { font-size: 12.5px; line-height: 1.5; color: var(--ink-500); margin: 0; }
+  .card { background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--r-md);
+    padding: 16px 18px; box-shadow: var(--shadow-card); margin-bottom: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+  .field .hint { font-size: 11.5px; color: var(--ink-500); margin-top: 4px; }
+  .input {
+    width: 100%; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--r-sm);
+    padding: 10px 12px; font-size: 14px; font-family: var(--font); color: var(--navy-900);
+  }
+  .input:focus { outline: none; border-color: var(--blue-600); box-shadow: 0 0 0 3px var(--blue-100); }
+  .field-row { display: flex; gap: 12px; }
+  .field-row > * { flex: 1; }
+  .check { display: flex; align-items: center; gap: 9px; font-size: 13.5px; margin-bottom: 9px; }
+  .check input { width: 17px; height: 17px; accent-color: var(--blue-600); }
+  .check:last-child { margin-bottom: 0; }
+  table.debts { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.debts th { text-align: left; font-size: 11.5px; color: var(--ink-500); font-weight: 600;
+    padding: 6px 8px; border-bottom: 1px solid var(--slate-200); }
+  table.debts td { padding: 6px 6px; border-bottom: 1px solid var(--slate-100); }
+  table.debts td input { padding: 7px 8px; font-size: 13px; }
+  table.debts td.rm { text-align: center; width: 30px; }
+  .rm-btn { background: none; border: none; color: var(--red-600); font-size: 16px; cursor: pointer; line-height: 1; padding: 4px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; font-family: var(--font);
+    font-size: 14px; font-weight: 600; padding: 11px 20px; border-radius: var(--r-pill);
+    border: 1px solid transparent; cursor: pointer; }
+  .btn-primary { background: var(--blue-600); color: var(--white); }
+  .btn-primary:hover { background: var(--blue-700); }
+  .btn-secondary { background: var(--white); color: var(--blue-600); border-color: var(--blue-600); }
+  .btn-secondary:hover { background: var(--blue-50); }
+  .btn-quiet { background: transparent; color: var(--ink-500); border: none; cursor: pointer;
+    font-family: var(--font); font-size: 13px; font-weight: 600; }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+  .actions { display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+  .actions select.input { width: auto; flex: 1 1 220px; }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .housing-toggle { display: flex; background: var(--slate-100); border-radius: var(--r-pill);
+    padding: 3px; gap: 2px; margin-bottom: 14px; }
+  .housing-toggle label { flex: 1; text-align: center; padding: 8px 14px; border-radius: var(--r-pill);
+    font-size: 13.5px; font-weight: 600; color: var(--ink-500); cursor: pointer; }
+  .housing-toggle input:checked + label { background: var(--blue-600); color: var(--white); }
+  .housing-toggle input:focus-visible + label { outline: none; box-shadow: 0 0 0 3px var(--blue-100); }
+  .housing-card:has(.housing-toggle input[value="RENT"]:checked) .housing-mortgage { display: none; }
+  .housing-card:has(.housing-toggle input[value="MORTGAGE"]:checked) .housing-rent { display: none; }
+
+  /* echo panel — stands in for the real result screen until the Java side exists */
+  .echo { display: none; background: var(--navy-900); color: var(--white); border-radius: var(--r-md);
+    padding: 16px 18px; margin-top: 20px; font-size: 13px; line-height: 1.7; }
+  .echo.show { display: block; }
+  .echo h3 { margin: 0 0 8px; font-size: 13px; color: #9FD3F0; }
+  .echo pre { margin: 0; white-space: pre-wrap; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+  .note { max-width: 620px; margin: 20px auto 0; padding: 12px 16px; background: var(--gold-100);
+    border-left: 4px solid var(--gold-500); border-radius: var(--r-sm); font-size: 12.5px;
+    line-height: 1.6; color: #6A4C00; }
+</style>
+</head>
+<body>
+
+  <div class="appbar">
+    <div class="wordmark"><span class="glyph">G</span> Gazelle</div>
+    <nav><span class="on">Snapshot</span><span>Results</span></nav>
+  </div>
+
+  <div class="screen">
+    <h1 class="h1">Where do you stand today?</h1>
+    <p class="body">Nothing here is saved. Fill it in, get your answer, close the tab.</p>
+
+    <form id="snapshot-form" method="post" action="/assess">
+
+      <div class="card">
+        <h2 class="h2" style="margin-bottom:14px;">Money in and out</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="monthlyTakeHomeIncome">Monthly take-home pay</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyTakeHomeIncome"
+                   name="monthlyTakeHomeIncome" value="6200" required>
+          </div>
+          <div class="field">
+            <label for="monthlyEssentialExpenses">Essential monthly expenses</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyEssentialExpenses"
+                   name="monthlyEssentialExpenses" value="3500" required>
+            <div class="hint">Everything except housing and debt payments.</div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="starterEmergencyFund">Starter emergency fund</label>
+            <input class="input" type="number" step="0.01" min="0" id="starterEmergencyFund"
+                   name="starterEmergencyFund" value="1000" required>
+          </div>
+          <div class="field">
+            <label for="fullEmergencyFund">Full emergency fund saved</label>
+            <input class="input" type="number" step="0.01" min="0" id="fullEmergencyFund"
+                   name="fullEmergencyFund" value="0" required>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="retirementContributionPercent">Retirement contribution</label>
+          <input class="input" type="number" step="0.1" min="0" max="100" id="retirementContributionPercent"
+                 name="retirementContributionPercent" value="6" style="max-width:140px" required>
+          <div class="hint">Percent of household income going into retirement accounts.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2 class="h2">Debts you owe</h2>
+          <button type="button" class="btn btn-secondary btn-sm" id="add-debt">Add a debt</button>
+        </div>
+        <table class="debts" id="debt-table">
+          <thead>
+            <tr><th>Name</th><th>Type</th><th>Balance</th><th>Rate %</th><th>Minimum</th><th></th></tr>
+          </thead>
+          <tbody id="debt-rows">
+            <!-- rows injected by JS; three sample rows for a working demo -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card housing-card">
+        <h2 class="h2" style="margin-bottom:12px;">About your household</h2>
+
+        <div class="housing-toggle">
+          <input type="radio" class="visually-hidden" id="housing-mortgage" name="housing" value="MORTGAGE" checked>
+          <label for="housing-mortgage">Mortgage</label>
+          <input type="radio" class="visually-hidden" id="housing-rent" name="housing" value="RENT">
+          <label for="housing-rent">Rent</label>
+        </div>
+
+        <div class="housing-mortgage">
+          <div class="field-row">
+            <div class="field">
+              <label for="mortgageBalance">Remaining balance</label>
+              <input class="input" type="number" step="0.01" min="0" id="mortgageBalance"
+                     name="mortgageBalance" value="285000">
+            </div>
+            <div class="field">
+              <label for="mortgageRate">Interest rate %</label>
+              <input class="input" type="number" step="0.001" min="0" id="mortgageRate"
+                     name="mortgageRate" value="6.5">
+            </div>
+          </div>
+          <div class="field">
+            <label for="mortgagePayment">Monthly payment</label>
+            <input class="input" type="number" step="0.01" min="0" id="mortgagePayment"
+                   name="mortgagePayment" value="2200" style="max-width:220px">
+            <div class="hint">Your full monthly payment, including taxes and insurance.</div>
+          </div>
+          <p class="small" style="margin-top:10px; margin-bottom:16px;">Paid off? Enter 0 for the remaining balance, and enter your property taxes and insurance as the monthly payment, since those still come out of your take-home pay each month.</p>
+        </div>
+
+        <div class="housing-rent">
+          <div class="field">
+            <label for="monthlyRent">Monthly rent</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyRent"
+                   name="monthlyRent" value="1400">
+          </div>
+        </div>
+
+        <div class="check">
+          <input type="checkbox" id="intendsToFundCollege" name="intendsToFundCollege">
+          <label for="intendsToFundCollege" style="font-weight:400;">We plan to fund college for our kids</label>
+        </div>
+        <div class="check">
+          <input type="checkbox" id="retired" name="retired">
+          <label for="retired" style="font-weight:400;">We're retired</label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Check my stage</button>
+        <select name="sample" class="input">
+          <option value="">Choose a sample household</option>
+          <option value="buried">Buried in debt</option>
+          <option value="board">Paying down debt</option>
+          <option value="debt-free">Debt-free, building savings</option>
+          <option value="homestretch">Paying off the house</option>
+          <option value="paid-off">Paid-off home, no debt</option>
+        </select>
+        <button type="submit" formaction="/sample" formnovalidate class="btn btn-secondary">Load sample data</button>
+      </div>
+    </form>
+
+    <div class="echo" id="echo">
+      <h3>Submitted snapshot (echoed — no backend yet)</h3>
+      <pre id="echo-body"></pre>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Build note.</b> This file has no Spring, no Thymeleaf, no backend. Its only job is to
+    prove the form layout matches the design board and that every input actually captures a
+    value. Submitting navigates to <code>assessment-result.html</code> — a full page load,
+    matching how the real <code>POST /assess</code> will behave — carrying your entered values
+    along for verification only; the result page's ladder is still the board's fixed example
+    until <code>StageEvaluator</code> exists in Java. The mortgage-vs-rent toggle shows and
+    hides its fields with pure CSS (<code>:has()</code>) — no JavaScript is involved, matching
+    how it must keep working once this becomes a server-rendered template. Do not regenerate
+    this markup from a description — copy it forward when converting to Thymeleaf.
+  </div>
+
+<script>
+  // ---- debt rows: minimal add/remove, no calculation, no validation beyond native HTML ----
+  const debtTypes = ["CREDIT_CARD","AUTO","STUDENT_LOAN","MEDICAL","PERSONAL","OTHER"];
+
+  function addDebtRow(name, type, balance, rate, minimum) {
+    const tbody = document.getElementById("debt-rows");
+    const idx = tbody.children.length;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input class="input" type="text" name="debts[${idx}].label" value="${name ?? ""}" required></td>
+      <td>
+        <select class="input" name="debts[${idx}].type">
+          ${debtTypes.map(t => `<option value="${t}" ${t === type ? "selected" : ""}>${t.replace("_"," ")}</option>`).join("")}
+        </select>
+      </td>
+      <td><input class="input" type="number" step="0.01" min="0" name="debts[${idx}].balance" value="${balance ?? ""}" required></td>
+      <td><input class="input" type="number" step="0.01" min="0" name="debts[${idx}].annualInterestRate" value="${rate ?? ""}" required></td>
+      <td><input class="input" type="number" step="0.01" min="0" name="debts[${idx}].minimumPayment" value="${minimum ?? ""}" required></td>
+      <td class="rm"><button type="button" class="rm-btn" title="Remove">✕</button></td>
+    `;
+    tr.querySelector(".rm-btn").addEventListener("click", () => { tr.remove(); reindexDebtRows(); });
+    tbody.appendChild(tr);
+  }
+
+  function reindexDebtRows() {
+    document.querySelectorAll("#debt-rows tr").forEach((tr, idx) => {
+      tr.querySelectorAll("[name]").forEach(el => {
+        el.name = el.name.replace(/debts\[\d+\]/, `debts[${idx}]`);
+      });
+    });
+  }
+
+  document.getElementById("add-debt").addEventListener("click", () => addDebtRow());
+
+  // Sample-household loading is server-side (POST /sample) once the backend exists; no JS stand-in here.
+
+  // seed with the same three sample rows shown on the design board, so the page is never empty
+  addDebtRow("Store card", "CREDIT_CARD", 840, 26.99, 35);
+  addDebtRow("Car loan", "AUTO", 9140, 6.40, 312);
+  addDebtRow("Student loan", "STUDENT_LOAN", 2500, 4.50, 110);
+
+  // ---- submit: stash the payload, then navigate to the results page ----
+  // This mirrors the real flow: POST /assess will render a new page, not update this one in place.
+  document.getElementById("snapshot-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = new FormData(form);
+    const out = {};
+    for (const [key, value] of data.entries()) {
+      out[key] = value;
+    }
+    ["intendsToFundCollege","retired"].forEach(id => {
+      if (!(id in out)) out[id] = "false"; else out[id] = "true";
+    });
+    sessionStorage.setItem("gazelleSubmission", JSON.stringify(out, null, 2));
+    window.location.href = "assessment-result.html";
+  });
+</script>
+
+</body>
+</html>

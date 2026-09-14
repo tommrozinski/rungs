@@ -1,9 +1,9 @@
 package com.rungs.readiness.web;
 
 /**
- * The five sample households the "Load sample data" control offers (design.md 039 section 4), each a fully
- * populated {@link SnapshotForm} keyed by its id. The mortgage payments, balances, and rates are fixed; the
- * mortgage no longer has a maturity to compute (design.md 041 section 1).
+ * The five sample households the "Load sample data" control offers, each a fully populated {@link SnapshotForm}
+ * keyed by its id. The mortgage payments, balances, and rates are fixed; {@link com.rungs.readiness.domain.model.Mortgage}
+ * has no maturity, so none is set here.
  */
 final class SampleHouseholds {
 

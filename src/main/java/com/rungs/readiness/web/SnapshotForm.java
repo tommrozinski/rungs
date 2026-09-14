@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Backing bean for the snapshot form (S-01). Holds raw strings exactly as submitted; no
+ * Backing bean for the snapshot form. Holds raw strings exactly as submitted; no
  * parsing or validation happens here. Unchecked boxes bind to {@code false} because the
  * fields are primitive {@code boolean}.
  */
@@ -137,7 +137,7 @@ public class SnapshotForm {
         this.debts = debts;
     }
 
-    /** One row of the debts table (S-01). */
+    /** One row of the debts table. */
     public static class DebtRow {
 
         private String label = "";

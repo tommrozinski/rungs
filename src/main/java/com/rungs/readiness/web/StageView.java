@@ -1,7 +1,7 @@
 package com.rungs.readiness.web;
 
 /**
- * One row of the seven-stage ladder as the result page renders it (design.md 038 section 4).
+ * One row of the seven-stage ladder as the result page renders it.
  *
  * @param stage the stage number, 1 to 7
  * @param title the stage's title, e.g. "Save $1,000 to start"

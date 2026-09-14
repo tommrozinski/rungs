@@ -1,7 +1,7 @@
 package com.rungs.readiness.web;
 
 /**
- * One row of the payoff schedule's "Your loans" table (design.md 040 section 2): a loan's starting figures,
+ * One row of the payoff schedule's "Your loans" table: a loan's starting figures,
  * formatted for display.
  *
  * @param name the loan's label; "Mortgage" for the home loan

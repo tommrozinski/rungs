@@ -4,8 +4,8 @@ import com.rungs.readiness.domain.model.Money;
 import java.util.Objects;
 
 /**
- * One loan's figures for one month of a {@link PayoffSchedule}, aligned by position with the schedule's loans
- * (design.md 040 section 3). A loan already closed by an earlier month shows every figure as {@link Money#ZERO}.
+ * One loan's figures for one month of a {@link PayoffSchedule}, aligned by position with the schedule's loans. A
+ * loan already closed by an earlier month shows every figure as {@link Money#ZERO}.
  *
  * @param open the balance owed at the start of the month, before this month's interest
  * @param interest this month's interest, open times the monthly rate, rounded half-even to the cent

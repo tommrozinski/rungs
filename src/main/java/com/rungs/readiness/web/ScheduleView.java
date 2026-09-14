@@ -3,7 +3,7 @@ package com.rungs.readiness.web;
 import java.util.List;
 
 /**
- * The payoff schedule page's view model (design.md 040 sections 2 and 3), built from a
+ * The payoff schedule page's view model, built from a
  * {@link com.rungs.readiness.domain.projection.PayoffSchedule}.
  *
  * @param hasLoans whether the household has any debt or mortgage balance to pay down

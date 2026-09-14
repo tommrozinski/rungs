@@ -13,7 +13,7 @@ import java.time.YearMonth;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** {@link MortgageEvaluator}, stage 6 (design.md 041 section 3). */
+/** {@link MortgageEvaluator}, stage 6. */
 class MortgageEvaluatorTests {
 
     private static final YearMonth AS_OF = YearMonth.of(2024, 1);
@@ -55,14 +55,14 @@ class MortgageEvaluatorTests {
 
     @Test
     void isNotStartedWithThePayoffLineWhenThePaymentCoversInterestAndFinishesInTime() {
-        // Hand-verified: balance $500 at 12% annual, $260 payment, no taxes, pays off in 2 months (see
-        // MortgagePayoffCalculatorTests).
+        // Hand-verified: balance $500 at 12% annual, $260 payment, no taxes, pays off after 2 payments, the first
+        // one due in AS_OF itself (see MortgagePayoffCalculatorTests).
         Mortgage mortgage = new Mortgage(Money.ofDollars(500), new BigDecimal("12"), Money.ofDollars(260));
 
         StageEvaluation result = evaluate(mortgage);
 
         assertThat(result).isEqualTo(StageEvaluation.notStarted(
-                6, Money.ofDollars(500), "At your current payment it's paid off in March 2024."));
+                6, Money.ofDollars(500), "At your current payment it's paid off in February 2024."));
     }
 
     @Test

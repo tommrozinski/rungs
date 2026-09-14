@@ -21,7 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class SnapshotControllerTests {
 
-    /** Pins {@code asOf} to September 2026 (design.md 039 section 4's sample households are computed against it). */
+    /** Pins {@code asOf} to September 2026, matching the sample households' expected figures. */
     @TestConfiguration
     static class FixedClockConfig {
 
@@ -648,7 +648,7 @@ class SnapshotControllerTests {
         assertThat(body).contains("You're on stage 6 of 7");
         assertThat(body).contains("At your current payment it's paid off in");
         assertThat(body).contains(
-                "With the debt snowball it's paid off in October 2028, 8 years 2 months sooner than your payment "
+                "With the debt snowball it's paid off in October 2028, 8 years 1 month sooner than your payment "
                         + "alone.");
     }
 
@@ -721,10 +721,10 @@ class SnapshotControllerTests {
                 .getContentAsString();
 
         // asOf is fixed to September 2026 (FixedClockConfig); the domain computes the current-payment payoff at
-        // August 2039 and the debt snowball's mortgage payoff at November 2030, 8 years 9 months sooner.
-        assertThat(body).contains("At your current payment it's paid off in August 2039.");
+        // July 2039 and the debt snowball's mortgage payoff at November 2030, 8 years 8 months sooner.
+        assertThat(body).contains("At your current payment it's paid off in July 2039.");
         assertThat(body).contains(
-                "With the debt snowball it's paid off in November 2030, 8 years 9 months sooner.");
+                "With the debt snowball it's paid off in November 2030, 8 years 8 months sooner.");
     }
 
     @Test

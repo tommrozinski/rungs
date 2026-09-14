@@ -7,7 +7,8 @@ import java.util.List;
 
 /**
  * Stage 2: every consumer debt paid off. The mortgage is never among the debts. Progress cannot be measured, so an
- * unmet stage is {@code IN_PROGRESS} at 0.0 (PRD 5.3 exception) with the total balance remaining.
+ * unmet stage is {@code IN_PROGRESS} at 0.0, as an explicit exception to the usual progress rule, with the total
+ * balance remaining.
  */
 public final class DebtFreeEvaluator implements StageEvaluator {
 

@@ -48,8 +48,8 @@ final class Invariants {
      * <p>The steps run in an order that keeps extreme exponents cheap: the range check by {@code compareTo} rejects
      * huge positive exponents before any rescale, {@code stripTrailingZeros} handles huge negative exponents without
      * expanding them, and the final {@code setScale} starts from a stripped scale between -2 and {@code scale}, so it
-     * is exact and small. Cost still grows with the number of digits supplied; callers bound input length (story 011
-     * validation, CSV and JSON parsing).
+     * is exact and small. Cost still grows with the number of digits supplied; callers bound input length before it
+     * reaches this method.
      */
     static BigDecimal percent(BigDecimal value, int scale, String name) {
         nonNull(value, name);

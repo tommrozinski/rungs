@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * One month of a {@link PayoffSchedule} (design.md 040 section 3).
+ * One month of a {@link PayoffSchedule}.
  *
  * @param month the calendar month, starting from the snapshot's {@code asOf}
  * @param extraCash the household's monthly surplus, floored at {@link Money#ZERO}; the same every month

@@ -76,7 +76,7 @@ class StageEvaluationTests {
                 .hasMessage(expectedMessage);
     }
 
-    /** Each row breaks exactly one REQ-004 rule; text markers are null, text, empty, or blank. */
+    /** Each row breaks exactly one construction rule; text markers are null, text, empty, or blank. */
     @ParameterizedTest
     @CsvSource(nullValues = "null", value = {
         "SATISFIED, 99.9, null, null, null, SATISFIED requires percentComplete 100.0",

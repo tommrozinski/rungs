@@ -14,7 +14,7 @@ public final class FullEmergencyFundEvaluator implements StageEvaluator {
 
     private static final int STAGE = 3;
 
-    /** Most months of expenses the target is measured against (REQ-005). */
+    /** Most months of expenses the target is measured against. */
     private static final int MAX_MONTHS = 6;
 
     private static final String BLOCKER = "Your emergency fund is %s short of a %s-month target of %s.";
@@ -37,7 +37,7 @@ public final class FullEmergencyFundEvaluator implements StageEvaluator {
         Money shortfall = target.minus(fund);
         String blocker = BLOCKER.formatted(shortfall.toDisplayString(), months, target.toDisplayString());
         BigDecimal percent = Percentages.of(fund, target);
-        // Story 004 REQ-005: status follows progress, so a fund that rounds to 0.0 is NOT_STARTED.
+        // Status follows progress, so a fund that rounds to 0.0 is NOT_STARTED.
         if (percent.signum() == 0) {
             return StageEvaluation.notStarted(STAGE, shortfall, blocker);
         }

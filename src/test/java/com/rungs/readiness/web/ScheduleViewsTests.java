@@ -16,8 +16,8 @@ import java.time.YearMonth;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** {@link ScheduleViews}' formatting rules (design.md 040 section 2): money, percentages, month labels, the
- * "no loans" case, and the green-tint "closed" flag. */
+/** {@link ScheduleViews}' formatting rules: money, percentages, month labels, the "no loans" case, and the
+ * green-tint "closed" flag. */
 class ScheduleViewsTests {
 
     @Test

@@ -3,9 +3,9 @@ package com.rungs.readiness.domain.model;
 import java.math.BigDecimal;
 
 /**
- * A home mortgage. A balance of $0 is allowed and means the home is paid off. Has no stated maturity
- * (design.md 041 section 1): the loan's payoff dates come from {@link MortgagePayoffCalculator} and, for the debt
- * snowball, from {@code PayoffScheduleCalculator}.
+ * A home mortgage. A balance of $0 is allowed and means the home is paid off. Has no stated maturity: the loan's
+ * payoff dates come from {@code MortgagePayoffCalculator} at the current payment, and from
+ * {@code PayoffScheduleCalculator} for the debt snowball.
  *
  * @param balance the amount still owed; at least zero
  * @param annualInterestRate the annual rate as a percentage ({@code 6.125} means 6.125%), from 0 to 100 inclusive,

@@ -9,8 +9,7 @@ import java.util.Optional;
 /**
  * The month-by-month payoff schedule {@link PayoffScheduleCalculator#schedule} computes for a household: every
  * debt paid smallest starting balance first (ties in supplied order), then the mortgage, with each closed loan's
- * minimum cascading to the next (design.md 040 section 3 for the pool mechanics; design.md 041 section 1 for the
- * snowball order).
+ * minimum cascading to the next.
  *
  * @param loans every loan in payoff order; empty when the household has neither debts nor a mortgage balance
  * @param months every month of the schedule, starting from the snapshot's {@code asOf}; empty with no loans
@@ -42,9 +41,9 @@ public record PayoffSchedule(
     }
 
     /**
-     * Returns the month the last non-mortgage loan closes (design.md 041 section 3): the latest of every debt's
-     * closing month, or empty when any debt never closes within the schedule. With no debts at all, this is
-     * trivially "already debt-free", so it returns {@code asOf} rather than empty.
+     * Returns the month the last non-mortgage loan closes: the latest of every debt's closing month, or empty when
+     * any debt never closes within the schedule. With no debts at all, this is trivially "already debt-free", so it
+     * returns {@code asOf} rather than empty.
      */
     public Optional<YearMonth> debtFreeMonth() {
         YearMonth latest = null;
@@ -67,7 +66,7 @@ public record PayoffSchedule(
 
     /**
      * Returns the month the mortgage row closes, empty when there is no mortgage row or it never closes within the
-     * schedule (design.md 041 section 3).
+     * schedule.
      */
     public Optional<YearMonth> mortgagePayoffMonth() {
         for (int i = 0; i < loans.size(); i++) {

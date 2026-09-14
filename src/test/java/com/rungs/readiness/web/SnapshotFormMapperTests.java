@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/** The lenient {@link SnapshotForm} to {@link FinancialSnapshot} conversion (design.md 039 section 3). */
+/** The lenient {@link SnapshotForm} to {@link FinancialSnapshot} conversion. */
 class SnapshotFormMapperTests {
 
     private static final YearMonth ASOF = YearMonth.of(2026, 9);
@@ -333,7 +333,7 @@ class SnapshotFormMapperTests {
         assertThatCode(() -> SnapshotFormMapper.toSnapshot(form, ASOF)).doesNotThrowAnyException();
     }
 
-    /** Last-resort guarantee (design.md 038 section 3): none of these ever reach the mapper as an exception. */
+    /** Last-resort guarantee: none of these hostile strings ever reach the mapper as an exception. */
     private static Stream<String> hostileNumericStrings() {
         return Stream.of(
                 "1e-999999999",

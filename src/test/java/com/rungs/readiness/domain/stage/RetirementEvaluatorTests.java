@@ -57,7 +57,7 @@ class RetirementEvaluatorTests {
         assertThat(result).isEqualTo(StageEvaluation.inProgress(4, new BigDecimal(progress), null, blocker));
     }
 
-    /** Status follows the computed progress (story 004 REQ-005); the blocker still prints the real percent. */
+    /** Status follows the computed progress; the blocker still prints the real percent. */
     @ParameterizedTest
     @CsvSource({"0, 0", "0.00, 0", "0.01, 0.01"})
     void isNotStartedWithNoRemainingAmountWhenProgressRoundsToZero(String percent, String displayed) {

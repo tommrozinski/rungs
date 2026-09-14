@@ -13,7 +13,7 @@ public final class StarterFundEvaluator implements StageEvaluator {
 
     private static final int STAGE = 1;
 
-    /** The fixed starter fund target; not configurable (REQ-002). */
+    /** The fixed starter fund target; not configurable. */
     private static final Money TARGET = Money.ofDollars(1_000);
 
     private static final String BLOCKER = "Your starter emergency fund is %s short of %s.";
@@ -32,7 +32,7 @@ public final class StarterFundEvaluator implements StageEvaluator {
         Money shortfall = TARGET.minus(fund);
         String blocker = BLOCKER.formatted(shortfall.toDisplayString(), TARGET.toDisplayString());
         BigDecimal percent = Percentages.of(fund, TARGET);
-        // Story 004 REQ-005: status follows progress, so a fund that rounds to 0.0 is NOT_STARTED.
+        // Status follows progress, so a fund that rounds to 0.0 is NOT_STARTED.
         if (percent.signum() == 0) {
             return StageEvaluation.notStarted(STAGE, shortfall, blocker);
         }

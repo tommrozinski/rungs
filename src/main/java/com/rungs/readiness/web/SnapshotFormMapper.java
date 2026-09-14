@@ -17,32 +17,33 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Converts the raw {@link SnapshotForm} the browser posts into a {@link FinancialSnapshot}, leniently, per
- * design.md 039 section 3: a blank or unparseable amount or percent becomes zero, a negative one becomes zero,
- * percentages are clamped to 0-100 and rounded to the scale the domain requires (rather than rejected for having
- * too many decimal places), a debt row with a zero balance is dropped, a blank label becomes "Debt N" (the row's
- * 1-based position as submitted), and an unrecognized debt type becomes {@link DebtType#OTHER}. Only the first
- * {@value #MAX_DEBT_ROWS} non-zero-balance rows, in submitted order, become debts; any further rows are dropped
- * (design.md 040 review), keeping the payoff schedule's rendered size bounded. A blank or
- * unrecognized {@code housing} becomes {@code MORTGAGE}; whichever mode is not selected has its fields ignored.
- * The form's maturity fields are not read (design.md 041 section 1: {@link Mortgage} has no maturity).
+ * Converts the raw {@link SnapshotForm} the browser posts into a {@link FinancialSnapshot}, leniently: a blank or
+ * unparseable amount or percent becomes zero, a negative one becomes zero, percentages are clamped to 0-100 and
+ * rounded to the scale the domain requires (rather than rejected for having too many decimal places), a debt row
+ * with a zero balance is dropped, a blank label becomes "Debt N" (the row's 1-based position as submitted), and an
+ * unrecognized debt type becomes {@link DebtType#OTHER}. Only the first {@value #MAX_DEBT_ROWS} non-zero-balance
+ * rows, in submitted order, become debts; any further rows are dropped, keeping the payoff schedule's rendered size
+ * bounded. A blank or unrecognized {@code housing} becomes {@code MORTGAGE}; whichever mode is not selected has its
+ * fields ignored. The form has no maturity fields, matching {@link Mortgage}, which has no maturity to set.
  * Nothing here rejects input or throws; every bad case resolves to a plain default instead, so a submission can
  * never 500.
  *
- * <p>The v0 form collects no college contribution amount, so the snapshot always has a $0 monthly college
- * contribution and a fixed 3-month emergency-fund target. {@code asOf} is supplied by the caller (the controller,
- * from its injected {@link java.time.Clock}), not decided here.
+ * <p>The form collects no college contribution amount, so the snapshot always has a $0 monthly college
+ * contribution; it also has no field for the emergency-fund target's month count, so the snapshot always targets
+ * the domain's minimum of 3 months. {@code asOf} is supplied by the caller (the controller, from its injected
+ * {@link java.time.Clock}), not decided here.
  */
 final class SnapshotFormMapper {
 
-    /** The v0 form has no field for this; the snapshot always targets a 3-month fund. */
+    /** The form has no field for this; the snapshot always targets the domain's minimum, a 3-month fund. */
     private static final int EMERGENCY_FUND_MONTHS = 3;
 
     /**
      * Only the first this many non-zero-balance debt rows become debts; later rows are dropped, keeping a huge
-     * submission (e.g. hundreds of rows) from rendering a page-crushing payoff schedule (design.md 040 review).
+     * submission (e.g. hundreds of rows) from rendering a page-crushing payoff schedule. Also
+     * {@link SnapshotController}'s cap on rows the form itself will grow to, so "Add a debt" and the binder agree.
      */
-    private static final int MAX_DEBT_ROWS = 20;
+    static final int MAX_DEBT_ROWS = 20;
 
     /** Decimal places {@link FinancialSnapshot#retirementContributionPercent()} is normalized to. */
     private static final int RETIREMENT_PERCENT_SCALE = 2;
@@ -54,7 +55,7 @@ final class SnapshotFormMapper {
 
     /**
      * Every parsed money amount is capped at this value so an enormous submitted amount can never reach the
-     * domain and overflow its arithmetic (design.md 039 review); larger amounts are capped, not rejected.
+     * domain and overflow its arithmetic; larger amounts are capped, not rejected.
      */
     private static final Money MAX_MONEY = Money.ofDollars(1_000_000_000);
 

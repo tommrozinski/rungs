@@ -43,7 +43,7 @@ class StarterFundEvaluatorTests {
                 1, new BigDecimal(percent), Money.ofCents(remainingCents), blocker));
     }
 
-    /** Status follows the computed progress (story 004 REQ-005), so a fund that rounds to 0.0 is not started. */
+    /** Status follows the computed progress, so a fund that rounds to 0.0 is not started. */
     @ParameterizedTest
     @CsvSource({
         "0, 100000, 'Your starter emergency fund is $1,000.00 short of $1,000.00.'",

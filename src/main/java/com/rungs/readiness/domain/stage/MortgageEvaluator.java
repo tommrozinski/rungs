@@ -2,9 +2,9 @@ package com.rungs.readiness.domain.stage;
 
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.model.Mortgage;
-import com.rungs.readiness.domain.model.MortgagePayoff;
-import com.rungs.readiness.domain.model.MortgagePayoffCalculator;
 import com.rungs.readiness.domain.model.Rent;
+import com.rungs.readiness.domain.projection.MortgagePayoff;
+import com.rungs.readiness.domain.projection.MortgagePayoffCalculator;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.List;
@@ -13,9 +13,9 @@ import java.util.Locale;
 /**
  * Stage 6: the home mortgage paid off. Renters skip it. A $0 balance satisfies it. Otherwise the stage is always Not
  * started, with the balance remaining and a blocker describing whether the current payment even covers the interest
- * and, when it does, when the loan pays off at that payment (design.md 041 section 3). The debt-snowball comparison
- * needs the payoff schedule, so it is appended by {@code ResultViews}, not here. It reads only the housing and the
- * assessment month, never the debts.
+ * and, when it does, when the loan pays off at that payment. The debt-snowball comparison needs the payoff
+ * schedule, so it is appended by {@code ResultViews}, not here. It reads only the housing and the assessment month,
+ * never the debts.
  */
 public final class MortgageEvaluator implements StageEvaluator {
 
@@ -51,14 +51,13 @@ public final class MortgageEvaluator implements StageEvaluator {
     }
 
     private static String blocker(MortgagePayoff payoff) {
-        if (!payoff.covered()) {
-            return NOT_COVERED.formatted(
-                    payoff.principalAndInterest().toDisplayString(), payoff.firstMonthInterest().toDisplayString());
-        }
-        if (payoff.monthsToPayoff() == null) {
-            return CAPPED;
-        }
-        return PAYOFF_LINE.formatted(monthYear(payoff.payoffMonth()));
+        return switch (payoff) {
+            case MortgagePayoff.NotCovered notCovered -> NOT_COVERED.formatted(
+                    notCovered.principalAndInterest().toDisplayString(),
+                    notCovered.firstMonthInterest().toDisplayString());
+            case MortgagePayoff.Capped ignored -> CAPPED;
+            case MortgagePayoff.PaysOff paysOff -> PAYOFF_LINE.formatted(monthYear(paysOff.month()));
+        };
     }
 
     /** Returns {@code month} as e.g. "March 2041". */

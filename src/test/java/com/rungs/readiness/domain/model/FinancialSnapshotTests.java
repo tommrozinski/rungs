@@ -308,7 +308,7 @@ class FinancialSnapshotTests {
         assertThat(snapshot.totalDebtBalance()).isEqualTo(Money.ofCents(50_000 + 1_200_000 + 80_050));
     }
 
-    // monthlyHousingCost (design.md 039 section 2)
+    // monthlyHousingCost
 
     @Test
     void monthlyHousingCostIsTheRentWhenRenting() {

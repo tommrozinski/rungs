@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gazelle — Payoff schedule (v0 static)</title>
+<style>
+  :root {
+    --blue-700: #08467F; --blue-600: #0B5CAB; --blue-100: #D6E7F5; --blue-50: #EFF6FC;
+    --navy-900: #10263B; --ink-700: #3C4A57; --ink-500: #6B7A88;
+    --gold-600: #C98600; --gold-500: #F2A900; --gold-100: #FDF0D2;
+    --green-700: #146842; --green-600: #1E8E5A; --green-100: #DCF2E7;
+    --red-600: #C4312B; --slate-200: #DDE3E9; --slate-100: #EDF1F4;
+    --surface: #F6F8FA; --white: #FFFFFF;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-pill: 999px;
+    --shadow-card: 0 1px 2px rgba(16,38,59,.06), 0 4px 12px rgba(16,38,59,.06);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font); color: var(--navy-900); background: var(--surface);
+    padding: 14px 16px 24px; }
+  .title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .subtitle { font-size: 12.5px; font-style: italic; color: var(--ink-500); margin: 0 0 18px; line-height: 1.5; max-width: 70ch; }
+  .section-label { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--ink-500);
+    text-transform: uppercase; margin: 0 0 8px; }
+  .table-wrap { overflow-x: auto; background: var(--white); border: 1px solid var(--slate-200);
+    border-radius: var(--r-md); }
+  .table-wrap + .table-wrap, .section + .section { margin-top: 18px; }
+  .section { margin-bottom: 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  table.loans { min-width: 480px; }
+  table.schedule { min-width: 1900px; }
+  th, td { padding: 6px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--slate-100); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { background: #F2F2F2; font-weight: 700; font-size: 11px; color: var(--ink-700);
+    border-bottom: 1px solid var(--slate-200); position: sticky; top: 0; }
+  table.schedule th:first-child, table.schedule tbody tr:not(.ellipsis) td:first-child {
+    position: sticky; left: 0; background: var(--white); z-index: 1; text-align: right;
+  }
+  table.schedule thead th:first-child { background: #F2F2F2; z-index: 2; }
+  td, th { font-variant-numeric: tabular-nums; }
+  tbody tr:nth-child(even) td { background: #FBFCFD; }
+  tbody tr.closed td { background: var(--green-100); }
+  table.schedule tbody tr.closed td:first-child { background: var(--green-100); }
+  tr.totals td { font-weight: 700; border-top: 2px solid var(--slate-200); background: var(--white); }
+  tr.ellipsis td { text-align: center; color: var(--ink-500); font-style: italic; background: var(--white); }
+  tr.total-row td { font-weight: 700; border-top: 2px solid var(--slate-200); }
+</style>
+</head>
+<body>
+
+  <p class="title">🏦 Payoff schedule — debt snowball (smallest balance first)</p>
+  <p class="subtitle">Your surplus goes to the smallest debt; each paid-off debt's payment rolls into the
+    next. The mortgage comes last.</p>
+
+  <div class="section">
+    <p class="section-label">Your loans</p>
+    <div class="table-wrap">
+      <table class="loans">
+        <thead>
+          <tr><th>Loan</th><th>Balance</th><th>Rate</th><th>Min payment</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Store card</td><td>$840.00</td><td>26.99%</td><td>$35.00</td></tr>
+          <tr><td>Student loan</td><td>$2,500.00</td><td>4.50%</td><td>$110.00</td></tr>
+          <tr><td>Car loan</td><td>$9,140.00</td><td>6.40%</td><td>$312.00</td></tr>
+          <tr><td>Mortgage</td><td>$185,000.00</td><td>5.25%</td><td>$1,650.00</td></tr>
+          <tr class="total-row"><td>TOTAL</td><td>$197,480.00</td><td></td><td>$2,107.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <p class="section-label">Payoff schedule</p>
+    <div class="table-wrap">
+      <table class="schedule">
+        <thead>
+          <tr>
+            <th>Month</th><th>Extra cash</th><th>Cascade</th><th>Total avail</th>
+            <th>Store card open</th><th>Store card int</th><th>Store card pmt</th><th>Store card end</th>
+            <th>Student loan open</th><th>Student loan int</th><th>Student loan pmt</th><th>Student loan end</th>
+            <th>Car loan open</th><th>Car loan int</th><th>Car loan pmt</th><th>Car loan end</th>
+            <th>Mortgage open</th><th>Mortgage int</th><th>Mortgage pmt</th><th>Mortgage end</th>
+            <th>Mo int</th><th>Total bal</th><th>Cum int</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="closed">
+            <td>1</td>
+            <td>$2,243.00</td>
+            <td>-</td>
+            <td>$2,243.00</td>
+            <td>$840.00</td>
+            <td>$18.89</td>
+            <td>$858.89</td>
+            <td>-</td>
+            <td>$2,500.00</td>
+            <td>$9.38</td>
+            <td>$1,529.11</td>
+            <td>$980.27</td>
+            <td>$9,140.00</td>
+            <td>$48.75</td>
+            <td>$312.00</td>
+            <td>$8,876.75</td>
+            <td>$185,000.00</td>
+            <td>$809.38</td>
+            <td>$1,650.00</td>
+            <td>$184,159.38</td>
+            <td>$886.40</td>
+            <td>$194,016.40</td>
+            <td>$886.40</td>
+          </tr>
+          <tr class="closed">
+            <td>2</td>
+            <td>$2,243.00</td>
+            <td>$35.00</td>
+            <td>$2,278.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$980.27</td>
+            <td>$3.68</td>
+            <td>$983.95</td>
+            <td>-</td>
+            <td>$8,876.75</td>
+            <td>$47.34</td>
+            <td>$1,716.05</td>
+            <td>$7,208.04</td>
+            <td>$184,159.38</td>
+            <td>$805.70</td>
+            <td>$1,650.00</td>
+            <td>$183,315.08</td>
+            <td>$856.72</td>
+            <td>$190,523.12</td>
+            <td>$1,743.12</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>$2,243.00</td>
+            <td>$145.00</td>
+            <td>$2,388.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$7,208.04</td>
+            <td>$38.44</td>
+            <td>$2,700.00</td>
+            <td>$4,546.48</td>
+            <td>$183,315.08</td>
+            <td>$802.00</td>
+            <td>$1,650.00</td>
+            <td>$182,467.08</td>
+            <td>$840.44</td>
+            <td>$187,013.56</td>
+            <td>$2,583.56</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>$2,243.00</td>
+            <td>$145.00</td>
+            <td>$2,388.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$4,546.48</td>
+            <td>$24.25</td>
+            <td>$2,700.00</td>
+            <td>$1,870.73</td>
+            <td>$182,467.08</td>
+            <td>$798.29</td>
+            <td>$1,650.00</td>
+            <td>$181,615.37</td>
+            <td>$822.54</td>
+            <td>$183,486.10</td>
+            <td>$3,406.10</td>
+          </tr>
+          <tr class="closed">
+            <td>5</td>
+            <td>$2,243.00</td>
+            <td>$145.00</td>
+            <td>$2,388.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$1,870.73</td>
+            <td>$9.98</td>
+            <td>$1,880.71</td>
+            <td>-</td>
+            <td>$181,615.37</td>
+            <td>$794.57</td>
+            <td>$2,469.29</td>
+            <td>$179,940.65</td>
+            <td>$804.55</td>
+            <td>$179,940.65</td>
+            <td>$4,210.65</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$179,940.65</td>
+            <td>$787.24</td>
+            <td>$4,350.00</td>
+            <td>$176,377.89</td>
+            <td>$787.24</td>
+            <td>$176,377.89</td>
+            <td>$4,997.89</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$176,377.89</td>
+            <td>$771.65</td>
+            <td>$4,350.00</td>
+            <td>$172,799.54</td>
+            <td>$771.65</td>
+            <td>$172,799.54</td>
+            <td>$5,769.54</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$172,799.54</td>
+            <td>$756.00</td>
+            <td>$4,350.00</td>
+            <td>$169,205.54</td>
+            <td>$756.00</td>
+            <td>$169,205.54</td>
+            <td>$6,525.54</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$169,205.54</td>
+            <td>$740.27</td>
+            <td>$4,350.00</td>
+            <td>$165,595.81</td>
+            <td>$740.27</td>
+            <td>$165,595.81</td>
+            <td>$7,265.81</td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$165,595.81</td>
+            <td>$724.48</td>
+            <td>$4,350.00</td>
+            <td>$161,970.29</td>
+            <td>$724.48</td>
+            <td>$161,970.29</td>
+            <td>$7,990.29</td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$161,970.29</td>
+            <td>$708.62</td>
+            <td>$4,350.00</td>
+            <td>$158,328.91</td>
+            <td>$708.62</td>
+            <td>$158,328.91</td>
+            <td>$8,698.91</td>
+          </tr>
+          <tr>
+            <td>12</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$158,328.91</td>
+            <td>$692.69</td>
+            <td>$4,350.00</td>
+            <td>$154,671.60</td>
+            <td>$692.69</td>
+            <td>$154,671.60</td>
+            <td>$9,391.60</td>
+          </tr>
+          <tr class="ellipsis"><td colspan="23">&hellip; 37 more months &hellip;</td></tr>
+          <tr>
+            <td>50</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$7,488.74</td>
+            <td>$32.76</td>
+            <td>$4,350.00</td>
+            <td>$3,171.50</td>
+            <td>$32.76</td>
+            <td>$3,171.50</td>
+            <td>$23,191.50</td>
+          </tr>
+          <tr class="closed">
+            <td>51</td>
+            <td>$2,243.00</td>
+            <td>$457.00</td>
+            <td>$2,700.00</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>$3,171.50</td>
+            <td>$13.88</td>
+            <td>$3,185.38</td>
+            <td>-</td>
+            <td>$13.88</td>
+            <td>-</td>
+            <td>$23,205.38</td>
+          </tr>
+          <tr class="totals">
+            <td>TOTAL</td>
+            <td>$114,393.00</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>$858.89</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>$2,513.06</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>$9,308.76</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>$208,004.67</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>$23,205.38</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</body>
+</html>
+</content>

@@ -57,7 +57,7 @@ class FullEmergencyFundEvaluatorTests {
         assertThat(result).isEqualTo(StageEvaluation.satisfied(3));
     }
 
-    /** Status follows the computed progress (story 004 REQ-005), so a fund that rounds to 0.0 is not started. */
+    /** Status follows the computed progress, so a fund that rounds to 0.0 is not started. */
     @ParameterizedTest
     @CsvSource({
         "0, 1050000, 'Your emergency fund is $10,500.00 short of a 3-month target of $10,500.00.'",
@@ -70,7 +70,7 @@ class FullEmergencyFundEvaluatorTests {
         assertThat(result).isEqualTo(StageEvaluation.notStarted(3, Money.ofCents(remainingCents), blocker));
     }
 
-    // Housing (design.md 039 section 2): the target is months of monthlyEssentialCosts(), which includes housing.
+    // Housing: the target is months of monthlyEssentialCosts(), which includes housing.
 
     @Test
     void theTargetIncludesTheMonthlyHousingCost() {

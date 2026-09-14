@@ -3,7 +3,7 @@ package com.rungs.readiness.web;
 import java.util.List;
 
 /**
- * One row of the payoff schedule's month-by-month table (design.md 040 section 2), formatted for display.
+ * One row of the payoff schedule's month-by-month table, formatted for display.
  *
  * @param monthLabel the calendar month, e.g. "Sep 2026"
  * @param extraCash the household's surplus this month

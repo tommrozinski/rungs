@@ -23,7 +23,7 @@ import com.rungs.readiness.domain.stage.WealthBuildingEvaluator;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** The result page's copy rules (design.md 038 section 4), one test per row of the table plus edge cases. */
+/** The result page's copy rules, one test per row of the table plus edge cases. */
 class ResultViewsTests {
 
     private final StageLadder ladder = new StageLadder(List.of(
@@ -318,7 +318,7 @@ class ResultViewsTests {
     void stage7ShowsTheNotStartedPresentationWhileSomeButNotAllEarlierStagesAreDone() {
         // Stage 1, 2, 5, and 6 are satisfied or skipped by default; stages 3 and 4 are not, so
         // WealthBuildingEvaluator reports IN_PROGRESS. The result page still shows stage 7 as Not
-        // started (design.md 038 section 4): a plain disc and the chip-waiting chip, never active.
+        // started: a plain disc and the chip-waiting chip, never active.
         FinancialSnapshot snapshot = aSnapshot().withStarterEmergencyFund(Money.ofDollars(1_000)).build();
 
         StageView view = stage(build(snapshot), 7);
@@ -485,10 +485,10 @@ class ResultViewsTests {
 
         assertThat(result.verdictLine()).isEqualTo("Pay off the house.");
         assertThat(result.verdictSub()).isEqualTo(
-                "With the debt snowball it's paid off in October 2028, 4 years 4 months sooner than your payment alone.");
+                "With the debt snowball it's paid off in October 2028, 4 years 3 months sooner than your payment alone.");
         assertThat(stage(result, 6).line()).isEqualTo(
-                "At your current payment it's paid off in February 2033. With the debt snowball it's paid off in "
-                        + "October 2028, 4 years 4 months sooner.");
+                "At your current payment it's paid off in January 2033. With the debt snowball it's paid off in "
+                        + "October 2028, 4 years 3 months sooner.");
     }
 
     @Test
@@ -507,6 +507,62 @@ class ResultViewsTests {
 
         assertThat(result.verdictSub())
                 .isEqualTo("Your $400.00 payment doesn't cover the $510.42 monthly interest.");
+    }
+
+    @Test
+    void stageSixLineNeverClaimsTheSnowballIsSoonerForAMortgageOnlyHouseholdWithNoSurplus() {
+        // No debts and a non-positive surplus mean the debt snowball has no extra cash: it amortizes the mortgage
+        // exactly like the current payment does, so the two payoff dates must be the same (A1) and the line must
+        // never claim the snowball is "sooner".
+        FinancialSnapshot snapshot = aSnapshot()
+                .withHousing(new Mortgage(Money.ofDollars(500), new BigDecimal("12"), Money.ofDollars(260)))
+                .build();
+
+        StageView view = stage(build(snapshot), 6);
+
+        assertThat(view.line()).isEqualTo("At your current payment it's paid off in February 2024.");
+        assertThat(view.line()).doesNotContain("sooner");
+    }
+
+    @Test
+    void stageSixVerdictNeverClaimsTheSnowballIsSoonerForAMortgageOnlyHouseholdWithNoSurplus() {
+        FinancialSnapshot snapshot = aSnapshot()
+                .withStarterEmergencyFund(Money.ofDollars(1_000))
+                .withFullEmergencyFund(Money.ofDollars(3_600))
+                .withRetirementContributionPercent("15")
+                .withHouseholdFlags(new HouseholdFlags(false, false))
+                .withHousing(new Mortgage(Money.ofDollars(500), new BigDecimal("12"), Money.ofDollars(260)))
+                .build();
+
+        ResultView result = build(snapshot);
+
+        assertThat(result.verdictSub()).isEqualTo("At your current payment it's paid off in February 2024.");
+        assertThat(result.verdictSub()).doesNotContain("sooner");
+    }
+
+    @Test
+    void stageSixShowsOnlyTheSnowballDateWhenTheCurrentPaymentDoesNotCoverInterestButTheSnowballFinishes() {
+        // The current payment never covers interest (Capped/NotCovered branch), but the debt snowball's extra
+        // cash still closes the mortgage: the line and verdict fall back to the snowball-only sentence, with no
+        // "sooner" comparison since there is no current-payment date to compare against (A1's untested branch).
+        FinancialSnapshot snapshot = aSnapshot()
+                .withStarterEmergencyFund(Money.ofDollars(1_000))
+                .withMonthlyTakeHomeIncome(Money.ofDollars(9_000))
+                .withMonthlyEssentialExpenses(Money.ofDollars(2_000))
+                .withFullEmergencyFund(Money.ofDollars(7_200))
+                .withRetirementContributionPercent("15")
+                .withHouseholdFlags(new HouseholdFlags(false, false))
+                .withHousing(new Mortgage(Money.ofDollars(300_000), new BigDecimal("6"), Money.ofDollars(400)))
+                .build();
+
+        ResultView result = build(snapshot);
+
+        assertThat(stage(result, 6).line()).isEqualTo(
+                "Your $400.00 payment doesn't cover the $1,500.00 monthly interest. With the debt snowball it's "
+                        + "paid off in January 2028.");
+        assertThat(stage(result, 6).line()).doesNotContain("sooner");
+        assertThat(result.verdictSub()).isEqualTo("With the debt snowball it's paid off in January 2028.");
+        assertThat(result.verdictSub()).doesNotContain("sooner");
     }
 
     @Test

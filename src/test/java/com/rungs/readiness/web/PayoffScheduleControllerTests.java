@@ -17,8 +17,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Web tests for the "Show payoff schedule" flow (design.md 040 section 4): the result page's inline breakdown and
- * the standalone {@code /breakdown} page.
+ * Web tests for the "Show payoff schedule" flow: the result page's inline breakdown and the standalone
+ * {@code /breakdown} page.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -119,8 +119,8 @@ class PayoffScheduleControllerTests {
                 .getContentAsString();
 
         assertThat(body).contains("PAYOFF SCHEDULE");
-        // Debt snowball order (design.md 041 section 1): smallest starting balance first — Store card $840,
-        // Student loan $2,500, Car loan $9,140 — then the mortgage last.
+        // Debt snowball order: smallest starting balance first — Store card $840, Student loan $2,500,
+        // Car loan $9,140 — then the mortgage last.
         int storeIndex = body.indexOf("Store card");
         int studentIndex = body.indexOf("Student loan");
         int carIndex = body.indexOf("Car loan");

@@ -32,9 +32,8 @@ import org.thymeleaf.ITemplateEngine;
 import org.thymeleaf.context.Context;
 
 /**
- * Renders the snapshot form (S-01) and, from the posted values, a real seven-stage assessment on the result page
- * (S-02), including its inline payoff schedule breakdown and the standalone {@code /breakdown} page
- * (design.md 040 section 4).
+ * Renders the snapshot form and, from the posted values, a real seven-stage assessment on the result page,
+ * including its inline payoff schedule breakdown and the standalone {@code /breakdown} page.
  */
 @Controller
 public class SnapshotController {
@@ -42,12 +41,6 @@ public class SnapshotController {
     private static final String FORM_VIEW = "form";
     private static final String RESULT_VIEW = "result";
     private static final String PAYOFF_SCHEDULE_VIEW = "payoff-schedule";
-
-    /**
-     * The most debt rows the form ever holds; matches {@link SnapshotFormMapper}'s row cap, so "Add a debt" and
-     * the binder agree on the same limit (design.md 040 review) and a bloated payoff schedule can't be posted.
-     */
-    private static final int MAX_DEBT_ROWS = 20;
 
     private final StageLadder ladder;
     private final Clock clock;
@@ -68,9 +61,9 @@ public class SnapshotController {
 
     @InitBinder
     void initBinder(WebDataBinder binder) {
-        // Keeps a stray debts[99999] (or debts[20], one row past MAX_DEBT_ROWS) from asking the binder to grow
-        // the list that far; index MAX_DEBT_ROWS trips this and reaches handleUnreachableDebtIndex() as a 400.
-        binder.setAutoGrowCollectionLimit(MAX_DEBT_ROWS);
+        // Keeps a stray debts[99999] (or one row past the cap) from asking the binder to grow the list that far;
+        // an index past the limit trips this and reaches handleUnreachableDebtIndex() as a 400.
+        binder.setAutoGrowCollectionLimit(SnapshotFormMapper.MAX_DEBT_ROWS);
     }
 
     @GetMapping("/")
@@ -83,7 +76,7 @@ public class SnapshotController {
 
     @PostMapping("/debts/add")
     String addDebt(@ModelAttribute("form") SnapshotForm form) {
-        if (form.getDebts().size() < MAX_DEBT_ROWS) {
+        if (form.getDebts().size() < SnapshotFormMapper.MAX_DEBT_ROWS) {
             form.getDebts().add(new SnapshotForm.DebtRow());
         }
         return FORM_VIEW;
@@ -114,16 +107,16 @@ public class SnapshotController {
         return RESULT_VIEW;
     }
 
-    /** Re-renders the snapshot form (S-01) filled in with every value from the result page's hidden copy, so
-     * "Change my numbers" (design.md 040 section 4) loses nothing the household already entered. */
+    /** Re-renders the snapshot form filled in with every value from the result page's hidden copy, so
+     * "Change my numbers" loses nothing the household already entered. */
     @PostMapping("/edit")
     String edit(@ModelAttribute("form") SnapshotForm form, Model model) {
         model.addAttribute("form", form);
         return FORM_VIEW;
     }
 
-    /** Renders the standalone payoff schedule page for the posted snapshot (design.md 040 section 4), independent
-     * of the result page's inline breakdown; useful for checks and tests. */
+    /** Renders the standalone payoff schedule page for the posted snapshot, independent of the result page's
+     * inline breakdown; useful for checks and tests. */
     @PostMapping("/breakdown")
     String breakdown(@ModelAttribute("form") SnapshotForm form, Model model) {
         YearMonth asOf = YearMonth.now(clock);
@@ -133,8 +126,7 @@ public class SnapshotController {
     }
 
     /** Renders {@code templates/payoff-schedule.html} to a standalone HTML string for the result page's iframe
-     * {@code srcdoc} (design.md 040 section 4); Thymeleaf escapes it as an attribute value when the result
-     * template writes it out. */
+     * {@code srcdoc}; Thymeleaf escapes it as an attribute value when the result template writes it out. */
     private String renderPayoffSchedule(PayoffSchedule schedule) {
         Context context = new Context();
         context.setVariable("schedule", ScheduleViews.build(schedule));

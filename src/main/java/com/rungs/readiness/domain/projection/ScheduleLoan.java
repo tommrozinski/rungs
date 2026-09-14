@@ -5,9 +5,8 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * One loan (a debt or the mortgage) as it enters a {@link PayoffSchedule}, in payoff order (design.md 040 section 3
- * for the month-by-month pool mechanics; design.md 041 section 1 for the snowball order: every debt smallest
- * starting balance first, ties in supplied order, then the mortgage last).
+ * One loan (a debt or the mortgage) as it enters a {@link PayoffSchedule}, in payoff order: every debt smallest
+ * starting balance first, ties in supplied order, then the mortgage last.
  *
  * @param name the loan's label; "Mortgage" for the home loan
  * @param startingBalance the balance owed as of the schedule's first month

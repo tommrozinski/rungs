@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 /**
- * One stage's result. Construction enforces REQ-004, so an inconsistent result cannot exist:
+ * One stage's result. Construction enforces the rules below, so an inconsistent result cannot exist:
  *
  * <ul>
  *   <li>{@code stage} is 1 to 7, {@code status} and {@code percentComplete} are non-null, and {@code percentComplete}

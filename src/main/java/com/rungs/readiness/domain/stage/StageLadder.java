@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Runs all seven stage evaluators and picks the household's current stage (PRD 5.3). Every evaluator runs on every
+ * Runs all seven stage evaluators and picks the household's current stage. Every evaluator runs on every
  * assessment; none is skipped because a lower stage is incomplete. The ladder reads no clock, random source, or
  * environment.
  */

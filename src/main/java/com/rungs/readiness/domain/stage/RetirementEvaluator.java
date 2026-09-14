@@ -37,7 +37,7 @@ public final class RetirementEvaluator implements StageEvaluator {
         // toPlainString, so 10.00 reads "10" rather than the "1E+1" stripTrailingZeros alone would give.
         String blocker = BLOCKER.formatted(percent.stripTrailingZeros().toPlainString());
         BigDecimal progress = Percentages.ofRatio(percent, TARGET_PERCENT);
-        // Story 004 REQ-005: status follows progress, so a contribution that rounds to 0.0 is NOT_STARTED.
+        // Status follows progress, so a contribution that rounds to 0.0 is NOT_STARTED.
         if (progress.signum() == 0) {
             return StageEvaluation.notStarted(STAGE, null, blocker);
         }

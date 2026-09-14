@@ -14,8 +14,7 @@ import java.time.YearMonth;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-/** {@link PayoffScheduleCalculator} (design.md 040 sections 3 and 5 for the pool mechanics; design.md 041
- * sections 1, 3, and 5 for the snowball order and the payoff-date helpers). */
+/** {@link PayoffScheduleCalculator}: the pool mechanics, the snowball order, and the payoff-date helpers. */
 class PayoffScheduleCalculatorTests {
 
     private static final YearMonth AS_OF = YearMonth.of(2026, 9);
@@ -35,8 +34,8 @@ class PayoffScheduleCalculatorTests {
         assertInvariants(schedule);
     }
 
-    // Hand-verified two-debt case, exact to the cent, over the first three months, under the debt snowball
-    // (design.md 041 section 1): smallest starting balance first, regardless of rate.
+    // Hand-verified two-debt case, exact to the cent, over the first three months, under the debt snowball:
+    // smallest starting balance first, regardless of rate.
     //
     // Debt A: $300.00 balance, 6% annual (0.5% monthly), $20 minimum. Debt B: $2,000.00 balance, 12% annual
     // (1% monthly), $100 minimum. Debt A's smaller balance orders it before Debt B even though Debt B's rate is
@@ -151,7 +150,7 @@ class PayoffScheduleCalculatorTests {
         assertInvariants(schedule);
     }
 
-    // Ordering: starting balance ascending, ties in supplied order (design.md 041 section 1).
+    // Ordering: starting balance ascending, ties in supplied order.
 
     @Test
     void ordersLoansByStartingBalanceAscendingWithTiesInSuppliedOrder() {
@@ -346,7 +345,7 @@ class PayoffScheduleCalculatorTests {
         assertInvariants(first);
     }
 
-    // debtFreeMonth and mortgagePayoffMonth (design.md 041 section 3).
+    // debtFreeMonth and mortgagePayoffMonth.
 
     @Test
     void debtFreeMonthIsAsOfWhenThereAreNoDebts() {
@@ -471,9 +470,9 @@ class PayoffScheduleCalculatorTests {
     }
 
     /**
-     * Asserts the invariants design.md 040 section 3 requires of every schedule: each loan's total paid equals its
-     * starting balance minus its final balance plus its total interest, no balance ever goes negative, and no
-     * month's total payment exceeds the minimums of that month's open loans plus that month's total available.
+     * Asserts the invariants every schedule must hold: each loan's total paid equals its starting balance minus its
+     * final balance plus its total interest, no balance ever goes negative, and no month's total payment exceeds
+     * the minimums of that month's open loans plus that month's total available.
      */
     private static void assertInvariants(PayoffSchedule schedule) {
         int loanCount = schedule.loans().size();
