@@ -11,8 +11,10 @@ package com.rungs.readiness.web;
  * @param discContent the disc's content: a checkmark, an en dash, or the stage number as text
  * @param open whether this is the current stage, rendered inside {@code .stage-open} with the blocker paragraph
  *     rather than the small line
- * @param line the stage's copy, shown as the small text or, when {@code open}, as the blocker; may contain a raw
- *     {@code <b>} tag (stage 2), so it is rendered unescaped
+ * @param line the stage's copy, shown as the small text or, when {@code open}, as the blocker: {@code line} is its
+ *     leading text (or the entire text when there is no emphasis)
+ * @param lineEmphasis the line's bold portion, or null when it has none (every stage but stage 2 in progress)
+ * @param lineSuffix the text following {@code lineEmphasis}; empty when {@code lineEmphasis} is null
  * @param showBar whether the progress bar is shown (stages 1, 3, and 4, only while in progress)
  * @param barWidthPercent the bar's fill percentage, meaningful only when {@code showBar} is true
  */
@@ -25,6 +27,8 @@ record StageView(
         String discContent,
         boolean open,
         String line,
+        String lineEmphasis,
+        String lineSuffix,
         boolean showBar,
         int barWidthPercent) {
 }

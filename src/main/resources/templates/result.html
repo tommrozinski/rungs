@@ -16,9 +16,9 @@
   <div class="screen">
 
     <div class="verdict">
-      <p class="eyebrow" th:utext="${result.eyebrow}"></p>
-      <p class="line" th:utext="${result.verdictLine}"></p>
-      <p class="sub" th:utext="${result.verdictSub}"></p>
+      <p class="eyebrow" th:text="${result.eyebrow}"></p>
+      <p class="line" th:text="${result.verdictLine}"></p>
+      <p class="sub" th:text="${result.verdictSub}"></p>
     </div>
 
     <div class="stat-grid">
@@ -34,15 +34,15 @@
         <div class="disc" th:classappend="${s.discClass}" th:text="${s.discContent}"></div>
 
         <div class="stage-body" th:unless="${s.open}">
-          <div class="stage-title"><span th:utext="${s.title}"></span><span class="chip" th:classappend="${s.chipClass}" th:utext="${s.chipLabel}"></span></div>
+          <div class="stage-title"><span th:text="${s.title}"></span><span class="chip" th:classappend="${s.chipClass}" th:text="${s.chipLabel}"></span></div>
           <div class="bar" th:if="${s.showBar}"><i th:style="'width:' + ${s.barWidthPercent} + '%'"></i></div>
-          <div class="small" th:style="${s.showBar} ? 'margin-top:6px;' : null" th:utext="${s.line}"></div>
+          <div class="small" th:style="${s.showBar} ? 'margin-top:6px;' : null">[[${s.line}]]<b th:if="${s.lineEmphasis} != null" th:text="${s.lineEmphasis}"></b>[[${s.lineSuffix}]]</div>
         </div>
 
         <div class="stage-body" style="padding-top:0" th:if="${s.open}">
           <div class="stage-open">
-            <div class="stage-title"><span th:utext="${s.title}"></span><span class="chip" th:classappend="${s.chipClass}" th:utext="${s.chipLabel}"></span></div>
-            <p class="blocker" th:classappend="${s.showBar} ? null : 'last'" th:utext="${s.line}"></p>
+            <div class="stage-title"><span th:text="${s.title}"></span><span class="chip" th:classappend="${s.chipClass}" th:text="${s.chipLabel}"></span></div>
+            <p class="blocker" th:classappend="${s.showBar} ? null : 'last'">[[${s.line}]]<b th:if="${s.lineEmphasis} != null" th:text="${s.lineEmphasis}"></b>[[${s.lineSuffix}]]</p>
             <div class="bar" th:if="${s.showBar}"><i th:style="'width:' + ${s.barWidthPercent} + '%'"></i></div>
           </div>
         </div>

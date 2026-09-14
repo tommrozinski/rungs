@@ -111,7 +111,9 @@ class ResultViewsTests {
 
         StageView view = stage(build(snapshot), 2);
 
-        assertThat(view.line()).isEqualTo("Three debts remain, totalling <b>$12,480</b>.");
+        assertThat(view.line()).isEqualTo("Three debts remain, totalling ");
+        assertThat(view.lineEmphasis()).isEqualTo("$12,480");
+        assertThat(view.lineSuffix()).isEqualTo(".");
     }
 
     @Test
@@ -122,7 +124,9 @@ class ResultViewsTests {
 
         StageView view = stage(build(snapshot), 2);
 
-        assertThat(view.line()).isEqualTo("One debt remains, totalling <b>$500</b>.");
+        assertThat(view.line()).isEqualTo("One debt remains, totalling ");
+        assertThat(view.lineEmphasis()).isEqualTo("$500");
+        assertThat(view.lineSuffix()).isEqualTo(".");
     }
 
     @Test
@@ -135,7 +139,9 @@ class ResultViewsTests {
 
         StageView view = stage(build(snapshot), 2);
 
-        assertThat(view.line()).isEqualTo("11 debts remain, totalling <b>$1,100</b>.");
+        assertThat(view.line()).isEqualTo("11 debts remain, totalling ");
+        assertThat(view.lineEmphasis()).isEqualTo("$1,100");
+        assertThat(view.lineSuffix()).isEqualTo(".");
     }
 
     // Stage 3: full emergency fund
