@@ -18,36 +18,47 @@ import java.util.regex.Pattern;
 
 /**
  * Converts the raw {@link SnapshotForm} the browser posts into a {@link FinancialSnapshot}, leniently, per
- * design.md 038 section 3: a blank or unparseable amount or percent becomes zero, a negative one becomes zero,
+ * design.md 039 section 3: a blank or unparseable amount or percent becomes zero, a negative one becomes zero,
  * percentages are clamped to 0-100 and rounded to the scale the domain requires (rather than rejected for having
  * too many decimal places), a debt row with a zero balance is dropped, a blank label becomes "Debt N" (the row's
- * 1-based position as submitted), and an unrecognized debt type becomes {@link DebtType#OTHER}. Nothing here
- * rejects input or throws; every bad case resolves to a plain default instead, so a submission can never 500.
+ * 1-based position as submitted), and an unrecognized debt type becomes {@link DebtType#OTHER}. A blank or
+ * unrecognized {@code housing} becomes {@code MORTGAGE}; whichever mode is not selected has its fields ignored, and
+ * a maturity month outside 1-12 or year outside 1900-2200 (or either one blank) becomes an unknown maturity.
+ * Nothing here rejects input or throws; every bad case resolves to a plain default instead, so a submission can
+ * never 500.
  *
- * <p>The v0 form collects no mortgage and no college contribution amount, so the snapshot always has a $0 monthly
- * college contribution and a fixed 3-month emergency-fund target.
- *
- * <p><b>Story 039 phase 2 stopgap:</b> the form still only has the old {@code rents} checkbox, not the real housing
- * fields (story 039 phase 3 adds those). Until then, {@code rents} maps to {@link Rent} at $0, and unchecked maps to
- * a {@link Mortgage} with every amount at $0 and an unknown maturity — either way housing costs nothing, matching
- * the v0 behavior this mapper had before story 039. {@code asOf} is likewise a fixed placeholder, not the real
- * clock-backed value phase 3 will use.
+ * <p>The v0 form collects no college contribution amount, so the snapshot always has a $0 monthly college
+ * contribution and a fixed 3-month emergency-fund target. {@code asOf} is supplied by the caller (the controller,
+ * from its injected {@link java.time.Clock}), not decided here.
  */
 final class SnapshotFormMapper {
 
     /** The v0 form has no field for this; the snapshot always targets a 3-month fund. */
     private static final int EMERGENCY_FUND_MONTHS = 3;
 
-    /** Story 039 phase 2 stopgap: the form has no assessment-month field yet, so every snapshot uses this month. */
-    private static final YearMonth PLACEHOLDER_AS_OF = YearMonth.of(2026, 9);
-
     /** Decimal places {@link FinancialSnapshot#retirementContributionPercent()} is normalized to. */
     private static final int RETIREMENT_PERCENT_SCALE = 2;
 
-    /** Decimal places {@link Debt#annualInterestRate()} is normalized to. */
+    /** Decimal places {@link Debt#annualInterestRate()} and {@link Mortgage#annualInterestRate()} normalize to. */
     private static final int INTEREST_RATE_SCALE = 3;
 
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
+
+    /**
+     * Every parsed money amount is capped at this value so an enormous submitted amount can never reach the
+     * domain and overflow its arithmetic (design.md 039 review); larger amounts are capped, not rejected.
+     */
+    private static final Money MAX_MONEY = Money.ofDollars(1_000_000_000);
+
+    /** {@link #MAX_MONEY} expressed as dollars, for capping before a {@link BigDecimal} amount is even in cents. */
+    private static final BigDecimal MAX_MONEY_DOLLARS = BigDecimal.valueOf(1_000_000_000);
+
+    private static final String RENT_MODE = "RENT";
+
+    private static final int MIN_MATURITY_MONTH = 1;
+    private static final int MAX_MATURITY_MONTH = 12;
+    private static final int MIN_MATURITY_YEAR = 1900;
+    private static final int MAX_MATURITY_YEAR = 2200;
 
     /**
      * Longest text {@link #parseDecimal} accepts, mirroring {@link Money#parse}'s own cap; this keeps the
@@ -66,8 +77,8 @@ final class SnapshotFormMapper {
     private SnapshotFormMapper() {
     }
 
-    /** Builds the snapshot the seven-stage ladder assesses from the form as submitted. */
-    static FinancialSnapshot toSnapshot(SnapshotForm form) {
+    /** Builds the snapshot the seven-stage ladder assesses from the form as submitted, as of {@code asOf}. */
+    static FinancialSnapshot toSnapshot(SnapshotForm form, YearMonth asOf) {
         List<Debt> debts = new ArrayList<>();
         List<SnapshotForm.DebtRow> rows = form.getDebts();
         for (int index = 0; index < rows.size(); index++) {
@@ -99,24 +110,67 @@ final class SnapshotFormMapper {
                 debts,
                 housing(form),
                 new HouseholdFlags(form.isRetired(), form.isIntendsToFundCollege()),
-                PLACEHOLDER_AS_OF);
+                asOf);
     }
 
     /**
-     * Story 039 phase 2 stopgap (see the class Javadoc): {@code rents} becomes {@link Rent} at $0, else a
-     * {@link Mortgage} with every amount at $0 and an unknown maturity.
+     * Returns the household's housing: {@link Rent} when {@code housing} is exactly {@code "RENT"}, ignoring the
+     * mortgage fields; otherwise a {@link Mortgage} built from the mortgage fields, ignoring the rent field. A
+     * blank or unrecognized {@code housing} is treated as the mortgage mode.
      */
     private static Housing housing(SnapshotForm form) {
-        return form.isRents()
-                ? new Rent(Money.ZERO)
-                : new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null);
+        if (RENT_MODE.equals(form.getHousing())) {
+            return new Rent(money(form.getMonthlyRent()));
+        }
+        return new Mortgage(
+                money(form.getMortgageBalance()),
+                percent(form.getMortgageRate(), INTEREST_RATE_SCALE),
+                money(form.getMortgagePayment()),
+                money(form.getAnnualPropertyTaxes()),
+                maturity(form.getMaturityMonth(), form.getMaturityYear()));
+    }
+
+    /**
+     * Returns the maturity month built from {@code monthText} and {@code yearText}, or null when either is blank
+     * or unparseable, the month is outside 1-12, or the year is outside 1900-2200.
+     */
+    private static YearMonth maturity(String monthText, String yearText) {
+        Integer month = parseInt(monthText);
+        Integer year = parseInt(yearText);
+        if (month == null || year == null) {
+            return null;
+        }
+        if (month < MIN_MATURITY_MONTH || month > MAX_MATURITY_MONTH) {
+            return null;
+        }
+        if (year < MIN_MATURITY_YEAR || year > MAX_MATURITY_YEAR) {
+            return null;
+        }
+        return YearMonth.of(year, month);
+    }
+
+    /** Returns {@code text} parsed as a plain integer, or null when it is null, blank, or unparseable. */
+    private static Integer parseInt(String text) {
+        if (text == null) {
+            return null;
+        }
+        String trimmed = text.strip();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(trimmed);
+        } catch (NumberFormatException notAnInteger) {
+            return null;
+        }
     }
 
     /**
      * Parses {@code text} as a dollar amount, accepting everything {@link Money#parse} does — including a leading
      * {@code $} and comma-grouped thousands — plus amounts with more than two decimal places, which round half-up
      * to the cent rather than being rejected (the more forgiving of {@link Money#parse}'s two options for those).
-     * Blank, unparseable, negative, or overflowing input becomes zero; nothing here ever throws.
+     * Blank, unparseable, or negative input becomes zero; an amount above {@link #MAX_MONEY} is capped to it rather
+     * than rejected, so nothing here ever throws or reaches the domain able to overflow its arithmetic.
      */
     private static Money money(String text) {
         if (text == null) {
@@ -125,17 +179,21 @@ final class SnapshotFormMapper {
         String trimmed = text.strip();
         try {
             Money parsed = Money.parse(trimmed);
-            return parsed.isNegative() ? Money.ZERO : parsed;
+            return parsed.isNegative() ? Money.ZERO : parsed.min(MAX_MONEY);
         } catch (MoneyFormatException notMoneyFormat) {
             return moneyFromLenientDecimal(trimmed);
         }
     }
 
-    /** Falls back for amounts {@link Money#parse} rejects only for having more than two decimal places. */
+    /** Falls back for amounts {@link Money#parse} rejects only for having more than two decimal places (or being
+     * too large for it to accumulate at all); also caps at {@link #MAX_MONEY} rather than reporting overflow. */
     private static Money moneyFromLenientDecimal(String text) {
         BigDecimal amount = parseDecimal(text);
         if (amount.signum() < 0) {
             return Money.ZERO;
+        }
+        if (amount.compareTo(MAX_MONEY_DOLLARS) > 0) {
+            return MAX_MONEY;
         }
         try {
             return Money.ofCents(amount.setScale(2, RoundingMode.HALF_UP).movePointRight(2).longValueExact());

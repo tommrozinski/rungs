@@ -60,18 +60,24 @@ public final class MortgagePayoffCalculator {
 
     /**
      * Amortizes {@code balance} month by month in cents, interest first then payment, and returns the month it
-     * reaches zero, or null when it takes more than {@link #MAX_MONTHS}.
+     * reaches zero, or null when it takes more than {@link #MAX_MONTHS}. A balance so close to the range of a
+     * {@code long} that a month's interest or payment overflows it is treated the same as running past
+     * {@link #MAX_MONTHS} rather than propagating the {@link ArithmeticException}.
      */
     private static Integer monthsToPayoff(Money balance, Money payment, BigDecimal monthlyRate) {
         Money remaining = balance;
-        for (int month = 1; month <= MAX_MONTHS; month++) {
-            Money interest = remaining.times(monthlyRate);
-            Money owed = remaining.plus(interest);
-            Money paid = payment.min(owed);
-            remaining = owed.minus(paid);
-            if (!remaining.isPositive()) {
-                return month;
+        try {
+            for (int month = 1; month <= MAX_MONTHS; month++) {
+                Money interest = remaining.times(monthlyRate);
+                Money owed = remaining.plus(interest);
+                Money paid = payment.min(owed);
+                remaining = owed.minus(paid);
+                if (!remaining.isPositive()) {
+                    return month;
+                }
             }
+        } catch (ArithmeticException overflow) {
+            return null;
         }
         return null;
     }

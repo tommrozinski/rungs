@@ -10,6 +10,8 @@ import com.rungs.readiness.domain.stage.RetirementEvaluator;
 import com.rungs.readiness.domain.stage.StageLadder;
 import com.rungs.readiness.domain.stage.StarterFundEvaluator;
 import com.rungs.readiness.domain.stage.WealthBuildingEvaluator;
+import java.time.Clock;
+import java.time.YearMonth;
 import java.util.List;
 import org.springframework.beans.InvalidPropertyException;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * Renders the snapshot form (S-01) and, from the posted values, a real seven-stage assessment on the result page
@@ -35,8 +38,10 @@ public class SnapshotController {
     private static final String RESULT_VIEW = "result";
 
     private final StageLadder ladder;
+    private final Clock clock;
 
-    public SnapshotController() {
+    public SnapshotController(Clock clock) {
+        this.clock = clock;
         this.ladder = new StageLadder(List.of(
                 new StarterFundEvaluator(),
                 new DebtFreeEvaluator(),
@@ -77,10 +82,23 @@ public class SnapshotController {
 
     @PostMapping("/assess")
     String assess(@ModelAttribute("form") SnapshotForm form, Model model) {
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        YearMonth asOf = YearMonth.now(clock);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, asOf);
         LadderResult ladderResult = ladder.assess(snapshot);
         model.addAttribute("result", ResultViews.build(ladderResult, snapshot));
         return RESULT_VIEW;
+    }
+
+    @PostMapping("/sample")
+    String loadSample(
+            @ModelAttribute("form") SnapshotForm form,
+            @RequestParam(name = "sample", required = false) String sampleId,
+            Model model) {
+        SnapshotForm sample = SampleHouseholds.byId(sampleId, YearMonth.now(clock));
+        if (sample != null) {
+            model.addAttribute("form", sample);
+        }
+        return FORM_VIEW;
     }
 
     @ExceptionHandler(InvalidPropertyException.class)

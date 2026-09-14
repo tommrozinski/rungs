@@ -138,6 +138,23 @@ class MortgagePayoffCalculatorTests {
         assertThat(payoff.monthsToPayoff()).isEqualTo(600);
     }
 
+    // Overflow during amortization: a balance this close to Long.MAX_VALUE cents, at 100% annual interest, adds
+    // more than a month's interest before the loop's first payment is even applied, overflowing Money.plus. That
+    // must be treated the same as running past 600 months rather than propagating the ArithmeticException.
+
+    @Test
+    void overflowDuringAmortizationIsTreatedAsTheSixHundredMonthCap() {
+        Money hugeBalance = Money.ofCents(Long.MAX_VALUE - 1000);
+        Mortgage mortgage = new Mortgage(hugeBalance, new BigDecimal("100"), hugeBalance, Money.ZERO, null);
+
+        MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
+
+        assertThat(payoff.covered()).isTrue();
+        assertThat(payoff.monthsToPayoff()).isNull();
+        assertThat(payoff.payoffMonth()).isNull();
+        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.UNKNOWN);
+    }
+
     // Cross-checked against the closed-form amortization formula n = -ln(1 - rB/P) / ln(1+r), computed with double
     // in this test only. A 30-year (360-month) loan at 5.75% whose payment is rounded to the cent takes one month
     // longer than the closed-form answer once that rounding is amortized out cent by cent — the off-by-one the

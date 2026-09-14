@@ -10,13 +10,16 @@ import com.rungs.readiness.domain.model.Mortgage;
 import com.rungs.readiness.domain.model.Money;
 import com.rungs.readiness.domain.model.Rent;
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/** The lenient {@link SnapshotForm} to {@link FinancialSnapshot} conversion (design.md 038 section 3). */
+/** The lenient {@link SnapshotForm} to {@link FinancialSnapshot} conversion (design.md 039 section 3). */
 class SnapshotFormMapperTests {
+
+    private static final YearMonth ASOF = YearMonth.of(2026, 9);
 
     @Test
     void blankMoneyFieldsBecomeZero() {
@@ -26,7 +29,7 @@ class SnapshotFormMapperTests {
         form.setStarterEmergencyFund("");
         form.setFullEmergencyFund("");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ZERO);
         assertThat(snapshot.monthlyEssentialExpenses()).isEqualTo(Money.ZERO);
@@ -39,7 +42,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setMonthlyTakeHomeIncome("not a number");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ZERO);
     }
@@ -49,7 +52,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setMonthlyTakeHomeIncome("-500");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ZERO);
     }
@@ -59,7 +62,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setMonthlyTakeHomeIncome("6200.50");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ofCents(620_050));
     }
@@ -69,7 +72,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setMonthlyTakeHomeIncome("$1,234.56");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ofCents(123_456));
     }
@@ -79,9 +82,29 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setMonthlyTakeHomeIncome("12.345");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ofCents(1_235));
+    }
+
+    @Test
+    void moneyFieldAboveTheBillionDollarCapIsCappedRatherThanOverflowing() {
+        SnapshotForm form = new SnapshotForm();
+        form.setMonthlyTakeHomeIncome("92233720368547748.07");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ofDollars(1_000_000_000));
+    }
+
+    @Test
+    void twentyDigitMoneyFieldIsCappedRatherThanBecomingZero() {
+        SnapshotForm form = new SnapshotForm();
+        form.setMonthlyTakeHomeIncome("99999999999999999999");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ofDollars(1_000_000_000));
     }
 
     @Test
@@ -89,7 +112,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setRetirementContributionPercent("");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.retirementContributionPercent()).isEqualTo(new BigDecimal("0.00"));
     }
@@ -99,7 +122,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setRetirementContributionPercent("-5");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.retirementContributionPercent()).isEqualTo(new BigDecimal("0.00"));
     }
@@ -109,7 +132,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setRetirementContributionPercent("250");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.retirementContributionPercent()).isEqualTo(new BigDecimal("100.00"));
     }
@@ -119,7 +142,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setRetirementContributionPercent("6.256");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.retirementContributionPercent()).isEqualTo(new BigDecimal("6.26"));
     }
@@ -132,7 +155,7 @@ class SnapshotFormMapperTests {
         row.setBalance("0");
         form.getDebts().add(row);
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.debts()).isEmpty();
     }
@@ -149,7 +172,7 @@ class SnapshotFormMapperTests {
         form.getDebts().add(first);
         form.getDebts().add(second);
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.debts()).extracting(Debt::label).containsExactly("Store card", "Debt 2");
     }
@@ -163,7 +186,7 @@ class SnapshotFormMapperTests {
         row.setType("NOT_A_REAL_TYPE");
         form.getDebts().add(row);
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.debts()).extracting(Debt::type).containsExactly(DebtType.OTHER);
     }
@@ -180,7 +203,7 @@ class SnapshotFormMapperTests {
         form.getDebts().add(droppedRow);
         form.getDebts().add(keptRow);
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.debts()).extracting(Debt::id).containsExactly("debt-1");
     }
@@ -189,32 +212,121 @@ class SnapshotFormMapperTests {
     void fixedComponentsAreAlwaysSet() {
         SnapshotForm form = new SnapshotForm();
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.emergencyFundMonths()).isEqualTo(3);
         assertThat(snapshot.monthlyCollegeContribution()).isEqualTo(Money.ZERO);
     }
 
     @Test
-    void unrentedFormMapsToAZeroMortgageWithHousingCostZero() {
+    void blankHousingDefaultsToAnEmptyMortgage() {
         SnapshotForm form = new SnapshotForm();
-        form.setRents(false);
+        form.setHousing("");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null));
+    }
+
+    @Test
+    void unrecognizedHousingDefaultsToMortgage() {
+        SnapshotForm form = new SnapshotForm();
+        form.setHousing("SOMETHING_ELSE");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.housing()).isInstanceOf(Mortgage.class);
+    }
+
+    @Test
+    void rentModeMapsToRentAndIgnoresMortgageFields() {
+        SnapshotForm form = new SnapshotForm();
+        form.setHousing("RENT");
+        form.setMonthlyRent("1400");
+        form.setMortgageBalance("285000");
+        form.setMortgageRate("6.5");
+        form.setMortgagePayment("2200");
+        form.setAnnualPropertyTaxes("4800");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.housing()).isEqualTo(new Rent(Money.ofDollars(1400)));
+    }
+
+    @Test
+    void mortgageModeMapsToMortgageAndIgnoresTheRentField() {
+        SnapshotForm form = new SnapshotForm();
+        form.setHousing("MORTGAGE");
+        form.setMortgageBalance("285000");
+        form.setMortgageRate("6.5");
+        form.setMortgagePayment("2200");
+        form.setAnnualPropertyTaxes("4800");
+        form.setMaturityMonth("8");
+        form.setMaturityYear("2051");
+        form.setMonthlyRent("1400");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.housing()).isEqualTo(new Mortgage(
+                Money.ofDollars(285_000),
+                new BigDecimal("6.500"),
+                Money.ofDollars(2_200),
+                Money.ofDollars(4_800),
+                YearMonth.of(2051, 8)));
+    }
+
+    @Test
+    void blankMortgageFieldsBecomeAZeroBalanceMortgageWithNoMaturity() {
+        SnapshotForm form = new SnapshotForm();
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null));
         assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
     }
 
     @Test
-    void rentedFormMapsToRentAtZero() {
+    void maturityMonthOutsideOneToTwelveBecomesUnknown() {
         SnapshotForm form = new SnapshotForm();
-        form.setRents(true);
+        form.setMaturityMonth("13");
+        form.setMaturityYear("2051");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
-        assertThat(snapshot.housing()).isEqualTo(new Rent(Money.ZERO));
-        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
+        assertThat(((Mortgage) snapshot.housing()).maturity()).isNull();
+    }
+
+    @Test
+    void maturityYearOutsideTheAllowedRangeBecomesUnknown() {
+        SnapshotForm form = new SnapshotForm();
+        form.setMaturityMonth("8");
+        form.setMaturityYear("1899");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(((Mortgage) snapshot.housing()).maturity()).isNull();
+    }
+
+    @Test
+    void blankMaturityFieldsBecomeUnknown() {
+        SnapshotForm form = new SnapshotForm();
+        form.setMaturityMonth("");
+        form.setMaturityYear("");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(((Mortgage) snapshot.housing()).maturity()).isNull();
+    }
+
+    @Test
+    void unparseableMaturityFieldsBecomeUnknown() {
+        SnapshotForm form = new SnapshotForm();
+        form.setMaturityMonth("not a month");
+        form.setMaturityYear("not a year");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(((Mortgage) snapshot.housing()).maturity()).isNull();
     }
 
     @Test
@@ -222,7 +334,7 @@ class SnapshotFormMapperTests {
         SnapshotForm form = new SnapshotForm();
         form.setRetirementContributionPercent("1e-999999999");
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.retirementContributionPercent()).isEqualTo(new BigDecimal("0.00"));
     }
@@ -236,13 +348,24 @@ class SnapshotFormMapperTests {
         form.setStarterEmergencyFund(hostile);
         form.setFullEmergencyFund(hostile);
         form.setRetirementContributionPercent(hostile);
+        form.setMortgageBalance(hostile);
+        form.setMortgageRate(hostile);
+        form.setMortgagePayment(hostile);
+        form.setAnnualPropertyTaxes(hostile);
+        form.setMonthlyRent(hostile);
+        form.setMaturityMonth(hostile);
+        form.setMaturityYear(hostile);
         SnapshotForm.DebtRow row = new SnapshotForm.DebtRow();
         row.setBalance(hostile);
         row.setAnnualInterestRate(hostile);
         row.setMinimumPayment(hostile);
         form.getDebts().add(row);
 
-        assertThatCode(() -> SnapshotFormMapper.toSnapshot(form)).doesNotThrowAnyException();
+        form.setHousing("MORTGAGE");
+        assertThatCode(() -> SnapshotFormMapper.toSnapshot(form, ASOF)).doesNotThrowAnyException();
+
+        form.setHousing("RENT");
+        assertThatCode(() -> SnapshotFormMapper.toSnapshot(form, ASOF)).doesNotThrowAnyException();
     }
 
     /** Last-resort guarantee (design.md 038 section 3): none of these ever reach the mapper as an exception. */
@@ -269,7 +392,7 @@ class SnapshotFormMapperTests {
         form.setRetired(true);
         form.setIntendsToFundCollege(true);
 
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.householdFlags().retired()).isTrue();
         assertThat(snapshot.householdFlags().intendsToFundCollege()).isTrue();

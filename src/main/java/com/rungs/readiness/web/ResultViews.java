@@ -2,13 +2,19 @@ package com.rungs.readiness.web;
 
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.model.Money;
+import com.rungs.readiness.domain.model.Mortgage;
+import com.rungs.readiness.domain.model.MortgagePayoff;
+import com.rungs.readiness.domain.model.MortgagePayoffCalculator;
 import com.rungs.readiness.domain.stage.LadderResult;
 import com.rungs.readiness.domain.stage.StageEvaluation;
 import com.rungs.readiness.domain.stage.StageStatus;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.YearMonth;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Builds the result page's view model (design.md 038 section 4) from a {@link LadderResult} and the
@@ -193,8 +199,8 @@ final class ResultViews {
         if (evaluation.status() == StageStatus.SKIPPED) {
             return "You rent, so there's no mortgage to pay down.";
         }
-        // Unreachable in story 039 phase 2 (SnapshotFormMapper always maps to a $0 mortgage or a $0 rent, so this
-        // stage is always satisfied or skipped); story 039 phase 3 wires the payoff copy into this line.
+        // MortgageEvaluator's blocker already carries the payoff copy (design.md 039 section 2): the payment's
+        // coverage of interest, or the payoff month and how it compares to the loan's maturity.
         return evaluation.blocker();
     }
 
@@ -224,9 +230,30 @@ final class ResultViews {
             case 2, 3 -> surplusSentence(current.remainingAmount(), surplus);
             case 4 -> "You're at " + plainPercent(snapshot.retirementContributionPercent()) + "%.";
             case 5 -> "Set aside something every month.";
-            case 6, 7 -> "Every earlier stage is done or skipped.";
+            case 6 -> stage6VerdictSub(current, snapshot);
+            case 7 -> "Every earlier stage is done or skipped.";
             default -> throw new IllegalArgumentException("stage must be between 1 and 7");
         };
+    }
+
+    /**
+     * Returns the stage 6 verdict's sub line (design.md 039 section 2): the payoff month at this payment, or, when
+     * the payment does not cover the interest or the loan runs past 600 months, the evaluator's own sentence for
+     * that case (identical to {@code current}'s blocker, since neither branch appends a maturity follow-up).
+     */
+    private static String stage6VerdictSub(StageEvaluation current, FinancialSnapshot snapshot) {
+        Mortgage mortgage = (Mortgage) snapshot.housing();
+        MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, snapshot.asOf());
+        if (!payoff.covered() || payoff.monthsToPayoff() == null) {
+            return current.blocker();
+        }
+        return "At this payment it's paid off in " + monthYear(payoff.payoffMonth())
+                + ". Every extra dollar gets you there sooner.";
+    }
+
+    /** Returns {@code month} as e.g. "March 2041". */
+    private static String monthYear(YearMonth month) {
+        return month.getMonth().getDisplayName(TextStyle.FULL, Locale.US) + " " + month.getYear();
     }
 
     /** Returns the surplus sentence for stages 2 and 3, or the alternate sentence when the surplus is $0 or below. */

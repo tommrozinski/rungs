@@ -481,7 +481,26 @@ class ResultViewsTests {
         ResultView result = build(snapshot);
 
         assertThat(result.verdictLine()).isEqualTo("Pay off the house.");
-        assertThat(result.verdictSub()).isEqualTo("Every earlier stage is done or skipped.");
+        assertThat(result.verdictSub())
+                .isEqualTo("At this payment it's paid off in February 2033. Every extra dollar gets you there sooner.");
+    }
+
+    @Test
+    void currentStageSixVerdictFallsBackToTheEvaluatorsSentenceWhenThePaymentDoesNotCoverInterest() {
+        FinancialSnapshot snapshot = aSnapshot()
+                .withStarterEmergencyFund(Money.ofDollars(1_000))
+                .withMonthlyEssentialExpenses(Money.ZERO)
+                .withFullEmergencyFund(Money.ofDollars(3_600))
+                .withRetirementContributionPercent("15")
+                .withHouseholdFlags(new HouseholdFlags(false, false))
+                .withHousing(new Mortgage(
+                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(400), Money.ZERO, null))
+                .build();
+
+        ResultView result = build(snapshot);
+
+        assertThat(result.verdictSub())
+                .isEqualTo("After property taxes, your $400.00 payment doesn't cover the $510.42 monthly interest.");
     }
 
     @Test

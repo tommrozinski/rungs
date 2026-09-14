@@ -31,6 +31,7 @@
             <label for="monthlyEssentialExpenses">Essential monthly expenses</label>
             <input class="input" type="number" step="0.01" min="0" id="monthlyEssentialExpenses"
                    name="monthlyEssentialExpenses" th:value="${form.monthlyEssentialExpenses}" required>
+            <div class="hint">Everything except housing and debt payments.</div>
           </div>
         </div>
         <div class="field-row">
@@ -84,12 +85,75 @@
         </table>
       </div>
 
-      <div class="card">
+      <div class="card housing-card">
         <h2 class="h2" style="margin-bottom:12px;">About your household</h2>
-        <div class="check">
-          <input type="checkbox" id="rents" name="rents" th:checked="${form.rents}">
-          <label for="rents" style="font-weight:400;">We rent our home</label>
+
+        <div class="housing-toggle">
+          <input type="radio" class="visually-hidden" id="housing-mortgage" name="housing" value="MORTGAGE" th:checked="${form.housing != 'RENT'}">
+          <label for="housing-mortgage">Mortgage</label>
+          <input type="radio" class="visually-hidden" id="housing-rent" name="housing" value="RENT" th:checked="${form.housing == 'RENT'}">
+          <label for="housing-rent">Rent</label>
         </div>
+
+        <div class="housing-mortgage">
+          <div class="field-row">
+            <div class="field">
+              <label for="mortgageBalance">Remaining balance</label>
+              <input class="input" type="number" step="0.01" min="0" id="mortgageBalance"
+                     name="mortgageBalance" th:value="${form.mortgageBalance}">
+            </div>
+            <div class="field">
+              <label for="mortgageRate">Interest rate %</label>
+              <input class="input" type="number" step="0.001" min="0" id="mortgageRate"
+                     name="mortgageRate" th:value="${form.mortgageRate}">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="mortgagePayment">Monthly payment</label>
+              <input class="input" type="number" step="0.01" min="0" id="mortgagePayment"
+                     name="mortgagePayment" th:value="${form.mortgagePayment}">
+              <div class="hint">Include property taxes (your annual taxes ÷ 12).</div>
+            </div>
+            <div class="field">
+              <label for="annualPropertyTaxes">Annual property taxes</label>
+              <input class="input" type="number" step="0.01" min="0" id="annualPropertyTaxes"
+                     name="annualPropertyTaxes" th:value="${form.annualPropertyTaxes}">
+            </div>
+          </div>
+          <div class="field">
+            <label id="maturity-label">Maturity</label>
+            <div class="field-row maturity-row" role="group" aria-labelledby="maturity-label">
+              <select class="input" name="maturityMonth" aria-label="Maturity month">
+                <option value="1" th:selected="${form.maturityMonth == '1'}">January</option>
+                <option value="2" th:selected="${form.maturityMonth == '2'}">February</option>
+                <option value="3" th:selected="${form.maturityMonth == '3'}">March</option>
+                <option value="4" th:selected="${form.maturityMonth == '4'}">April</option>
+                <option value="5" th:selected="${form.maturityMonth == '5'}">May</option>
+                <option value="6" th:selected="${form.maturityMonth == '6'}">June</option>
+                <option value="7" th:selected="${form.maturityMonth == '7'}">July</option>
+                <option value="8" th:selected="${form.maturityMonth == '8'}">August</option>
+                <option value="9" th:selected="${form.maturityMonth == '9'}">September</option>
+                <option value="10" th:selected="${form.maturityMonth == '10'}">October</option>
+                <option value="11" th:selected="${form.maturityMonth == '11'}">November</option>
+                <option value="12" th:selected="${form.maturityMonth == '12'}">December</option>
+              </select>
+              <input class="input" type="number" name="maturityYear" min="1900" max="2200"
+                     th:value="${form.maturityYear}" aria-label="Maturity year">
+            </div>
+          </div>
+          <p class="small" style="margin-top:10px; margin-bottom:16px;">Paid off? Enter 0 for the
+            remaining balance — your payment is then just your property taxes.</p>
+        </div>
+
+        <div class="housing-rent">
+          <div class="field">
+            <label for="monthlyRent">Monthly rent</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyRent"
+                   name="monthlyRent" th:value="${form.monthlyRent}">
+          </div>
+        </div>
+
         <div class="check">
           <input type="checkbox" id="intendsToFundCollege" name="intendsToFundCollege" th:checked="${form.intendsToFundCollege}">
           <label for="intendsToFundCollege" style="font-weight:400;">We plan to fund college for our kids</label>
@@ -102,6 +166,15 @@
 
       <div class="actions">
         <button type="submit" class="btn btn-primary">Check my stage</button>
+        <select name="sample" class="input">
+          <option value="">Choose a sample household</option>
+          <option value="buried" th:selected="${form.sample == 'buried'}">Buried in debt</option>
+          <option value="board" th:selected="${form.sample == 'board'}">Paying down debt</option>
+          <option value="debt-free" th:selected="${form.sample == 'debt-free'}">Debt-free, building savings</option>
+          <option value="homestretch" th:selected="${form.sample == 'homestretch'}">Paying off the house</option>
+          <option value="paid-off" th:selected="${form.sample == 'paid-off'}">Paid-off home, no debt</option>
+        </select>
+        <button type="submit" formaction="/sample" formnovalidate class="btn btn-secondary">Load sample data</button>
       </div>
     </form>
   </div>

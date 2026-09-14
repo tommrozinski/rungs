@@ -15,7 +15,15 @@ public class SnapshotForm {
     private String starterEmergencyFund = "";
     private String fullEmergencyFund = "";
     private String retirementContributionPercent = "";
-    private boolean rents;
+    private String sample = "";
+    private String housing = "MORTGAGE";
+    private String mortgageBalance = "";
+    private String mortgageRate = "";
+    private String mortgagePayment = "";
+    private String annualPropertyTaxes = "";
+    private String maturityMonth = "";
+    private String maturityYear = "";
+    private String monthlyRent = "";
     private boolean intendsToFundCollege;
     private boolean retired;
     private List<DebtRow> debts = new ArrayList<>();
@@ -60,12 +68,76 @@ public class SnapshotForm {
         this.retirementContributionPercent = retirementContributionPercent;
     }
 
-    public boolean isRents() {
-        return rents;
+    public String getSample() {
+        return sample;
     }
 
-    public void setRents(boolean rents) {
-        this.rents = rents;
+    public void setSample(String sample) {
+        this.sample = sample;
+    }
+
+    public String getHousing() {
+        return housing;
+    }
+
+    public void setHousing(String housing) {
+        this.housing = housing;
+    }
+
+    public String getMortgageBalance() {
+        return mortgageBalance;
+    }
+
+    public void setMortgageBalance(String mortgageBalance) {
+        this.mortgageBalance = mortgageBalance;
+    }
+
+    public String getMortgageRate() {
+        return mortgageRate;
+    }
+
+    public void setMortgageRate(String mortgageRate) {
+        this.mortgageRate = mortgageRate;
+    }
+
+    public String getMortgagePayment() {
+        return mortgagePayment;
+    }
+
+    public void setMortgagePayment(String mortgagePayment) {
+        this.mortgagePayment = mortgagePayment;
+    }
+
+    public String getAnnualPropertyTaxes() {
+        return annualPropertyTaxes;
+    }
+
+    public void setAnnualPropertyTaxes(String annualPropertyTaxes) {
+        this.annualPropertyTaxes = annualPropertyTaxes;
+    }
+
+    public String getMaturityMonth() {
+        return maturityMonth;
+    }
+
+    public void setMaturityMonth(String maturityMonth) {
+        this.maturityMonth = maturityMonth;
+    }
+
+    public String getMaturityYear() {
+        return maturityYear;
+    }
+
+    public void setMaturityYear(String maturityYear) {
+        this.maturityYear = maturityYear;
+    }
+
+    public String getMonthlyRent() {
+        return monthlyRent;
+    }
+
+    public void setMonthlyRent(String monthlyRent) {
+        this.monthlyRent = monthlyRent;
     }
 
     public boolean isIntendsToFundCollege() {
