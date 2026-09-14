@@ -1,9 +1,0 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="en">
-<body>
-<!--/* C-05 status chip: the label is always visible text, and the class adds the status color. */-->
-<span th:fragment="statusChip(status, label)" class="chip"
-      th:classappend="${status == 'SATISFIED'} ? 'chip-satisfied' : (${status == 'IN_PROGRESS'} ? 'chip-in-progress' : (${status == 'SKIPPED'} ? 'chip-skipped' : 'chip-not-started'))"
-      th:text="${label}">Not started</span>
-</body>
-</html>

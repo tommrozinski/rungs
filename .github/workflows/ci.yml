@@ -26,28 +26,4 @@ jobs:
           cache: maven
 
       - name: Verify
-        run: ./mvnw -B verify
-
-      # A failing test stops the build before verify, so render the report from the recorded data.
-      - name: Render coverage report after failure
-        if: failure() && hashFiles('target/jacoco.exec') != ''
-        continue-on-error: true
-        run: ./mvnw -B -o org.jacoco:jacoco-maven-plugin:0.8.15:report
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: jacoco-report
-          path: target/site/jacoco/
-          if-no-files-found: warn
-
-      - name: Upload test reports
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-reports
-          path: |
-            target/surefire-reports/
-            target/failsafe-reports/
-          if-no-files-found: ignore
+        run: ./mvnw -B -ntp verify

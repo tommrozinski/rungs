@@ -1,0 +1,99 @@
+Implementation progress: 038 v0 reset
+
+## Phase 1 — strip
+
+Stripped the codebase back to the v0 scope defined in prd/v0-scope-addendum.md and
+spec/038-v0-reset/design.md §1-2. This was a deletion-only pass, not TDD.
+
+Kept (main):
+- domain/model: Money, Debt, DebtType, FinancialSnapshot, HouseholdFlags, Mortgage,
+  Invariants, MoneyFormatException, package-info.
+- domain/stage: the seven evaluators (StarterFundEvaluator, DebtFreeEvaluator,
+  FullEmergencyFundEvaluator, RetirementEvaluator, CollegeEvaluator, MortgageEvaluator,
+  WealthBuildingEvaluator), StageLadder, LadderResult, StageEvaluation, StageEvaluator,
+  StageStatus, Percentages, package-info.
+- RungsApplication.
+- src/main/resources/application.properties (management.* lines removed),
+  static/fonts/* (Inter font kept, optional).
+- Maven wrapper.
+
+Kept (test):
+- RungsApplicationTests (unchanged; still passes with no controllers registered).
+- domain/model tests: DebtTests, DebtTypeTests, FinancialSnapshotBuilder,
+  FinancialSnapshotTests, HouseholdFlagsTests, InvariantsTests, MoneyArithmeticTests,
+  MoneyFormattingTests, MoneyParsingTests, MortgageTests.
+- domain/stage tests: all seven evaluator test classes, FixedStageEvaluator,
+  LadderAcceptanceTests, LadderResultTests, StageEvaluationTests, StageLadderTests,
+  PercentagesTests.
+
+Removed (git rm):
+- domain/projection (PayoffSimulator, PayoffSimulation, SimulationInput, MonthlyPeriod,
+  PayoffOrdering, DebtLine, Strategy, Invariants, package-info) and its tests.
+- domain/port (package-info only; no interfaces existed yet).
+- domain/stage/WarningDetector.java + WarningDetectorTests.java. Verified beforehand
+  that none of the seven kept evaluators or kept model classes reference Warning,
+  WarningCode, Severity, or MonthlyInterest.
+- domain/model: Warning, WarningCode, Severity, MonthlyInterest (+ WarningTests,
+  MonthlyInterestTests).
+- application/ in full (input models, validation, response DTOs, AssessmentService,
+  ProjectionService, ExampleHouseholds, AssessmentPage, ProjectionPage) + its tests.
+- adapter/in/web/api/ in full (AssessmentController, ProjectionController,
+  ProblemDetailsAdvice, ApiJsonConfiguration, JsonPointers,
+  SnapshotValidationException, package-info) + its tests.
+- adapter/in/web/view/ in full (SnapshotFormController, AssessmentPageController,
+  ProjectionPageController, ComponentGalleryController, and every view/DTO class) +
+  its tests. The app now has no controllers; expected per the design doc until phase 2.
+- adapter/out/ (ai package-info only).
+- config/ApplicationConfiguration.java, config/SecurityHeadersFilter.java + their
+  tests (SecurityHeadersFilterTests, SecurityHeadersIntegrationTests). Also removed
+  config/VendorVersionsTests.java, which only existed to check the vendored htmx file
+  now being deleted.
+- Test-side architecture suite: architecture/ (ArchitectureTests, ArchitectureRules,
+  ArchitectureFixtureTests, ColorLiteralScanTests, DesignTokensTests,
+  SingleModuleScanTests, SnapshotValidationScanTests, TemplateMarkupScanTests,
+  WebClientScanTests), archfixtures/ (all fixture classes), NeutralVocabularyTests,
+  ActuatorExposureTests.
+- Golden/fixture resources: src/test/resources/golden/*,
+  src/test/resources/archfixtures/*.
+- All templates (src/main/resources/templates/**), static/js (incl. vendor htmx),
+  static/css/rungs.css.
+- Dockerfile, .dockerignore.
+
+pom.xml changes:
+- Removed dependencies: spring-boot-starter-validation, spring-boot-starter-actuator,
+  spring-boot-starter-actuator-test, archunit-junit5, jsoup.
+- Removed the JaCoCo plugin (prepare-agent/report/check executions and coverage
+  gate rules).
+- Kept spring-boot-starter-webmvc, spring-boot-starter-thymeleaf,
+  spring-boot-starter-webmvc-test, the Enforcer plugin (harmless), the
+  maven-dependency-plugin properties goal (needed for the Mockito agent javaLine),
+  and the Surefire Mockito-agent configuration.
+
+application.properties: removed the three management.* lines; kept
+spring.application.name=rungs.
+
+.github/workflows/ci.yml: reduced the Verify job to a single `./mvnw -B -ntp verify`
+step; removed the JaCoCo report-on-failure step and the coverage/test-report upload
+steps.
+
+README.md: removed the Podman section, the actuator health-check walkthrough, the
+coverage/ArchUnit/neutral-vocabulary description of the build, and the extra
+"deliberately not included" bullets that no longer apply (printing/PDF, dark mode,
+charting, save-in-place). Replaced the opening paragraph and added a one-line note
+that the form and result page are coming next.
+
+Build: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home
+&& ./mvnw -B -ntp clean verify` -> BUILD SUCCESS. Tests run: 665, Failures: 0,
+Errors: 0, Skipped: 0.
+
+Confirmed via grep that no deleted class name (ProjectionController,
+AssessmentController, SnapshotFormController, AssessmentPageController,
+ProjectionPageController, ApplicationConfiguration, SecurityHeadersFilter,
+WarningDetector, WarningCode, Severity, MonthlyInterest, PayoffSimulator,
+PayoffSimulation, SimulationInput, MonthlyPeriod, PayoffOrdering, DebtLine,
+ExampleHouseholds, SnapshotValidator, ProblemDetailsAdvice, ArchitectureRules,
+NeutralVocabularyTests, ActuatorExposureTests) remains anywhere under src/, pom.xml,
+README.md, or .github/.
+
+Not committed: implementer role does not run `git commit`; the orchestrator commits
+this change set.
