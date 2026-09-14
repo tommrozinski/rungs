@@ -87,7 +87,6 @@ final class SampleHouseholds {
         form.setMortgageBalance("285000");
         form.setMortgageRate("6.5");
         form.setMortgagePayment("2269");
-        form.setAnnualPropertyTaxes("4800");
         setMaturity(form, matchingMaturity(form, asOf, 0));
         return form;
     }
@@ -104,7 +103,6 @@ final class SampleHouseholds {
         form.setMortgageBalance("198000");
         form.setMortgageRate("3.25");
         form.setMortgagePayment("1900");
-        form.setAnnualPropertyTaxes("6000");
         setMaturity(form, matchingMaturity(form, asOf, HOMESTRETCH_AHEAD_MONTHS));
         return form;
     }
@@ -141,7 +139,6 @@ final class SampleHouseholds {
         form.setMortgageBalance("0");
         form.setMortgageRate("0");
         form.setMortgagePayment("650");
-        form.setAnnualPropertyTaxes("6300");
         return form;
     }
 

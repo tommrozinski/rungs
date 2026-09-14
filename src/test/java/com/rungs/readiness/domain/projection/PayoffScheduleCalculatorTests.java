@@ -2,6 +2,7 @@ package com.rungs.readiness.domain.projection;
 
 import static com.rungs.readiness.domain.model.FinancialSnapshotBuilder.aSnapshot;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.rungs.readiness.domain.model.DebtType;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
@@ -115,6 +116,34 @@ class PayoffScheduleCalculatorTests {
         assertThat(actual.end()).isEqualTo(dollars(end));
     }
 
+    // A loan's final payment can be below its own minimum (its payoff amount is smaller than the minimum), which
+    // must free the unused part of that minimum to the next loan in the same month rather than losing it.
+    //
+    // Loan A: $10.00 balance, 0% rate, $50 minimum — payoff amount is $10.00, $40.00 below its minimum.
+    // Loan B: $200.00 balance, 0% rate, $30 minimum. No extra cash: totalAvail is $0, so pool starts at $0.
+    //
+    // Month 1: A: open 10.00, int 0.00, owed 10.00, cap 50 + 0 = 50.00, payment 10.00 (payoff), end 0.00 — closes.
+    //   pool after A: 0 + 50 - 10 = 40.00 (A's unused minimum flows forward instead of being lost).
+    //   B: open 200.00, int 0.00, owed 200.00, cap 30 + 40 = 70.00, payment 70.00, end 130.00.
+
+    @Test
+    void aLoanClosingBelowItsMinimumFreesTheLeftoverToTheNextLoanInTheSameMonth() {
+        FinancialSnapshot snapshot = aSnapshot()
+                .withMonthlyTakeHomeIncome(Money.ofDollars(0))
+                .withHousing(new Rent(Money.ZERO))
+                .withDebt("Loan A", DebtType.CREDIT_CARD, Money.ofDollars(10), "0", Money.ofDollars(50))
+                .withDebt("Loan B", DebtType.CREDIT_CARD, Money.ofDollars(200), "0", Money.ofDollars(30))
+                .withAsOf(AS_OF)
+                .build();
+
+        PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
+
+        ScheduleMonth month1 = schedule.months().get(0);
+        assertLoanMonth(month1.loanMonths().get(0), "10.00", "0.00", "10.00", "0.00");
+        assertLoanMonth(month1.loanMonths().get(1), "200.00", "0.00", "70.00", "130.00");
+        assertInvariants(schedule);
+    }
+
     // Ordering: rate descending, ties in supplied order.
 
     @Test
@@ -223,6 +252,24 @@ class PayoffScheduleCalculatorTests {
         assertThat(schedule.months()).hasSize(600);
         assertThat(schedule.months().get(599).totalBalance().isPositive()).isTrue();
         assertInvariants(schedule);
+    }
+
+    // Arithmetic overflow (a balance near Long.MAX_VALUE cents accruing interest) is treated the same as hitting
+    // the cap, rather than propagating.
+
+    @Test
+    void aBalanceNearLongMaxValueOverflowsIntoATruncatedScheduleInsteadOfThrowing() {
+        FinancialSnapshot snapshot = aSnapshot()
+                .withMonthlyTakeHomeIncome(Money.ofDollars(1_000))
+                .withHousing(new Rent(Money.ZERO))
+                .withDebt("Huge", DebtType.CREDIT_CARD, Money.ofCents(Long.MAX_VALUE - 100), "24", Money.ofDollars(10))
+                .withAsOf(AS_OF)
+                .build();
+
+        assertThatCode(() -> PayoffScheduleCalculator.schedule(snapshot)).doesNotThrowAnyException();
+
+        PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
+        assertThat(schedule.truncated()).isTrue();
     }
 
     @Test

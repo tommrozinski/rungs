@@ -76,7 +76,11 @@ class SnapshotControllerTests {
         assertThat(body).contains("name=\"mortgageBalance\"");
         assertThat(body).contains("name=\"mortgageRate\"");
         assertThat(body).contains("name=\"mortgagePayment\"");
-        assertThat(body).contains("name=\"annualPropertyTaxes\"");
+        assertThat(body).doesNotContain("name=\"annualPropertyTaxes\"");
+        assertThat(body).contains("Your full monthly payment, including taxes and insurance.");
+        assertThat(body).contains("Paid off? Enter 0 for the remaining balance, and enter your property taxes "
+                + "and insurance as the monthly payment, since those still come out of your take-home pay each "
+                + "month.");
         assertThat(body).contains("name=\"maturityMonth\"");
         assertThat(body).contains("name=\"maturityYear\"");
         assertThat(body).contains("name=\"monthlyRent\"");
@@ -156,6 +160,37 @@ class SnapshotControllerTests {
     }
 
     @Test
+    void editWithLargeDebtIndexDoesNotFail() throws Exception {
+        mockMvc.perform(post("/edit")
+                        .param("debts[99999].label", "Anything"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void breakdownWithLargeDebtIndexDoesNotFail() throws Exception {
+        mockMvc.perform(post("/breakdown")
+                        .param("debts[99999].label", "Anything"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void addDebtAtTwentyRowsDoesNotAddAFurtherRow() throws Exception {
+        org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request = post("/debts/add");
+        for (int i = 0; i < 20; i++) {
+            request.param("debts[" + i + "].label", "Debt " + i);
+        }
+
+        String body = mockMvc.perform(request)
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("debts[19].label");
+        assertThat(body).doesNotContain("debts[20].label");
+    }
+
+    @Test
     void assessRunsTheRealSevenStageAssessmentForTheBoardHousehold() throws Exception {
         String body = mockMvc.perform(post("/assess")
                         .param("monthlyTakeHomeIncome", "6200")
@@ -226,6 +261,113 @@ class SnapshotControllerTests {
         String openCard = openCardHtml(body);
         assertThat(openCard).doesNotContain("class=\"bar\"");
         assertThat(openCard).contains("blocker last");
+    }
+
+    @Test
+    void resultPageHasBothButtonsAndAHiddenCopyOfEveryFormField() throws Exception {
+        String body = mockMvc.perform(post("/assess")
+                        .param("monthlyTakeHomeIncome", "6200")
+                        .param("monthlyEssentialExpenses", "2100")
+                        .param("starterEmergencyFund", "1000")
+                        .param("fullEmergencyFund", "0")
+                        .param("retirementContributionPercent", "6")
+                        .param("housing", "RENT")
+                        .param("monthlyRent", "1400")
+                        .param("intendsToFundCollege", "true")
+                        .param("retired", "true")
+                        .param("debts[0].label", "Store card")
+                        .param("debts[0].type", "CREDIT_CARD")
+                        .param("debts[0].balance", "840")
+                        .param("debts[0].annualInterestRate", "26.99")
+                        .param("debts[0].minimumPayment", "35"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("formaction=\"/edit\"");
+        assertThat(body).contains("Change my numbers");
+        assertThat(body).contains("formaction=\"/assess#breakdown\"");
+        assertThat(body).contains("name=\"breakdown\" value=\"true\"");
+        assertThat(body).contains("Show payoff schedule");
+
+        assertThat(body).contains("name=\"monthlyTakeHomeIncome\" value=\"6200\"");
+        assertThat(body).contains("name=\"monthlyEssentialExpenses\" value=\"2100\"");
+        assertThat(body).contains("name=\"starterEmergencyFund\" value=\"1000\"");
+        assertThat(body).contains("name=\"fullEmergencyFund\" value=\"0\"");
+        assertThat(body).contains("name=\"retirementContributionPercent\" value=\"6\"");
+        assertThat(body).contains("name=\"housing\" value=\"RENT\"");
+        assertThat(body).contains("name=\"monthlyRent\" value=\"1400\"");
+        assertThat(body).contains("name=\"mortgageBalance\"");
+        assertThat(body).contains("name=\"mortgageRate\"");
+        assertThat(body).contains("name=\"mortgagePayment\"");
+        assertThat(body).contains("name=\"maturityMonth\"");
+        assertThat(body).contains("name=\"maturityYear\"");
+        assertThat(body).contains("name=\"intendsToFundCollege\" value=\"true\"");
+        assertThat(body).contains("name=\"retired\" value=\"true\"");
+        assertThat(body).contains("name=\"debts[0].label\" value=\"Store card\"");
+        assertThat(body).contains("name=\"debts[0].type\" value=\"CREDIT_CARD\"");
+        assertThat(body).contains("name=\"debts[0].balance\" value=\"840\"");
+        assertThat(body).contains("name=\"debts[0].annualInterestRate\" value=\"26.99\"");
+        assertThat(body).contains("name=\"debts[0].minimumPayment\" value=\"35\"");
+
+        assertThat(body).doesNotContain("id=\"breakdown\"");
+    }
+
+    @Test
+    void resultPageOmitsUncheckedCheckboxHiddenFields() throws Exception {
+        String body = mockMvc.perform(post("/assess")
+                        .param("monthlyTakeHomeIncome", "6200")
+                        .param("housing", "RENT"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).doesNotContain("name=\"intendsToFundCollege\" value=\"true\"");
+        assertThat(body).doesNotContain("name=\"retired\" value=\"true\"");
+    }
+
+    @Test
+    void editRestoresEveryValueIncludingHousingModeAndDebtRows() throws Exception {
+        String body = mockMvc.perform(post("/edit")
+                        .param("monthlyTakeHomeIncome", "7800")
+                        .param("housing", "MORTGAGE")
+                        .param("mortgageBalance", "285000")
+                        .param("mortgageRate", "6.5")
+                        .param("mortgagePayment", "2269")
+                        .param("maturityMonth", "5")
+                        .param("maturityYear", "2044")
+                        .param("intendsToFundCollege", "true")
+                        .param("debts[0].label", "Store card")
+                        .param("debts[0].balance", "840"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("<form");
+        assertThat(body).contains("action=\"/assess\"");
+        assertThat(body).contains("name=\"monthlyTakeHomeIncome\" value=\"7800\"");
+        assertThat(body).contains("name=\"mortgageBalance\" value=\"285000\"");
+        assertThat(body).contains("name=\"mortgagePayment\" value=\"2269\"");
+        assertThat(body).contains("value=\"2044\" aria-label=\"Maturity year\"");
+        assertThat(body).contains("value=\"Store card\"");
+        int mortgageRadioIndex = body.indexOf("id=\"housing-mortgage\"");
+        int mortgageRadioEnd = body.indexOf(">", mortgageRadioIndex);
+        assertThat(body.substring(mortgageRadioIndex, mortgageRadioEnd)).contains("checked");
+        int collegeCheckboxIndex = body.indexOf("id=\"intendsToFundCollege\"");
+        int collegeCheckboxEnd = body.indexOf(">", collegeCheckboxIndex);
+        assertThat(body.substring(collegeCheckboxIndex, collegeCheckboxEnd)).contains("checked");
+    }
+
+    @Test
+    void editWithHostileHiddenValuesNeverFails() throws Exception {
+        mockMvc.perform(post("/edit")
+                        .param("monthlyTakeHomeIncome", "1e-999999999")
+                        .param("debts[0].balance", "not-a-number")
+                        .param("maturityMonth", "not-a-month"))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -311,7 +453,6 @@ class SnapshotControllerTests {
                         .param("mortgageBalance", "285000")
                         .param("mortgageRate", "6.5")
                         .param("mortgagePayment", "2269")
-                        .param("annualPropertyTaxes", "4800")
                         .param("maturityMonth", "9")
                         .param("maturityYear", "2053"))
                 .andExpect(status().isOk())
@@ -322,7 +463,6 @@ class SnapshotControllerTests {
         assertThat(body).contains("name=\"mortgageBalance\" value=\"285000\"");
         assertThat(body).contains("name=\"mortgageRate\" value=\"6.5\"");
         assertThat(body).contains("name=\"mortgagePayment\" value=\"2269\"");
-        assertThat(body).contains("name=\"annualPropertyTaxes\" value=\"4800\"");
         assertThat(body).contains("name=\"maturityYear\"");
         assertThat(body).contains("value=\"2053\" aria-label=\"Maturity year\"");
         int mortgageRadioIndex = body.indexOf("id=\"housing-mortgage\"");
@@ -413,7 +553,7 @@ class SnapshotControllerTests {
                 .getContentAsString();
 
         assertThat(body).contains("name=\"mortgageBalance\" value=\"0\"");
-        assertThat(body).contains("name=\"annualPropertyTaxes\" value=\"6300\"");
+        assertThat(body).contains("name=\"mortgagePayment\" value=\"650\"");
         assertThat(body).contains("<option value=\"paid-off\" selected");
     }
 
@@ -486,7 +626,6 @@ class SnapshotControllerTests {
                         .param("mortgageBalance", "285000")
                         .param("mortgageRate", "6.5")
                         .param("mortgagePayment", "2269")
-                        .param("annualPropertyTaxes", "4800")
                         .param("maturityMonth", "5")
                         .param("maturityYear", "2044"))
                 .andExpect(status().isOk())
@@ -510,7 +649,6 @@ class SnapshotControllerTests {
                         .param("mortgageBalance", "198000")
                         .param("mortgageRate", "3.25")
                         .param("mortgagePayment", "1900")
-                        .param("annualPropertyTaxes", "6000")
                         .param("maturityMonth", "9")
                         .param("maturityYear", "2042"))
                 .andExpect(status().isOk())
@@ -533,8 +671,7 @@ class SnapshotControllerTests {
                         .param("housing", "MORTGAGE")
                         .param("mortgageBalance", "0")
                         .param("mortgageRate", "0")
-                        .param("mortgagePayment", "0")
-                        .param("annualPropertyTaxes", "6300"))
+                        .param("mortgagePayment", "0"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -555,8 +692,7 @@ class SnapshotControllerTests {
                         .param("housing", "MORTGAGE")
                         .param("mortgageBalance", "92233720368547748.07")
                         .param("mortgageRate", "5")
-                        .param("mortgagePayment", "92233720368547748.07")
-                        .param("annualPropertyTaxes", "6300"))
+                        .param("mortgagePayment", "92233720368547748.07"))
                 .andExpect(status().isOk());
     }
 }

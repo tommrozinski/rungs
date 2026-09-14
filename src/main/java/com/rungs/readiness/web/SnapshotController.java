@@ -1,6 +1,8 @@
 package com.rungs.readiness.web;
 
 import com.rungs.readiness.domain.model.FinancialSnapshot;
+import com.rungs.readiness.domain.projection.PayoffSchedule;
+import com.rungs.readiness.domain.projection.PayoffScheduleCalculator;
 import com.rungs.readiness.domain.stage.CollegeEvaluator;
 import com.rungs.readiness.domain.stage.DebtFreeEvaluator;
 import com.rungs.readiness.domain.stage.FullEmergencyFundEvaluator;
@@ -26,22 +28,34 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.thymeleaf.ITemplateEngine;
+import org.thymeleaf.context.Context;
 
 /**
  * Renders the snapshot form (S-01) and, from the posted values, a real seven-stage assessment on the result page
- * (S-02).
+ * (S-02), including its inline payoff schedule breakdown and the standalone {@code /breakdown} page
+ * (design.md 040 section 4).
  */
 @Controller
 public class SnapshotController {
 
     private static final String FORM_VIEW = "form";
     private static final String RESULT_VIEW = "result";
+    private static final String PAYOFF_SCHEDULE_VIEW = "payoff-schedule";
+
+    /**
+     * The most debt rows the form ever holds; matches {@link SnapshotFormMapper}'s row cap, so "Add a debt" and
+     * the binder agree on the same limit (design.md 040 review) and a bloated payoff schedule can't be posted.
+     */
+    private static final int MAX_DEBT_ROWS = 20;
 
     private final StageLadder ladder;
     private final Clock clock;
+    private final ITemplateEngine templateEngine;
 
-    public SnapshotController(Clock clock) {
+    public SnapshotController(Clock clock, ITemplateEngine templateEngine) {
         this.clock = clock;
+        this.templateEngine = templateEngine;
         this.ladder = new StageLadder(List.of(
                 new StarterFundEvaluator(),
                 new DebtFreeEvaluator(),
@@ -54,8 +68,9 @@ public class SnapshotController {
 
     @InitBinder
     void initBinder(WebDataBinder binder) {
-        // Keeps a stray debts[99999] from asking the binder to grow the list to that size.
-        binder.setAutoGrowCollectionLimit(100);
+        // Keeps a stray debts[99999] (or debts[20], one row past MAX_DEBT_ROWS) from asking the binder to grow
+        // the list that far; index MAX_DEBT_ROWS trips this and reaches handleUnreachableDebtIndex() as a 400.
+        binder.setAutoGrowCollectionLimit(MAX_DEBT_ROWS);
     }
 
     @GetMapping("/")
@@ -68,7 +83,9 @@ public class SnapshotController {
 
     @PostMapping("/debts/add")
     String addDebt(@ModelAttribute("form") SnapshotForm form) {
-        form.getDebts().add(new SnapshotForm.DebtRow());
+        if (form.getDebts().size() < MAX_DEBT_ROWS) {
+            form.getDebts().add(new SnapshotForm.DebtRow());
+        }
         return FORM_VIEW;
     }
 
@@ -81,12 +98,47 @@ public class SnapshotController {
     }
 
     @PostMapping("/assess")
-    String assess(@ModelAttribute("form") SnapshotForm form, Model model) {
+    String assess(
+            @ModelAttribute("form") SnapshotForm form,
+            @RequestParam(name = "breakdown", required = false) String breakdown,
+            Model model) {
         YearMonth asOf = YearMonth.now(clock);
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, asOf);
         LadderResult ladderResult = ladder.assess(snapshot);
+        model.addAttribute("form", form);
         model.addAttribute("result", ResultViews.build(ladderResult, snapshot));
+        if ("true".equals(breakdown)) {
+            model.addAttribute("breakdownHtml", renderPayoffSchedule(snapshot));
+        }
         return RESULT_VIEW;
+    }
+
+    /** Re-renders the snapshot form (S-01) filled in with every value from the result page's hidden copy, so
+     * "Change my numbers" (design.md 040 section 4) loses nothing the household already entered. */
+    @PostMapping("/edit")
+    String edit(@ModelAttribute("form") SnapshotForm form, Model model) {
+        model.addAttribute("form", form);
+        return FORM_VIEW;
+    }
+
+    /** Renders the standalone payoff schedule page for the posted snapshot (design.md 040 section 4), independent
+     * of the result page's inline breakdown; useful for checks and tests. */
+    @PostMapping("/breakdown")
+    String breakdown(@ModelAttribute("form") SnapshotForm form, Model model) {
+        YearMonth asOf = YearMonth.now(clock);
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, asOf);
+        model.addAttribute("schedule", ScheduleViews.build(PayoffScheduleCalculator.schedule(snapshot)));
+        return PAYOFF_SCHEDULE_VIEW;
+    }
+
+    /** Renders {@code templates/payoff-schedule.html} to a standalone HTML string for the result page's iframe
+     * {@code srcdoc} (design.md 040 section 4); Thymeleaf escapes it as an attribute value when the result
+     * template writes it out. */
+    private String renderPayoffSchedule(FinancialSnapshot snapshot) {
+        PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
+        Context context = new Context();
+        context.setVariable("schedule", ScheduleViews.build(schedule));
+        return templateEngine.process(PAYOFF_SCHEDULE_VIEW, context);
     }
 
     @PostMapping("/sample")

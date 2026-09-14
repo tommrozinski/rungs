@@ -50,6 +50,41 @@
 
     </div>
 
+    <form method="post">
+      <input type="hidden" name="monthlyTakeHomeIncome" th:value="${form.monthlyTakeHomeIncome}">
+      <input type="hidden" name="monthlyEssentialExpenses" th:value="${form.monthlyEssentialExpenses}">
+      <input type="hidden" name="starterEmergencyFund" th:value="${form.starterEmergencyFund}">
+      <input type="hidden" name="fullEmergencyFund" th:value="${form.fullEmergencyFund}">
+      <input type="hidden" name="retirementContributionPercent" th:value="${form.retirementContributionPercent}">
+      <input type="hidden" name="sample" th:value="${form.sample}">
+      <input type="hidden" name="housing" th:value="${form.housing}">
+      <input type="hidden" name="mortgageBalance" th:value="${form.mortgageBalance}">
+      <input type="hidden" name="mortgageRate" th:value="${form.mortgageRate}">
+      <input type="hidden" name="mortgagePayment" th:value="${form.mortgagePayment}">
+      <input type="hidden" name="maturityMonth" th:value="${form.maturityMonth}">
+      <input type="hidden" name="maturityYear" th:value="${form.maturityYear}">
+      <input type="hidden" name="monthlyRent" th:value="${form.monthlyRent}">
+      <input type="hidden" name="intendsToFundCollege" value="true" th:if="${form.intendsToFundCollege}">
+      <input type="hidden" name="retired" value="true" th:if="${form.retired}">
+      <th:block th:each="row, iter : ${form.debts}">
+        <input type="hidden" th:name="|debts[${iter.index}].label|" th:value="${row.label}">
+        <input type="hidden" th:name="|debts[${iter.index}].type|" th:value="${row.type}">
+        <input type="hidden" th:name="|debts[${iter.index}].balance|" th:value="${row.balance}">
+        <input type="hidden" th:name="|debts[${iter.index}].annualInterestRate|" th:value="${row.annualInterestRate}">
+        <input type="hidden" th:name="|debts[${iter.index}].minimumPayment|" th:value="${row.minimumPayment}">
+      </th:block>
+
+      <div class="actions">
+        <button type="submit" formaction="/edit" class="btn btn-secondary">Change my numbers</button>
+        <button type="submit" formaction="/assess#breakdown" name="breakdown" value="true" class="btn btn-primary">Show payoff schedule</button>
+      </div>
+    </form>
+
+    <section id="breakdown" th:if="${breakdownHtml != null}">
+      <h2 class="h2" style="margin-bottom:14px;">Payoff schedule</h2>
+      <iframe title="Payoff schedule" class="breakdown-frame" th:attr="srcdoc=${breakdownHtml}"></iframe>
+    </section>
+
   </div>
 
 </body>

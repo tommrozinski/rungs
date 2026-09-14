@@ -209,6 +209,26 @@ class SnapshotFormMapperTests {
     }
 
     @Test
+    void onlyTheFirstTwentyNonZeroDebtRowsAreKept() {
+        SnapshotForm form = new SnapshotForm();
+        for (int i = 0; i < 25; i++) {
+            SnapshotForm.DebtRow row = new SnapshotForm.DebtRow();
+            row.setLabel("Debt row " + i);
+            row.setBalance("100");
+            form.getDebts().add(row);
+        }
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.debts()).hasSize(20);
+        assertThat(snapshot.debts()).extracting(Debt::label).containsExactly(
+                "Debt row 0", "Debt row 1", "Debt row 2", "Debt row 3", "Debt row 4",
+                "Debt row 5", "Debt row 6", "Debt row 7", "Debt row 8", "Debt row 9",
+                "Debt row 10", "Debt row 11", "Debt row 12", "Debt row 13", "Debt row 14",
+                "Debt row 15", "Debt row 16", "Debt row 17", "Debt row 18", "Debt row 19");
+    }
+
+    @Test
     void fixedComponentsAreAlwaysSet() {
         SnapshotForm form = new SnapshotForm();
 
@@ -246,7 +266,6 @@ class SnapshotFormMapperTests {
         form.setMortgageBalance("285000");
         form.setMortgageRate("6.5");
         form.setMortgagePayment("2200");
-        form.setAnnualPropertyTaxes("4800");
 
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
@@ -260,7 +279,6 @@ class SnapshotFormMapperTests {
         form.setMortgageBalance("285000");
         form.setMortgageRate("6.5");
         form.setMortgagePayment("2200");
-        form.setAnnualPropertyTaxes("4800");
         form.setMaturityMonth("8");
         form.setMaturityYear("2051");
         form.setMonthlyRent("1400");
@@ -347,7 +365,6 @@ class SnapshotFormMapperTests {
         form.setMortgageBalance(hostile);
         form.setMortgageRate(hostile);
         form.setMortgagePayment(hostile);
-        form.setAnnualPropertyTaxes(hostile);
         form.setMonthlyRent(hostile);
         form.setMaturityMonth(hostile);
         form.setMaturityYear(hostile);

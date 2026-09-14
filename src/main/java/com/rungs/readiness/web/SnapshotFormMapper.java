@@ -21,7 +21,9 @@ import java.util.regex.Pattern;
  * design.md 039 section 3: a blank or unparseable amount or percent becomes zero, a negative one becomes zero,
  * percentages are clamped to 0-100 and rounded to the scale the domain requires (rather than rejected for having
  * too many decimal places), a debt row with a zero balance is dropped, a blank label becomes "Debt N" (the row's
- * 1-based position as submitted), and an unrecognized debt type becomes {@link DebtType#OTHER}. A blank or
+ * 1-based position as submitted), and an unrecognized debt type becomes {@link DebtType#OTHER}. Only the first
+ * {@value #MAX_DEBT_ROWS} non-zero-balance rows, in submitted order, become debts; any further rows are dropped
+ * (design.md 040 review), keeping the payoff schedule's rendered size bounded. A blank or
  * unrecognized {@code housing} becomes {@code MORTGAGE}; whichever mode is not selected has its fields ignored, and
  * a maturity month outside 1-12 or year outside 1900-2200 (or either one blank) becomes an unknown maturity.
  * Nothing here rejects input or throws; every bad case resolves to a plain default instead, so a submission can
@@ -35,6 +37,12 @@ final class SnapshotFormMapper {
 
     /** The v0 form has no field for this; the snapshot always targets a 3-month fund. */
     private static final int EMERGENCY_FUND_MONTHS = 3;
+
+    /**
+     * Only the first this many non-zero-balance debt rows become debts; later rows are dropped, keeping a huge
+     * submission (e.g. hundreds of rows) from rendering a page-crushing payoff schedule (design.md 040 review).
+     */
+    private static final int MAX_DEBT_ROWS = 20;
 
     /** Decimal places {@link FinancialSnapshot#retirementContributionPercent()} is normalized to. */
     private static final int RETIREMENT_PERCENT_SCALE = 2;
@@ -81,7 +89,7 @@ final class SnapshotFormMapper {
     static FinancialSnapshot toSnapshot(SnapshotForm form, YearMonth asOf) {
         List<Debt> debts = new ArrayList<>();
         List<SnapshotForm.DebtRow> rows = form.getDebts();
-        for (int index = 0; index < rows.size(); index++) {
+        for (int index = 0; index < rows.size() && debts.size() < MAX_DEBT_ROWS; index++) {
             SnapshotForm.DebtRow row = rows.get(index);
             Money balance = money(row.getBalance());
             if (balance.isZero()) {

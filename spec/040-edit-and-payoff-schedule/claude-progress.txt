@@ -81,3 +81,198 @@ Tests added (`domain.projection.PayoffScheduleCalculatorTests`, 11 tests, all pa
 
 Verify result: `./mvnw -B -ntp clean verify` — BUILD SUCCESS, Tests run: 817, Failures: 0, Errors: 0,
 Skipped: 0 (806 pre-existing + 11 new PayoffScheduleCalculatorTests).
+
+Phase 3 — web
+-------------
+Scope: design.md section 4 (web) plus its section 5 web tests: carry the mocks forward into form.html,
+result.html, and the new payoff-schedule.html, wire up /edit and breakdown, and finish removing
+annualPropertyTaxes.
+
+1. Simpler mortgage fields, finished
+   - SnapshotForm: dropped the `annualPropertyTaxes` field and its getter/setter (the phase-2 stopgap).
+   - templates/form.html: removed the "Annual property taxes" input and its field-row partner; the mortgage
+     payment field now sits alone with the mock's hint ("Your full monthly payment, including taxes and
+     insurance.") and `style="max-width:220px"`; the paid-off note below Maturity now reads "Paid off? Enter
+     0 for the remaining balance, and enter your property taxes and insurance as the monthly payment — those
+     still come out of your take-home pay each month." (carried verbatim from prd/snapshot-form.html).
+   - SampleHouseholds: dropped the three `setAnnualPropertyTaxes` calls (debt-free, homestretch, paid-off);
+     no other change, since phase 2 had already moved paid-off's payment to $650 and the other two samples'
+     maturities are computed relative to asOf regardless of taxes.
+   - Removed every remaining `annualPropertyTaxes`/`AnnualPropertyTaxes` reference from
+     SnapshotControllerTests and SnapshotFormMapperTests (params, assertions, and `form.setAnnualPropertyTaxes`
+     calls); the paid-off sample's test assertion now checks `mortgagePayment value="650"` instead.
+
+2. Result page: hidden form, Change my numbers, Show payoff schedule
+   - templates/result.html: added one `<form method="post">` below the ladder holding a hidden `<input>` for
+     every `SnapshotForm` field (all money fields, `sample`, `housing`, the mortgage fields, maturity
+     month/year, `monthlyRent`), the two checkboxes only when true (`th:if`), and each debt row's five fields
+     with indexed names via a `th:block th:each`, all `th:value`-bound (Thymeleaf escapes attribute values by
+     construction, so no explicit escaping call was needed). Two buttons follow: "Change my numbers"
+     (`formaction="/edit"`, `btn-secondary`) and "Show payoff schedule" (`formaction="/assess#breakdown"`,
+     `name="breakdown" value="true"`, `btn-primary`) — both carried from prd/assessment-result.html.
+   - A `<section id="breakdown">` with `th:if="${breakdownHtml != null}"` follows the form, holding
+     `<iframe class="breakdown-frame" th:attr="srcdoc=${breakdownHtml}">`; absent whenever `breakdownHtml`
+     isn't in the model.
+   - rungs.css: added `#breakdown` and `.breakdown-frame` (carried from the mock's `<style>`); `.actions` and
+     the `.btn`/`.btn-primary`/`.btn-secondary` rules already existed from phase 038/039, so nothing there was
+     duplicated.
+
+3. SnapshotController
+   - Constructor now also takes an injected `ITemplateEngine` (Spring Boot's autoconfigured Thymeleaf engine
+     bean), used only to render `payoff-schedule.html` to a `String` for the srcdoc.
+   - `POST /assess` gained a `@RequestParam(required = false) String breakdown` and now always puts `form`
+     in the model (needed for the hidden fields); when `breakdown` is exactly `"true"`, it also builds the
+     `PayoffSchedule` via the domain's `PayoffScheduleCalculator.schedule(snapshot)`, wraps it in a
+     `ScheduleView` (see below), renders `payoff-schedule` through the injected template engine into a plain
+     `org.thymeleaf.context.Context`, and puts the resulting HTML string in the model as `breakdownHtml`.
+   - `POST /edit` (new): binds the posted hidden fields into a fresh `SnapshotForm` (same `@ModelAttribute`
+     mechanism `/debts/add` and `/debts/remove` already use) and re-renders `form.html` with it — no domain
+     call, so hostile values can't reach the mapper here at all.
+   - `POST /breakdown` (new): builds the snapshot the same way `/assess` does and renders `payoff-schedule`
+     standalone (not via the template-engine string path — a normal `Model` attribute and view name), for
+     checks and tests independent of the result page.
+
+4. Payoff schedule view model and template
+   - New package-visible records in `web`: `LoanSummaryView` (Your Loans row), `LoanMonthView` (one loan's
+     open/interest/payment/end for one month), `ScheduleMonthView` (one schedule row, plus a `closed` flag),
+     and `ScheduleView` (the whole page: `hasLoans`, the loans table, `loanNames` for the schedule table's
+     per-loan headers, the schedule rows, and the three totals).
+   - `ScheduleViews.build(PayoffSchedule)`: formats every `Money` as `$#,##0.00` via `Money.toDisplayString()`,
+     except a zero amount becomes `"-"` (design.md 040 section 2); each loan's rate as a plain two-decimal
+     percentage (`26.99%`); each month's label as `MMM yyyy` in `Locale.US` (e.g. "Sep 2026") from
+     `ScheduleMonth.month()`. A month's `closed` flag is true when any loan's `payment` is positive and its
+     `end` is zero that month (a loan already closed in an earlier month renders all-`$0`/`payment` zero, so
+     it never re-triggers the flag). An empty `PayoffSchedule.loans()` (no debts, no mortgage balance) yields
+     `hasLoans = false` and every other field empty/null, short-circuiting before the month loop.
+   - templates/payoff-schedule.html and static/css/schedule.css: carried forward from prd/payoff-schedule.html
+     (same class names — `.table-wrap`, `table.loans`, `table.schedule`, `tr.closed`, `tr.totals`, etc.) with
+     three deliberate departures the task called for over the static mock: every month renders (no `.ellipsis`
+     row — `th:each` over `schedule.months` with no cap), the Month column shows the calendar label instead of
+     a bare index, and the stylesheet link is the absolute `/css/schedule.css` (own file, since srcdoc inherits
+     the parent page's base URL and a relative href would resolve against `/` or `/assess`, not `/css/`).
+     `th:block` wraps each loan's four schedule columns (open/int/pmt/end) and the totals row's per-loan `pmt`
+     cell, so the per-loan column count stays data-driven. "No debts or mortgage to pay down." renders in
+     place of both tables when `hasLoans` is false; "This schedule stops at 600 months." renders under the
+     tables when `truncated` is true. Section labels are the literal `YOUR LOANS` / `PAYOFF SCHEDULE` text
+     (not lower-case text with a CSS `text-transform`), matching what design.md 040 section 5's web tests
+     assert the rendered srcdoc contains.
+
+5. Tests added
+   - SnapshotControllerTests: `resultPageHasBothButtonsAndAHiddenCopyOfEveryFormField` (both formactions, the
+     `breakdown` hidden field, and a hidden input for every money/housing/mortgage/maturity/debt-row field);
+     `resultPageOmitsUncheckedCheckboxHiddenFields`; `editRestoresEveryValueIncludingHousingModeAndDebtRows`
+     (housing radio `checked`, mortgage fields, maturity year, a debt row, and the college checkbox all
+     restored via `/edit`); `editWithHostileHiddenValuesNeverFails`. Also updated the existing hidden-field and
+     sample-household assertions to drop `annualPropertyTaxes` and added assertions for the new hint/note text
+     on `getRootRendersEmptyFormWithOneDebtRow`.
+   - New `PayoffScheduleControllerTests` (6 tests): `assessWithoutBreakdownHasNoBreakdownSection`;
+     `assessWithBreakdownTrueRendersTheIframeSrcdocWithTheSchedule` (asserts `id="breakdown"`,
+     `class="breakdown-frame"`, a `srcdoc="` attribute, "PAYOFF SCHEDULE", every loan name including
+     "Mortgage", and the first month's "Sep 2026" label, all inside the escaped srcdoc string, and no
+     `<script`); `breakdownRendersTheFirstMonthFiguresAndLoanNamesInPayoffOrder` (board debts plus a
+     $185,000 @ 5.25% mortgage with a $1,650 payment — the design.md worked example — asserts the loan names
+     appear in the order Store card, Car loan, Student loan, Mortgage, and that the first row shows
+     `$840.00`/`$18.89`/`$858.89`, matching the hand-verified figures in prd/payoff-schedule.html and the
+     phase-2 calculator tests); `renterHouseholdHasNoMortgageColumn`; `noLoansRendersTheEmptyMessage`;
+     `breakdownWithHostileHiddenValuesNeverFails`.
+   - New `ScheduleViewsTests` (3 tests) at the view-model level, independent of MockMvc: the no-loans case;
+     money/percent formatting and the zero-as-dash rule plus the `closed` flag, using a single debt sized so
+     it pays off in its first month; the mortgage landing as the (only, last) loan in `loanNames`.
+
+Files touched: SnapshotForm.java, SnapshotController.java, SampleHouseholds.java (main); form.html,
+result.html, payoff-schedule.html (new), rungs.css, schedule.css (new); LoanSummaryView.java (new),
+LoanMonthView.java (new), ScheduleMonthView.java (new), ScheduleView.java (new), ScheduleViews.java (new);
+SnapshotControllerTests.java, SnapshotFormMapperTests.java, PayoffScheduleControllerTests.java (new),
+ScheduleViewsTests.java (new).
+
+Verify result: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B
+-ntp clean verify` — BUILD SUCCESS, Tests run: 830, Failures: 0, Errors: 0, Skipped: 0 (817 pre-existing + 3
+new SnapshotControllerTests + 6 new PayoffScheduleControllerTests + 3 new ScheduleViewsTests + 1 new
+assertion set on an existing SnapshotControllerTests test).
+
+Not done in this phase: screenshots (design.md 040 section 5's "Screenshots" row) — no browser tooling was
+available in this environment; the orchestrator should capture the three mocks and the app's result page
+with the schedule open before sign-off, per design.md section 6's phase table.
+
+## Review fixes
+
+Six review findings, fixed with TDD (one failing test per behavior, then the minimal fix), on top of the
+uncommitted phase-3 web work above.
+
+1. **Unbounded schedule size (medium).** A debt-row cap of 20 now runs end to end: `SnapshotController`'s
+   `@InitBinder` sets `setAutoGrowCollectionLimit(20)` (was 100) so `debts[20]` and up hit
+   `handleUnreachableDebtIndex()` as a 400, the same path `debts[99999]` already used; `addDebt` (`POST
+   /debts/add`) silently no-ops once the form already holds 20 rows instead of adding a 21st; and
+   `SnapshotFormMapper.toSnapshot` keeps only the first `MAX_DEBT_ROWS` (20) non-zero-balance rows in
+   submitted order, documented on the constant and the class javadoc, dropping any further rows rather than
+   mapping them.
+   - Note on the binder limit: the task described this as "autoGrowCollectionLimit 21 (index 20 → 400)"; a
+     small experiment against `BeanWrapperImpl` directly (Spring 7.0.9) showed the limit itself is the
+     rejection threshold — `index >= limit` throws `InvalidPropertyException` — so a limit of 20 (not 21) is
+     what actually produces "debts[19] is the 20th and last row, debts[20] is a 400", the exact observable
+     behavior the task asked for. Implemented with 20.
+   - New tests: `SnapshotFormMapperTests.onlyTheFirstTwentyNonZeroDebtRowsAreKept` (25 rows in, 20 kept, in
+     order); `SnapshotControllerTests.addDebtAtTwentyRowsDoesNotAddAFurtherRow` (posts 20 rows, `POST
+     /debts/add`, asserts `debts[19].label` present and `debts[20].label` absent).
+   - `PayoffScheduleControllerTests.twentyDebtsAtTheSixHundredMonthCapStayWellUnderTheOldFiftyDebtSize`: 20
+     debts, each with a minimum a little below its own monthly interest (same shape as the calculator's own
+     600-cap test), so all 20 stay open for the full 600-month cap — the largest a breakdown page can be, and
+     the same shape as the pre-fix bug (50 debts × 600 months, 6.6 MB). Measures the `POST /breakdown` response
+     byte size. Measured ~2.0 MB at 20 debts, well under both the old 6.6 MB and a straight 50-to-20 scaling of
+     it (~2.64 MB); asserts under 2.2 MB. The task's own "~1.5 MB" figure wasn't reachable purely by capping
+     row count — at 20 loans × 600 months the table is ~52,000 `<td>`s, and the template's own per-cell
+     indentation/whitespace (not the debt count) is the remaining ~38 bytes/cell; trimming that is a template
+     change outside this task's blast radius (binder + mapper + controller row cap only), so it's flagged here
+     rather than done silently.
+
+2. **Freed-minimum leak in `PayoffScheduleCalculator` (low).** Fixed the exact bug: when an open loan's payoff
+   amount lands below its own minimum (e.g. its last small payment), the unused part of that minimum was
+   discarded instead of flowing to the next loan the same month. Replaced the old `overMinimum =
+   max(pmt − minimum, 0); pool -= overMinimum` (loses the case where pmt < minimum) with `pool = pool +
+   minimum − pmt` — algebraically identical when pmt ≥ minimum, but now also correct when pmt < minimum: pool
+   *increases* by the unused part. Never negative, since pmt = min(open + int, minimum + pool) can never
+   exceed minimum + pool. design.md 040 §3 step 4 rewritten to state this rule directly (pool = pool + minimum
+   − pmt) instead of the old one-sided "reduces it by (pmt − minimum) when that difference is positive"
+   wording, which was the buggy rule spelled out.
+   - The existing hand-verified two-debt test (first three months) doesn't change: rechecked by hand — every
+     loan's payment that month is always ≥ its minimum in that fixture (owed always exceeds minimum before
+     either loan closes), so the old and new pool formulas agree there and no figure moved.
+   - New test: `aLoanClosingBelowItsMinimumFreesTheLeftoverToTheNextLoanInTheSameMonth` — Loan A ($10 balance,
+     0%, $50 minimum) pays off at $10.00 (below its $50 minimum) and Loan B ($200 balance, 0%, $30 minimum,
+     $0 extra cash) receives the $40 leftover the same month, paying $70.00 instead of just its own $30
+     minimum. Failed against the old code (asserted $30.00) before the fix, passes after.
+
+3. **Overflow → truncated (low).** New test
+   `PayoffScheduleCalculatorTests.aBalanceNearLongMaxValueOverflowsIntoATruncatedScheduleInsteadOfThrowing`: a
+   single debt at `Long.MAX_VALUE - 100` cents, 24% APR — its first month's `open + interest` overflows a
+   `long`, caught by `simulate`'s existing `catch (ArithmeticException)`. Asserts `schedule()` doesn't throw
+   and the returned schedule is `truncated()`. No production code change needed; this closes the untested gap
+   around the calculator's existing overflow handling.
+
+4. **400, not 500, for `debts[99999]` on `/breakdown` and `/edit` (low).** New tests
+   `SnapshotControllerTests.editWithLargeDebtIndexDoesNotFail` and `...breakdownWithLargeDebtIndexDoesNotFail`,
+   mirroring the existing `largeDebtIndexDoesNotFail` (`/assess`). Both already passed once written — the
+   `@InitBinder`/`@ExceptionHandler` pair on `SnapshotController` applies to every `@ModelAttribute("form")`
+   binding on the controller, `/edit` and `/breakdown` included — so this closes a coverage gap rather than a
+   bug.
+
+5. **Paid-off note wording (low).** `form.html` and `prd/snapshot-form.html` now read "Paid off? Enter 0 for
+   the remaining balance, and enter your property taxes and insurance as the monthly payment, since those
+   still come out of your take-home pay each month." (was "...monthly payment — those still come out..."),
+   matching design.md 040 §1 verbatim. Put on a single template line (was wrapped across three) so the
+   rendered HTML has no embedded newlines, letting the test pin the exact sentence.
+   `SnapshotControllerTests.getRootRendersEmptyFormWithOneDebtRow` now asserts the full sentence instead of a
+   fragment.
+
+6. **Dead CSS (low).** Removed `tr.ellipsis td { ... }` from `static/css/schedule.css`; the app's
+   `payoff-schedule.html` renders every month (no `.ellipsis` row — see the "3 deliberate departures" note in
+   this file's phase-3 entry above), so the rule was unreachable. Left the unrelated `:not(.ellipsis)`
+   selector on `table.schedule th:first-child, table.schedule tbody tr:not(.ellipsis) td:first-child` alone —
+   it's a no-op now but is a different, still-used rule (sticky first column), not "the `tr.ellipsis` rule"
+   the task named.
+
+Verify result: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B
+-ntp clean verify` — BUILD SUCCESS, Tests run: 837, Failures: 0, Errors: 0, Skipped: 0 (830 before this pass +
+2 PayoffScheduleCalculatorTests + 1 SnapshotFormMapperTests + 3 SnapshotControllerTests + 1
+PayoffScheduleControllerTests, plus the rewritten wording assertion on an existing SnapshotControllerTests
+test).

@@ -1,0 +1,41 @@
+:root {
+  --blue-700: #08467F; --blue-600: #0B5CAB; --blue-100: #D6E7F5; --blue-50: #EFF6FC;
+  --navy-900: #10263B; --ink-700: #3C4A57; --ink-500: #6B7A88;
+  --gold-600: #C98600; --gold-500: #F2A900; --gold-100: #FDF0D2;
+  --green-700: #146842; --green-600: #1E8E5A; --green-100: #DCF2E7;
+  --red-600: #C4312B; --slate-200: #DDE3E9; --slate-100: #EDF1F4;
+  --surface: #F6F8FA; --white: #FFFFFF;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(16,38,59,.06), 0 4px 12px rgba(16,38,59,.06);
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font); color: var(--navy-900); background: var(--surface);
+  padding: 14px 16px 24px; }
+.title { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+.subtitle { font-size: 12.5px; font-style: italic; color: var(--ink-500); margin: 0 0 18px; line-height: 1.5; max-width: 70ch; }
+.section-label { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--ink-500);
+  text-transform: uppercase; margin: 0 0 8px; }
+.table-wrap { overflow-x: auto; background: var(--white); border: 1px solid var(--slate-200);
+  border-radius: var(--r-md); }
+.table-wrap + .table-wrap, .section + .section { margin-top: 18px; }
+.section { margin-bottom: 18px; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.loans { min-width: 480px; }
+table.schedule { min-width: 1900px; }
+th, td { padding: 6px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--slate-100); }
+th:first-child, td:first-child { text-align: left; }
+thead th { background: #F2F2F2; font-weight: 700; font-size: 11px; color: var(--ink-700);
+  border-bottom: 1px solid var(--slate-200); position: sticky; top: 0; }
+table.schedule th:first-child, table.schedule tbody tr:not(.ellipsis) td:first-child {
+  position: sticky; left: 0; background: var(--white); z-index: 1; text-align: right;
+}
+table.schedule thead th:first-child { background: #F2F2F2; z-index: 2; }
+td, th { font-variant-numeric: tabular-nums; }
+tbody tr:nth-child(even) td { background: #FBFCFD; }
+tbody tr.closed td { background: var(--green-100); }
+table.schedule tbody tr.closed td:first-child { background: var(--green-100); }
+tr.totals td { font-weight: 700; border-top: 2px solid var(--slate-200); background: var(--white); }
+tr.total-row td { font-weight: 700; border-top: 2px solid var(--slate-200); }
+.foot-note { font-size: 11.5px; color: var(--ink-500); margin-top: 10px; }
+.no-loans { font-size: 13.5px; color: var(--ink-700); }

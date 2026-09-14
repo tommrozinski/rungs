@@ -106,8 +106,10 @@ public final class PayoffScheduleCalculator {
                     Money payment = owed.min(cap);
                     Money end = owed.minus(payment);
 
-                    Money overMinimum = payment.minus(loan.minimumPayment()).max(Money.ZERO);
-                    pool = pool.minus(overMinimum);
+                    // pmt never exceeds minimum + pool, so this is never negative: an unused minimum (pmt below
+                    // minimum, e.g. a small payoff) flows forward to the next loan this same month, and money
+                    // taken above the minimum is subtracted from what is left.
+                    pool = pool.plus(loan.minimumPayment()).minus(payment);
 
                     loanMonths.add(new LoanMonth(open, interest, payment, end));
                     monthInterest = monthInterest.plus(interest);

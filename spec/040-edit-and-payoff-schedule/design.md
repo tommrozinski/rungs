@@ -59,8 +59,10 @@ Static mocks come first and are checked in a browser. Templates carry them forwa
     3. `totalAvail` = extraCash + cascade.
     4. For each loan still open, in order:
        - `int` = open × rate ÷ 1200, half-even to the cent.
-       - `pmt` = min(open + int, minimum + pool), where pool starts at totalAvail and each loan reduces it
-         by (pmt − minimum) when that difference is positive.
+       - `pool` starts at totalAvail. `pmt` = min(open + int, minimum + pool). Then `pool` = pool + minimum −
+         pmt, so an unused minimum (pmt below minimum, e.g. a small payoff) flows to later loans in the same
+         month, and money taken above the minimum is subtracted from the pool. Never negative, since pmt never
+         exceeds minimum + pool.
        - `end` = open + int − pmt.
        - Loans closed earlier show open, int, pmt, and end as $0.
     5. `moInt` = the sum of int. `totalBal` = the sum of end. `cumInt` is the running total of moInt.
