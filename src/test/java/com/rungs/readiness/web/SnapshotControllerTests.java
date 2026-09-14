@@ -81,8 +81,8 @@ class SnapshotControllerTests {
         assertThat(body).contains("Paid off? Enter 0 for the remaining balance, and enter your property taxes "
                 + "and insurance as the monthly payment, since those still come out of your take-home pay each "
                 + "month.");
-        assertThat(body).contains("name=\"maturityMonth\"");
-        assertThat(body).contains("name=\"maturityYear\"");
+        assertThat(body).doesNotContain("name=\"maturityMonth\"");
+        assertThat(body).doesNotContain("name=\"maturityYear\"");
         assertThat(body).contains("name=\"monthlyRent\"");
         assertThat(body).contains("name=\"intendsToFundCollege\"");
         assertThat(body).contains("name=\"retired\"");
@@ -227,7 +227,9 @@ class SnapshotControllerTests {
 
         assertThat(body).contains("You're on stage 2 of 7");
         assertThat(body).contains("$12,480 stands between you and debt freedom.");
-        assertThat(body).contains("At your current surplus of $2,243 a month, that's about 6 months of work.");
+        assertThat(body).contains(
+                "With the debt snowball you're free of everything but the house by January 2027, "
+                        + "about 5 months from now.");
         assertThat(body).contains("$2,243");
         assertThat(body).contains("$12,480");
         assertThat(body).contains("1 of 7");
@@ -301,8 +303,8 @@ class SnapshotControllerTests {
         assertThat(body).contains("name=\"mortgageBalance\"");
         assertThat(body).contains("name=\"mortgageRate\"");
         assertThat(body).contains("name=\"mortgagePayment\"");
-        assertThat(body).contains("name=\"maturityMonth\"");
-        assertThat(body).contains("name=\"maturityYear\"");
+        assertThat(body).doesNotContain("name=\"maturityMonth\"");
+        assertThat(body).doesNotContain("name=\"maturityYear\"");
         assertThat(body).contains("name=\"intendsToFundCollege\" value=\"true\"");
         assertThat(body).contains("name=\"retired\" value=\"true\"");
         assertThat(body).contains("name=\"debts[0].label\" value=\"Store card\"");
@@ -336,8 +338,6 @@ class SnapshotControllerTests {
                         .param("mortgageBalance", "285000")
                         .param("mortgageRate", "6.5")
                         .param("mortgagePayment", "2269")
-                        .param("maturityMonth", "5")
-                        .param("maturityYear", "2044")
                         .param("intendsToFundCollege", "true")
                         .param("debts[0].label", "Store card")
                         .param("debts[0].balance", "840"))
@@ -351,7 +351,8 @@ class SnapshotControllerTests {
         assertThat(body).contains("name=\"monthlyTakeHomeIncome\" value=\"7800\"");
         assertThat(body).contains("name=\"mortgageBalance\" value=\"285000\"");
         assertThat(body).contains("name=\"mortgagePayment\" value=\"2269\"");
-        assertThat(body).contains("value=\"2044\" aria-label=\"Maturity year\"");
+        assertThat(body).doesNotContain("name=\"maturityMonth\"");
+        assertThat(body).doesNotContain("name=\"maturityYear\"");
         assertThat(body).contains("value=\"Store card\"");
         int mortgageRadioIndex = body.indexOf("id=\"housing-mortgage\"");
         int mortgageRadioEnd = body.indexOf(">", mortgageRadioIndex);
@@ -365,8 +366,7 @@ class SnapshotControllerTests {
     void editWithHostileHiddenValuesNeverFails() throws Exception {
         mockMvc.perform(post("/edit")
                         .param("monthlyTakeHomeIncome", "1e-999999999")
-                        .param("debts[0].balance", "not-a-number")
-                        .param("maturityMonth", "not-a-month"))
+                        .param("debts[0].balance", "not-a-number"))
                 .andExpect(status().isOk());
     }
 
@@ -422,7 +422,7 @@ class SnapshotControllerTests {
                 .getResponse()
                 .getContentAsString();
 
-        assertThat(body).contains("All seven stages are done or skipped");
+        assertThat(body).contains("Every stage that applies to you is done");
         assertThat(body).contains("Build wealth and give.");
         assertThat(body).contains("5 of 7");
     }
@@ -452,9 +452,7 @@ class SnapshotControllerTests {
                         .param("housing", "MORTGAGE")
                         .param("mortgageBalance", "285000")
                         .param("mortgageRate", "6.5")
-                        .param("mortgagePayment", "2269")
-                        .param("maturityMonth", "9")
-                        .param("maturityYear", "2053"))
+                        .param("mortgagePayment", "2269"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -463,8 +461,8 @@ class SnapshotControllerTests {
         assertThat(body).contains("name=\"mortgageBalance\" value=\"285000\"");
         assertThat(body).contains("name=\"mortgageRate\" value=\"6.5\"");
         assertThat(body).contains("name=\"mortgagePayment\" value=\"2269\"");
-        assertThat(body).contains("name=\"maturityYear\"");
-        assertThat(body).contains("value=\"2053\" aria-label=\"Maturity year\"");
+        assertThat(body).doesNotContain("name=\"maturityMonth\"");
+        assertThat(body).doesNotContain("name=\"maturityYear\"");
         int mortgageRadioIndex = body.indexOf("id=\"housing-mortgage\"");
         int mortgageRadioEnd = body.indexOf(">", mortgageRadioIndex);
         assertThat(body.substring(mortgageRadioIndex, mortgageRadioEnd)).contains("checked");
@@ -611,7 +609,7 @@ class SnapshotControllerTests {
     }
 
     @Test
-    void assessAssignsTheDebtFreeSampleHouseholdToStageThreeAndIgnoresThePostedMaturityFields() throws Exception {
+    void assessAssignsTheDebtFreeSampleHouseholdToStageThree() throws Exception {
         String body = mockMvc.perform(post("/assess")
                         .param("monthlyTakeHomeIncome", "7800")
                         .param("monthlyEssentialExpenses", "2600")
@@ -621,9 +619,7 @@ class SnapshotControllerTests {
                         .param("housing", "MORTGAGE")
                         .param("mortgageBalance", "285000")
                         .param("mortgageRate", "6.5")
-                        .param("mortgagePayment", "2269")
-                        .param("maturityMonth", "5")
-                        .param("maturityYear", "2044"))
+                        .param("mortgagePayment", "2269"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -633,7 +629,7 @@ class SnapshotControllerTests {
     }
 
     @Test
-    void assessAssignsTheHomestretchSampleHouseholdToStageSixAndIgnoresThePostedMaturityFields() throws Exception {
+    void assessAssignsTheHomestretchSampleHouseholdToStageSixAndShowsTheSnowballsEarlierPayoffDate() throws Exception {
         String body = mockMvc.perform(post("/assess")
                         .param("monthlyTakeHomeIncome", "11500")
                         .param("monthlyEssentialExpenses", "3400")
@@ -643,9 +639,7 @@ class SnapshotControllerTests {
                         .param("housing", "MORTGAGE")
                         .param("mortgageBalance", "198000")
                         .param("mortgageRate", "3.25")
-                        .param("mortgagePayment", "1900")
-                        .param("maturityMonth", "9")
-                        .param("maturityYear", "2042"))
+                        .param("mortgagePayment", "1900"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -653,6 +647,9 @@ class SnapshotControllerTests {
 
         assertThat(body).contains("You're on stage 6 of 7");
         assertThat(body).contains("At your current payment it's paid off in");
+        assertThat(body).contains(
+                "With the debt snowball it's paid off in October 2028, 8 years 2 months sooner than your payment "
+                        + "alone.");
     }
 
     @Test
@@ -672,7 +669,7 @@ class SnapshotControllerTests {
                 .getResponse()
                 .getContentAsString();
 
-        assertThat(body).contains("All seven stages are done or skipped");
+        assertThat(body).contains("Every stage that applies to you is done");
         assertThat(body).contains("Your house is paid off.");
     }
 
@@ -689,5 +686,87 @@ class SnapshotControllerTests {
                         .param("mortgageRate", "5")
                         .param("mortgagePayment", "92233720368547748.07"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void assessShowsBothMortgagePayoffDatesAndSoonerForAHomeownerWithDebts() throws Exception {
+        String body = mockMvc.perform(post("/assess")
+                        .param("monthlyTakeHomeIncome", "6450")
+                        .param("monthlyEssentialExpenses", "2100")
+                        .param("starterEmergencyFund", "1000")
+                        .param("fullEmergencyFund", "0")
+                        .param("retirementContributionPercent", "6")
+                        .param("housing", "MORTGAGE")
+                        .param("mortgageBalance", "185000")
+                        .param("mortgageRate", "5.25")
+                        .param("mortgagePayment", "1650")
+                        .param("debts[0].label", "Store card")
+                        .param("debts[0].type", "CREDIT_CARD")
+                        .param("debts[0].balance", "840")
+                        .param("debts[0].annualInterestRate", "26.99")
+                        .param("debts[0].minimumPayment", "35")
+                        .param("debts[1].label", "Car loan")
+                        .param("debts[1].type", "AUTO")
+                        .param("debts[1].balance", "9140")
+                        .param("debts[1].annualInterestRate", "6.40")
+                        .param("debts[1].minimumPayment", "312")
+                        .param("debts[2].label", "Student loan")
+                        .param("debts[2].type", "STUDENT_LOAN")
+                        .param("debts[2].balance", "2500")
+                        .param("debts[2].annualInterestRate", "4.50")
+                        .param("debts[2].minimumPayment", "110"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        // asOf is fixed to September 2026 (FixedClockConfig); the domain computes the current-payment payoff at
+        // August 2039 and the debt snowball's mortgage payoff at November 2030, 8 years 9 months sooner.
+        assertThat(body).contains("At your current payment it's paid off in August 2039.");
+        assertThat(body).contains(
+                "With the debt snowball it's paid off in November 2030, 8 years 9 months sooner.");
+    }
+
+    @Test
+    void assessShowsTheSnowballOnlyDateWhenTheCurrentPaymentDoesNotCoverInterest() throws Exception {
+        String body = mockMvc.perform(post("/assess")
+                        .param("monthlyTakeHomeIncome", "9000")
+                        .param("monthlyEssentialExpenses", "2000")
+                        .param("starterEmergencyFund", "1000")
+                        .param("fullEmergencyFund", "7200")
+                        .param("retirementContributionPercent", "15")
+                        .param("housing", "MORTGAGE")
+                        .param("mortgageBalance", "300000")
+                        .param("mortgageRate", "6")
+                        .param("mortgagePayment", "400"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("You're on stage 6 of 7");
+        assertThat(body).contains("Your $400.00 payment doesn't cover the $1,500.00 monthly interest.");
+        assertThat(body).contains("With the debt snowball it's paid off in September 2030.");
+        assertThat(body).doesNotContain("sooner");
+    }
+
+    @Test
+    void assessForARenterShowsNoMortgagePayoffDates() throws Exception {
+        String body = mockMvc.perform(post("/assess")
+                        .param("monthlyTakeHomeIncome", "6200")
+                        .param("monthlyEssentialExpenses", "2100")
+                        .param("starterEmergencyFund", "1000")
+                        .param("fullEmergencyFund", "0")
+                        .param("retirementContributionPercent", "6")
+                        .param("housing", "RENT")
+                        .param("monthlyRent", "1400"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("You rent, so there's no mortgage to pay down.");
+        assertThat(body).doesNotContain("With the debt snowball it's paid off");
+        assertThat(body).doesNotContain("At your current payment it's paid off");
     }
 }

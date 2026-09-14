@@ -9,6 +9,7 @@ import com.rungs.readiness.domain.model.FinancialSnapshotBuilder;
 import com.rungs.readiness.domain.model.HouseholdFlags;
 import com.rungs.readiness.domain.model.Money;
 import com.rungs.readiness.domain.model.Mortgage;
+import com.rungs.readiness.domain.projection.PayoffScheduleCalculator;
 import java.math.BigDecimal;
 import com.rungs.readiness.domain.stage.CollegeEvaluator;
 import com.rungs.readiness.domain.stage.DebtFreeEvaluator;
@@ -40,7 +41,7 @@ class ResultViewsTests {
 
     private ResultView build(FinancialSnapshot snapshot) {
         LadderResult result = ladder.assess(snapshot);
-        return ResultViews.build(result, snapshot);
+        return ResultViews.build(result, snapshot, PayoffScheduleCalculator.schedule(snapshot));
     }
 
     // Stage 1: starter fund
@@ -301,7 +302,7 @@ class ResultViewsTests {
         ResultView result = build(snapshot);
 
         assertThat(stage(result, 7).line()).isEqualTo("Every earlier stage is done or skipped.");
-        assertThat(result.eyebrow()).isEqualTo("All seven stages are done or skipped");
+        assertThat(result.eyebrow()).isEqualTo("Every stage that applies to you is done");
     }
 
     @Test
@@ -377,7 +378,7 @@ class ResultViewsTests {
     }
 
     @Test
-    void currentStageTwoVerdictWithAPositiveSurplus() {
+    void currentStageTwoVerdictShowsTheSnowballsDebtFreeMonth() {
         FinancialSnapshot snapshot = aSnapshot()
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
                 .withMonthlyTakeHomeIncome(Money.ofDollars(6_200))
@@ -390,12 +391,12 @@ class ResultViewsTests {
         ResultView result = build(snapshot);
 
         assertThat(result.verdictLine()).isEqualTo("$12,480 stands between you and debt freedom.");
-        assertThat(result.verdictSub())
-                .isEqualTo("At your current surplus of $2,243 a month, that's about 6 months of work.");
+        assertThat(result.verdictSub()).isEqualTo(
+                "With the debt snowball you're free of everything but the house by May 2024, about 5 months from now.");
     }
 
     @Test
-    void currentStageTwoVerdictSingularMonthOfWork() {
+    void currentStageTwoVerdictUsesTheSingularMonthWhenTheSnowballClearsTheDebtsThisMonth() {
         FinancialSnapshot snapshot = aSnapshot()
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
                 .withMonthlyTakeHomeIncome(Money.ofDollars(5_000))
@@ -404,11 +405,12 @@ class ResultViewsTests {
 
         ResultView result = build(snapshot);
 
-        assertThat(result.verdictSub()).isEqualTo("At your current surplus of $5,000 a month, that's about 1 month of work.");
+        assertThat(result.verdictSub()).isEqualTo(
+                "With the debt snowball you're free of everything but the house by January 2024, about 1 month from now.");
     }
 
     @Test
-    void currentStageTwoVerdictWithNoSurplusUsesTheAlternateSentence() {
+    void currentStageTwoVerdictUsesTheGiveUpSentenceWhenTheSnowballNeverClearsTheDebts() {
         FinancialSnapshot snapshot = aSnapshot()
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
                 .withMonthlyTakeHomeIncome(Money.ofDollars(3_000))
@@ -418,7 +420,7 @@ class ResultViewsTests {
 
         ResultView result = build(snapshot);
 
-        assertThat(result.verdictSub()).isEqualTo("Right now your expenses and minimums use up your take-home pay.");
+        assertThat(result.verdictSub()).isEqualTo("At these payments your debts won't be paid off within 50 years.");
     }
 
     @Test
@@ -467,9 +469,10 @@ class ResultViewsTests {
     }
 
     @Test
-    void currentStageSixVerdict() {
+    void currentStageSixVerdictShowsTheSnowballsEarlierPayoffDate() {
         FinancialSnapshot snapshot = aSnapshot()
                 .withStarterEmergencyFund(Money.ofDollars(1_000))
+                .withMonthlyTakeHomeIncome(Money.ofDollars(2_000))
                 .withMonthlyEssentialExpenses(Money.ZERO)
                 .withFullEmergencyFund(Money.ofDollars(3_600))
                 .withRetirementContributionPercent("15")
@@ -481,8 +484,11 @@ class ResultViewsTests {
         ResultView result = build(snapshot);
 
         assertThat(result.verdictLine()).isEqualTo("Pay off the house.");
-        assertThat(result.verdictSub())
-                .isEqualTo("At this payment it's paid off in February 2033. Every extra dollar gets you there sooner.");
+        assertThat(result.verdictSub()).isEqualTo(
+                "With the debt snowball it's paid off in October 2028, 4 years 4 months sooner than your payment alone.");
+        assertThat(stage(result, 6).line()).isEqualTo(
+                "At your current payment it's paid off in February 2033. With the debt snowball it's paid off in "
+                        + "October 2028, 4 years 4 months sooner.");
     }
 
     @Test
@@ -515,7 +521,7 @@ class ResultViewsTests {
 
         ResultView result = build(snapshot);
 
-        assertThat(result.eyebrow()).isEqualTo("All seven stages are done or skipped");
+        assertThat(result.eyebrow()).isEqualTo("Every stage that applies to you is done");
         assertThat(result.verdictLine()).isEqualTo("Build wealth and give.");
         assertThat(result.verdictSub()).isEqualTo("Every earlier stage is done or skipped.");
     }

@@ -98,6 +98,19 @@ class PayoffScheduleControllerTests {
     }
 
     @Test
+    void breakdownShowsTheSnowballTitleAndSubtitle() throws Exception {
+        String body = mockMvc.perform(boardWithMortgage("/breakdown"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("Payoff schedule — debt snowball (smallest balance first)");
+        assertThat(body).contains("Your surplus goes to the smallest debt");
+        assertThat(body).contains("The mortgage comes last.");
+    }
+
+    @Test
     void breakdownRendersTheFirstMonthFiguresAndLoanNamesInPayoffOrder() throws Exception {
         String body = mockMvc.perform(boardWithMortgage("/breakdown"))
                 .andExpect(status().isOk())

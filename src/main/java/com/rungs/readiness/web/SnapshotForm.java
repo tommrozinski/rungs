@@ -20,8 +20,6 @@ public class SnapshotForm {
     private String mortgageBalance = "";
     private String mortgageRate = "";
     private String mortgagePayment = "";
-    private String maturityMonth = "";
-    private String maturityYear = "";
     private String monthlyRent = "";
     private boolean intendsToFundCollege;
     private boolean retired;
@@ -105,22 +103,6 @@ public class SnapshotForm {
 
     public void setMortgagePayment(String mortgagePayment) {
         this.mortgagePayment = mortgagePayment;
-    }
-
-    public String getMaturityMonth() {
-        return maturityMonth;
-    }
-
-    public void setMaturityMonth(String maturityMonth) {
-        this.maturityMonth = maturityMonth;
-    }
-
-    public String getMaturityYear() {
-        return maturityYear;
-    }
-
-    public void setMaturityYear(String maturityYear) {
-        this.maturityYear = maturityYear;
     }
 
     public String getMonthlyRent() {

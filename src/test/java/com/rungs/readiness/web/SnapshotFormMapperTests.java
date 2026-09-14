@@ -288,22 +288,6 @@ class SnapshotFormMapperTests {
     }
 
     @Test
-    void mortgageModeIgnoresTheMaturityFields() {
-        SnapshotForm form = new SnapshotForm();
-        form.setHousing("MORTGAGE");
-        form.setMortgageBalance("285000");
-        form.setMortgageRate("6.5");
-        form.setMortgagePayment("2200");
-        form.setMaturityMonth("8");
-        form.setMaturityYear("2051");
-
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
-
-        assertThat(snapshot.housing())
-                .isEqualTo(new Mortgage(Money.ofDollars(285_000), new BigDecimal("6.500"), Money.ofDollars(2_200)));
-    }
-
-    @Test
     void blankMortgageFieldsBecomeAZeroBalanceMortgage() {
         SnapshotForm form = new SnapshotForm();
 
@@ -336,8 +320,6 @@ class SnapshotFormMapperTests {
         form.setMortgageRate(hostile);
         form.setMortgagePayment(hostile);
         form.setMonthlyRent(hostile);
-        form.setMaturityMonth(hostile);
-        form.setMaturityYear(hostile);
         SnapshotForm.DebtRow row = new SnapshotForm.DebtRow();
         row.setBalance(hostile);
         row.setAnnualInterestRate(hostile);

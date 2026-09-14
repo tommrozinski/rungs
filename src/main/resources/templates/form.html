@@ -114,27 +114,6 @@
                    name="mortgagePayment" th:value="${form.mortgagePayment}" style="max-width:220px">
             <div class="hint">Your full monthly payment, including taxes and insurance.</div>
           </div>
-          <div class="field">
-            <label id="maturity-label">Maturity</label>
-            <div class="field-row maturity-row" role="group" aria-labelledby="maturity-label">
-              <select class="input" name="maturityMonth" aria-label="Maturity month">
-                <option value="1" th:selected="${form.maturityMonth == '1'}">January</option>
-                <option value="2" th:selected="${form.maturityMonth == '2'}">February</option>
-                <option value="3" th:selected="${form.maturityMonth == '3'}">March</option>
-                <option value="4" th:selected="${form.maturityMonth == '4'}">April</option>
-                <option value="5" th:selected="${form.maturityMonth == '5'}">May</option>
-                <option value="6" th:selected="${form.maturityMonth == '6'}">June</option>
-                <option value="7" th:selected="${form.maturityMonth == '7'}">July</option>
-                <option value="8" th:selected="${form.maturityMonth == '8'}">August</option>
-                <option value="9" th:selected="${form.maturityMonth == '9'}">September</option>
-                <option value="10" th:selected="${form.maturityMonth == '10'}">October</option>
-                <option value="11" th:selected="${form.maturityMonth == '11'}">November</option>
-                <option value="12" th:selected="${form.maturityMonth == '12'}">December</option>
-              </select>
-              <input class="input" type="number" name="maturityYear" min="1900" max="2200"
-                     th:value="${form.maturityYear}" aria-label="Maturity year">
-            </div>
-          </div>
           <p class="small" style="margin-top:10px; margin-bottom:16px;">Paid off? Enter 0 for the remaining balance, and enter your property taxes and insurance as the monthly payment, since those still come out of your take-home pay each month.</p>
         </div>
 

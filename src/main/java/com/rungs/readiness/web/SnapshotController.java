@@ -105,10 +105,11 @@ public class SnapshotController {
         YearMonth asOf = YearMonth.now(clock);
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, asOf);
         LadderResult ladderResult = ladder.assess(snapshot);
+        PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
         model.addAttribute("form", form);
-        model.addAttribute("result", ResultViews.build(ladderResult, snapshot));
+        model.addAttribute("result", ResultViews.build(ladderResult, snapshot, schedule));
         if ("true".equals(breakdown)) {
-            model.addAttribute("breakdownHtml", renderPayoffSchedule(snapshot));
+            model.addAttribute("breakdownHtml", renderPayoffSchedule(schedule));
         }
         return RESULT_VIEW;
     }
@@ -134,8 +135,7 @@ public class SnapshotController {
     /** Renders {@code templates/payoff-schedule.html} to a standalone HTML string for the result page's iframe
      * {@code srcdoc} (design.md 040 section 4); Thymeleaf escapes it as an attribute value when the result
      * template writes it out. */
-    private String renderPayoffSchedule(FinancialSnapshot snapshot) {
-        PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
+    private String renderPayoffSchedule(PayoffSchedule schedule) {
         Context context = new Context();
         context.setVariable("schedule", ScheduleViews.build(schedule));
         return templateEngine.process(PAYOFF_SCHEDULE_VIEW, context);
@@ -146,7 +146,7 @@ public class SnapshotController {
             @ModelAttribute("form") SnapshotForm form,
             @RequestParam(name = "sample", required = false) String sampleId,
             Model model) {
-        SnapshotForm sample = SampleHouseholds.byId(sampleId, YearMonth.now(clock));
+        SnapshotForm sample = SampleHouseholds.byId(sampleId);
         if (sample != null) {
             model.addAttribute("form", sample);
         }

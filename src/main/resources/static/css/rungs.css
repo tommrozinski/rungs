@@ -68,7 +68,6 @@ table.debts td.rm { text-align: center; width: 30px; }
   font-size: 13.5px; font-weight: 600; color: var(--ink-500); cursor: pointer; }
 .housing-toggle input:checked + label { background: var(--blue-600); color: var(--white); }
 .housing-toggle input:focus-visible + label { outline: none; box-shadow: 0 0 0 3px var(--blue-100); }
-.housing-mortgage .field-row.maturity-row { align-items: flex-start; }
 .housing-card:has(.housing-toggle input[value="RENT"]:checked) .housing-mortgage { display: none; }
 .housing-card:has(.housing-toggle input[value="MORTGAGE"]:checked) .housing-rent { display: none; }
 

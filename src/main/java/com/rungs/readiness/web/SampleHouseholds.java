@@ -1,7 +1,5 @@
 package com.rungs.readiness.web;
 
-import java.time.YearMonth;
-
 /**
  * The five sample households the "Load sample data" control offers (design.md 039 section 4), each a fully
  * populated {@link SnapshotForm} keyed by its id. The mortgage payments, balances, and rates are fixed; the
@@ -12,12 +10,8 @@ final class SampleHouseholds {
     private SampleHouseholds() {
     }
 
-    /**
-     * Returns the sample household form for {@code id}, or null when {@code id} names none. {@code asOf} is
-     * accepted for the caller's convenience but no longer affects any sample, now that the mortgage carries no
-     * maturity to compute (design.md 041 section 1).
-     */
-    static SnapshotForm byId(String id, YearMonth asOf) {
+    /** Returns the sample household form for {@code id}, or null when {@code id} names none. */
+    static SnapshotForm byId(String id) {
         if (id == null) {
             return null;
         }

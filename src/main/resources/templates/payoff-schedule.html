@@ -8,8 +8,8 @@
 </head>
 <body>
 
-  <p class="title">🏦 Payoff schedule — highest rate first, with cascade</p>
-  <p class="subtitle">Your surplus goes to the highest-rate debt; each paid-off debt's minimum rolls to the
+  <p class="title">🏦 Payoff schedule — debt snowball (smallest balance first)</p>
+  <p class="subtitle">Your surplus goes to the smallest debt; each paid-off debt's payment rolls into the
     next. The mortgage comes last.</p>
 
   <p class="no-loans" th:unless="${schedule.hasLoans}">No debts or mortgage to pay down.</p>

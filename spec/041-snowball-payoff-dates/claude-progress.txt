@@ -82,3 +82,99 @@ Test changes beyond straightforward constructor-arg fixups:
 
 Verify: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B -ntp clean verify`
 BUILD SUCCESS, Tests run: 819, Failures: 0, Errors: 0, Skipped: 0.
+
+Phase 3 — web
+-------------
+Scope: design.md 041 sections 1, 2, and 4 (carry the mocks forward, the result-page copy driven by the payoff
+schedule, and the schedule page's title/subtitle), plus the web-side maturity removal deferred from phase 2.
+
+What changed:
+
+1. Maturity removal (design.md 041 section 1). Deleted `maturityMonth`/`maturityYear` from `SnapshotForm` (fields
+   and getters/setters), the maturity `<select>`/`<input>` block from `templates/form.html` (the mock's mortgage
+   card has no maturity fields at all — carried forward verbatim, paragraph moved up to sit directly under the
+   payment field), the two maturity hidden fields from `templates/result.html`'s "Change my numbers" round-trip
+   form, and the now-dead `.housing-mortgage .field-row.maturity-row` rule from `rungs.css`. `SampleHouseholds
+   .byId` dropped its unused `asOf` parameter (`SnapshotController.loadSample` updated to match); no sample ever
+   read it once phase 2 removed the maturity computation.
+
+2. Schedule computed once per `/assess` (design.md 041 build order, item 3). `SnapshotController.assess` now calls
+   `PayoffScheduleCalculator.schedule(snapshot)` unconditionally (not only when `breakdown=true`) and passes the
+   same `PayoffSchedule` to both `ResultViews.build` (for stage 2/6 copy) and, when `breakdown=true`, to
+   `renderPayoffSchedule` for the inline iframe — replacing its former re-computation from the snapshot. `/breakdown`
+   (the standalone page) still computes its own schedule from its own posted form, independently, as before.
+
+3. Result-page copy (design.md 041 section 2). `ResultViews.build` takes a third `PayoffSchedule` parameter,
+   threaded into `stageView`/`stageLine`/`verdictSub`:
+   - **Stage 2 verdict sub** (`stage2VerdictSub`, new): from `schedule.debtFreeMonth()` — "With the debt snowball
+     you're free of everything but the house by {date}, about {N} months from now" (singular "1 month"), where N
+     counts the schedule's own `asOf` month as month one (`ChronoUnit.MONTHS.between(schedule.asOf(), date) + 1`);
+     or the fixed "At these payments your debts won't be paid off within 50 years." when the schedule's debts never
+     all close.
+   - **Stage 6 line** (`stage6Line`, reworked): unchanged for Done/Skipped; for the open case, still starts from
+     `evaluation.blocker()` (the current-payment sentence, unchanged in the domain) and appends a snowball
+     sentence via `snowballComparison`/`snowballSuffix` when the schedule's `mortgagePayoffMonth()` beats the
+     current-payment payoff (or the current payment has no payoff date to compare against) — with the "{duration}
+     sooner" clause only when there is a current-payment date to measure against.
+   - **Stage 6 verdict sub** (`stage6VerdictSub`, reworked): the same comparison, phrased as "...sooner than your
+     payment alone." (or just the date with no comparison); falls back to calling `stage6Line` itself when the
+     snowball doesn't finish sooner than the current payment (covers both "never closes" and "closes but not
+     sooner").
+   - **All-done eyebrow**: "Every stage that applies to you is done" (was "All seven stages are done or skipped").
+   - Added a private `SnowballComparison(YearMonth date, String duration)` record and a `snowballComparison(...)`
+     helper shared by both stage-6 call sites, so the "does the snowball help, and by how much" logic lives in
+     exactly one place. Added a `duration(YearMonth, YearMonth)` helper ("Y years M months", singular forms and
+     zero parts omitted) — phase 2 had already deleted `MortgageEvaluator`'s old duration/maturity-comparison
+     helpers entirely (design.md 041 section 1), so there was nothing left to reuse; this is a fresh, single-
+     location implementation rather than a duplicate. `monthYear` is unchanged and still the one date formatter.
+
+4. Schedule page (design.md 041 build order, item 1 carried into templates). `templates/payoff-schedule.html`'s
+   title and subtitle now read "🏦 Payoff schedule — debt snowball (smallest balance first)" and "Your surplus goes
+   to the smallest debt; each paid-off debt's payment rolls into the next. The mortgage comes last." — copied
+   verbatim from `prd/payoff-schedule.html`. `ScheduleViews` itself was untouched, as expected (loan order already
+   came from the snowball-ordered `PayoffSchedule` since phase 2).
+
+Test changes:
+   - `SnapshotFormMapperTests`: deleted `mortgageModeIgnoresTheMaturityFields` (the fields it posted no longer
+     exist on `SnapshotForm`) and the two `setMaturityMonth`/`setMaturityYear` calls in
+     `hostileNumericTextNeverThrowsForAnyNumericField`.
+   - `SnapshotControllerTests`: removed every `maturityMonth`/`maturityYear` param and assertion; the empty-form and
+     result-page hidden-field tests now assert `doesNotContain` for both field names. The board household's stage 2
+     verdict-sub assertion (in `assessRunsTheRealSevenStageAssessmentForTheBoardHousehold`, fixed clock September
+     2026) now expects "With the debt snowball you're free of everything but the house by January 2027, about 5
+     months from now." — matches the mock exactly. Renamed and updated the three sample-assigns-to-stage tests that
+     used to post-and-ignore maturity params (`...ToStageThree`, `...ToStageSixAndShowsTheSnowballsEarlierPayoffDate`
+     — the homestretch one now also asserts the exact snowball-sooner sentence: "With the debt snowball it's paid
+     off in October 2028, 8 years 2 months sooner than your payment alone."); updated both all-done-eyebrow
+     assertions to "Every stage that applies to you is done". Added three new tests: a homeowner-with-three-debts
+     snapshot (board debts + a $185,000/5.25%/$1,650 mortgage, fixed clock September 2026) asserting the stage 6
+     line contains both "At your current payment it's paid off in August 2039." and "With the debt snowball it's
+     paid off in November 2030, 8 years 9 months sooner." (both dates independently computed by the domain, not
+     hand-derived — see below); a not-covered-mortgage snapshot (no debts, $300,000/6%/$400, current payment stage
+     6) asserting the snowball-only sentence "With the debt snowball it's paid off in September 2030." with no
+     "sooner" anywhere on the page; and a renter snapshot asserting neither payoff-date sentence appears.
+   - `PayoffScheduleControllerTests`: added `breakdownShowsTheSnowballTitleAndSubtitle`, asserting the new title and
+     (since the subtitle wraps across two lines in the template's markup) the subtitle's two halves.
+   - `ResultViewsTests`: `build(snapshot)` now threads `PayoffScheduleCalculator.schedule(snapshot)` through to
+     `ResultViews.build`. Renamed and rewrote the three stage-2-verdict tests for the schedule-driven sentence
+     (positive case, the singular "1 month" case, and the 50-year give-up case — replacing the old surplus-only
+     sentence and its no-surplus fallback, since stage 2 no longer looks at surplus at all). Renamed and rewrote
+     `currentStageSixVerdict` (now `...ShowsTheSnowballsEarlierPayoffDate`, income raised from $0 to $2,000/month
+     so the schedule has real extra cash to apply) to assert both the verdict sub and the stage's own `line()` with
+     the new "sooner than your payment alone."/"sooner." phrasing. Left
+     `currentStageSixVerdictFallsBackToTheEvaluatorsSentenceWhenThePaymentDoesNotCoverInterest` unchanged — with a
+     single mortgage and no extra cash, its schedule never closes the mortgage either, so the fallback sentence is
+     identical before and after. Updated both all-done-eyebrow assertions.
+   - Every new date/duration figure asserted above was taken verbatim from a small scratch program that called
+     `PayoffScheduleCalculator.schedule`/`MortgagePayoffCalculator.payoff` directly against `target/classes` for
+     the exact test snapshot, rather than hand-computed — per design.md 041 section 5's "assert the exact dates
+     computed by the domain" instruction. One surprise worth recording: for a single-mortgage, zero-extra-cash
+     household, the schedule's simulation and `MortgagePayoffCalculator`'s standalone amortization can land one
+     month apart (e.g. `currentStageSixVerdictShowsTheSnowballsEarlierPayoffDate`'s original no-extra-cash form
+     showed the schedule closing one month before the standalone calculator, despite identical inputs) — likely a
+     rounding-path difference between the two amortization loops, not a bug either implementation needs fixing for
+     (the design only compares the two dates, it never asserts they must match when there is no extra cash); the
+     test was reshaped to use a clearly positive surplus instead, so its assertion isn't riding on that edge.
+
+Verify: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B -ntp clean verify`
+BUILD SUCCESS, Tests run: 822, Failures: 0, Errors: 0, Skipped: 0.
