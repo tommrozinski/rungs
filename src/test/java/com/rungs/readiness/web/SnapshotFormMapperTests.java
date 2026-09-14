@@ -245,7 +245,7 @@ class SnapshotFormMapperTests {
 
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
-        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, null));
+        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO));
     }
 
     @Test
@@ -279,68 +279,38 @@ class SnapshotFormMapperTests {
         form.setMortgageBalance("285000");
         form.setMortgageRate("6.5");
         form.setMortgagePayment("2200");
-        form.setMaturityMonth("8");
-        form.setMaturityYear("2051");
         form.setMonthlyRent("1400");
 
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
-        assertThat(snapshot.housing()).isEqualTo(new Mortgage(
-                Money.ofDollars(285_000), new BigDecimal("6.500"), Money.ofDollars(2_200), YearMonth.of(2051, 8)));
+        assertThat(snapshot.housing())
+                .isEqualTo(new Mortgage(Money.ofDollars(285_000), new BigDecimal("6.500"), Money.ofDollars(2_200)));
     }
 
     @Test
-    void blankMortgageFieldsBecomeAZeroBalanceMortgageWithNoMaturity() {
+    void mortgageModeIgnoresTheMaturityFields() {
         SnapshotForm form = new SnapshotForm();
-
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
-
-        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, null));
-        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
-    }
-
-    @Test
-    void maturityMonthOutsideOneToTwelveBecomesUnknown() {
-        SnapshotForm form = new SnapshotForm();
-        form.setMaturityMonth("13");
+        form.setHousing("MORTGAGE");
+        form.setMortgageBalance("285000");
+        form.setMortgageRate("6.5");
+        form.setMortgagePayment("2200");
+        form.setMaturityMonth("8");
         form.setMaturityYear("2051");
 
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
-        assertThat(((Mortgage) snapshot.housing()).maturity()).isNull();
+        assertThat(snapshot.housing())
+                .isEqualTo(new Mortgage(Money.ofDollars(285_000), new BigDecimal("6.500"), Money.ofDollars(2_200)));
     }
 
     @Test
-    void maturityYearOutsideTheAllowedRangeBecomesUnknown() {
+    void blankMortgageFieldsBecomeAZeroBalanceMortgage() {
         SnapshotForm form = new SnapshotForm();
-        form.setMaturityMonth("8");
-        form.setMaturityYear("1899");
 
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
-        assertThat(((Mortgage) snapshot.housing()).maturity()).isNull();
-    }
-
-    @Test
-    void blankMaturityFieldsBecomeUnknown() {
-        SnapshotForm form = new SnapshotForm();
-        form.setMaturityMonth("");
-        form.setMaturityYear("");
-
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
-
-        assertThat(((Mortgage) snapshot.housing()).maturity()).isNull();
-    }
-
-    @Test
-    void unparseableMaturityFieldsBecomeUnknown() {
-        SnapshotForm form = new SnapshotForm();
-        form.setMaturityMonth("not a month");
-        form.setMaturityYear("not a year");
-
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
-
-        assertThat(((Mortgage) snapshot.housing()).maturity()).isNull();
+        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO));
+        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
     }
 
     @Test

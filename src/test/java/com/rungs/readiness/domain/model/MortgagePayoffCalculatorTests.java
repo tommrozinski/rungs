@@ -3,12 +3,11 @@ package com.rungs.readiness.domain.model;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.rungs.readiness.domain.model.MortgagePayoff.MaturityComparison;
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import org.junit.jupiter.api.Test;
 
-/** {@link MortgagePayoffCalculator} (design.md 039 section 2). */
+/** {@link MortgagePayoffCalculator} (design.md 041 section 3). */
 class MortgagePayoffCalculatorTests {
 
     private static final YearMonth AS_OF = YearMonth.of(2024, 1);
@@ -22,7 +21,7 @@ class MortgagePayoffCalculatorTests {
 
     @Test
     void rejectsANullAsOf() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(1_000), BigDecimal.ZERO, Money.ofDollars(100), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(1_000), BigDecimal.ZERO, Money.ofDollars(100));
 
         assertThatThrownBy(() -> MortgagePayoffCalculator.payoff(mortgage, null))
                 .isInstanceOf(NullPointerException.class)
@@ -33,7 +32,7 @@ class MortgagePayoffCalculatorTests {
 
     @Test
     void aZeroBalancePaysOffImmediatelyAndIsCovered() {
-        Mortgage paidOff = new Mortgage(Money.ZERO, new BigDecimal("5"), Money.ZERO, null);
+        Mortgage paidOff = new Mortgage(Money.ZERO, new BigDecimal("5"), Money.ZERO);
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(paidOff, AS_OF);
 
@@ -41,23 +40,13 @@ class MortgagePayoffCalculatorTests {
         assertThat(payoff.monthsToPayoff()).isEqualTo(0);
         assertThat(payoff.payoffMonth()).isEqualTo(AS_OF);
         assertThat(payoff.firstMonthInterest()).isEqualTo(Money.ZERO);
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.UNKNOWN);
-    }
-
-    @Test
-    void aZeroBalanceComparesThePayoffMonthAgainstAKnownMaturity() {
-        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, AS_OF);
-
-        MortgagePayoff payoff = MortgagePayoffCalculator.payoff(paidOff, AS_OF);
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.MATCHES);
     }
 
     // Not covered: the payment does not exceed the first month's interest
 
     @Test
     void isNotCoveredWhenThePaymentDoesNotExceedTheFirstMonthInterest() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(100_000), new BigDecimal("12"), Money.ofDollars(900), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(100_000), new BigDecimal("12"), Money.ofDollars(900));
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
 
@@ -66,13 +55,11 @@ class MortgagePayoffCalculatorTests {
         assertThat(payoff.covered()).isFalse();
         assertThat(payoff.monthsToPayoff()).isNull();
         assertThat(payoff.payoffMonth()).isNull();
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.UNKNOWN);
     }
 
     @Test
     void isNotCoveredWhenThePaymentExactlyEqualsTheFirstMonthInterest() {
-        Mortgage mortgage =
-                new Mortgage(Money.ofDollars(100_000), new BigDecimal("12"), Money.ofDollars(1_000), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(100_000), new BigDecimal("12"), Money.ofDollars(1_000));
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
 
@@ -85,7 +72,7 @@ class MortgagePayoffCalculatorTests {
 
     @Test
     void payoffOfAHandVerifiedSmallLoanMatchesTheCentByCentAmortization() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(500), new BigDecimal("12"), Money.ofDollars(260), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(500), new BigDecimal("12"), Money.ofDollars(260));
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
 
@@ -100,7 +87,7 @@ class MortgagePayoffCalculatorTests {
 
     @Test
     void payoffAtAZeroPercentRateDividesTheBalanceByThePayment() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(1_200), BigDecimal.ZERO, Money.ofDollars(300), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(1_200), BigDecimal.ZERO, Money.ofDollars(300));
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
 
@@ -116,21 +103,19 @@ class MortgagePayoffCalculatorTests {
 
     @Test
     void isNullWhenTheLoanRunsPastSixHundredMonths() {
-        Mortgage mortgage =
-                new Mortgage(Money.ofDollars(500_000), new BigDecimal("20"), Money.ofCents(833_340), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(500_000), new BigDecimal("20"), Money.ofCents(833_340));
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
 
         assertThat(payoff.covered()).isTrue();
         assertThat(payoff.monthsToPayoff()).isNull();
         assertThat(payoff.payoffMonth()).isNull();
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.UNKNOWN);
     }
 
     @Test
     void payoffAtExactlySixHundredMonthsIsNotCapped() {
         // 0% rate, so the balance divides exactly: $600 at $1 a month pays off in exactly 600 months.
-        Mortgage mortgage = new Mortgage(Money.ofDollars(600), BigDecimal.ZERO, Money.ofDollars(1), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(600), BigDecimal.ZERO, Money.ofDollars(1));
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
 
@@ -144,14 +129,13 @@ class MortgagePayoffCalculatorTests {
     @Test
     void overflowDuringAmortizationIsTreatedAsTheSixHundredMonthCap() {
         Money hugeBalance = Money.ofCents(Long.MAX_VALUE - 1000);
-        Mortgage mortgage = new Mortgage(hugeBalance, new BigDecimal("100"), hugeBalance, null);
+        Mortgage mortgage = new Mortgage(hugeBalance, new BigDecimal("100"), hugeBalance);
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
 
         assertThat(payoff.covered()).isTrue();
         assertThat(payoff.monthsToPayoff()).isNull();
         assertThat(payoff.payoffMonth()).isNull();
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.UNKNOWN);
     }
 
     // Cross-checked against the closed-form amortization formula n = -ln(1 - rB/P) / ln(1+r), computed with double
@@ -169,7 +153,7 @@ class MortgagePayoffCalculatorTests {
         long paymentCents = Math.round(payment * 100);
         Money paymentMoney = Money.ofCents(paymentCents);
 
-        Mortgage mortgage = new Mortgage(Money.ofDollars((long) balance), new BigDecimal("5.75"), paymentMoney, null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars((long) balance), new BigDecimal("5.75"), paymentMoney);
 
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
 
@@ -181,78 +165,5 @@ class MortgagePayoffCalculatorTests {
         assertThat(Math.abs(payoff.monthsToPayoff() - closedFormMonths)).isLessThanOrEqualTo(1.0);
         // Pinned exactly, so a change to the amortization loop is caught even though the formula above tolerates it.
         assertThat(payoff.monthsToPayoff()).isEqualTo(361);
-    }
-
-    // Maturity comparison branches, using the 361-month loan above: payoff month is February 2054.
-
-    @Test
-    void maturityComparisonIsUnknownWithNoMaturity() {
-        MortgagePayoff payoff = payoffOfThe361MonthLoan(null);
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.UNKNOWN);
-        assertThat(payoff.monthsDifference()).isZero();
-    }
-
-    @Test
-    void maturityComparisonMatchesWhenThePayoffMonthIsTheMaturity() {
-        MortgagePayoff payoff = payoffOfThe361MonthLoan(YearMonth.of(2054, 2));
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.MATCHES);
-    }
-
-    @Test
-    void maturityComparisonMatchesOneMonthBeforeThePayoffMonth() {
-        MortgagePayoff payoff = payoffOfThe361MonthLoan(YearMonth.of(2054, 1));
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.MATCHES);
-    }
-
-    @Test
-    void maturityComparisonMatchesOneMonthAfterThePayoffMonth() {
-        MortgagePayoff payoff = payoffOfThe361MonthLoan(YearMonth.of(2054, 3));
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.MATCHES);
-    }
-
-    @Test
-    void maturityComparisonIsAheadAtTheTwoMonthBoundary() {
-        MortgagePayoff payoff = payoffOfThe361MonthLoan(YearMonth.of(2054, 4));
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.AHEAD);
-        assertThat(payoff.monthsDifference()).isEqualTo(2);
-    }
-
-    @Test
-    void maturityComparisonIsBehindAtTheTwoMonthBoundary() {
-        MortgagePayoff payoff = payoffOfThe361MonthLoan(YearMonth.of(2053, 12));
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.BEHIND);
-        assertThat(payoff.monthsDifference()).isEqualTo(2);
-    }
-
-    @Test
-    void maturityComparisonIsFarAhead() {
-        MortgagePayoff payoff = payoffOfThe361MonthLoan(YearMonth.of(2060, 2));
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.AHEAD);
-        assertThat(payoff.monthsDifference()).isEqualTo(72);
-    }
-
-    @Test
-    void maturityComparisonIsFarBehind() {
-        MortgagePayoff payoff = payoffOfThe361MonthLoan(YearMonth.of(2048, 2));
-
-        assertThat(payoff.maturityComparison()).isEqualTo(MaturityComparison.BEHIND);
-        assertThat(payoff.monthsDifference()).isEqualTo(72);
-    }
-
-    /** The 361-month loan from {@link #payoffMonthsAreWithinOneMonthOfTheClosedFormAmortizationFormula}. */
-    private static MortgagePayoff payoffOfThe361MonthLoan(YearMonth maturity) {
-        Mortgage mortgage =
-                new Mortgage(Money.ofDollars(220_000), new BigDecimal("5.75"), Money.ofCents(128_386), maturity);
-        MortgagePayoff payoff = MortgagePayoffCalculator.payoff(mortgage, AS_OF);
-        assertThat(payoff.monthsToPayoff()).isEqualTo(361);
-        assertThat(payoff.payoffMonth()).isEqualTo(YearMonth.of(2054, 2));
-        return payoff;
     }
 }

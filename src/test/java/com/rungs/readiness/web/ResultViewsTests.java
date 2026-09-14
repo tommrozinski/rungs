@@ -272,7 +272,7 @@ class ResultViewsTests {
 
     @Test
     void stage6DoneWithAPaidOffMortgage() {
-        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, null);
+        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO);
         FinancialSnapshot snapshot = aSnapshot().withHousing(paidOff).build();
 
         StageView view = stage(build(snapshot), 6);
@@ -475,7 +475,7 @@ class ResultViewsTests {
                 .withRetirementContributionPercent("15")
                 .withHouseholdFlags(new HouseholdFlags(false, false))
                 .withHousing(new Mortgage(
-                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(1_200), null))
+                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(1_200)))
                 .build();
 
         ResultView result = build(snapshot);
@@ -494,7 +494,7 @@ class ResultViewsTests {
                 .withRetirementContributionPercent("15")
                 .withHouseholdFlags(new HouseholdFlags(false, false))
                 .withHousing(new Mortgage(
-                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(400), null))
+                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(400)))
                 .build();
 
         ResultView result = build(snapshot);

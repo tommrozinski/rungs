@@ -1,16 +1,14 @@
 package com.rungs.readiness.domain.model;
 
-import com.rungs.readiness.domain.model.MortgagePayoff.MaturityComparison;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 /**
- * Computes a mortgage's payoff schedule at this payment (design.md 039 section 2). Pure and deterministic: every
- * fact comes from the {@link Mortgage} and the {@code asOf} month supplied by the caller; nothing here reads a
- * clock.
+ * Computes a mortgage's payoff schedule at this payment alone, with no extra payments (design.md 041 section 3).
+ * Pure and deterministic: every fact comes from the {@link Mortgage} and the {@code asOf} month supplied by the
+ * caller; nothing here reads a clock.
  */
 public final class MortgagePayoffCalculator {
 
@@ -19,9 +17,6 @@ public final class MortgagePayoffCalculator {
 
     /** Longest amortization considered before the loan is treated as never paying off (50 years).*/
     private static final int MAX_MONTHS = 600;
-
-    /** At most this many months apart counts as matching the maturity. */
-    private static final long MATCHES_TOLERANCE_MONTHS = 1;
 
     private MortgagePayoffCalculator() {
     }
@@ -39,23 +34,19 @@ public final class MortgagePayoffCalculator {
         Money firstMonthInterest = mortgage.balance().times(monthlyRate);
 
         if (mortgage.balance().isZero()) {
-            return withComparison(principalAndInterest, firstMonthInterest, true, 0, asOf, asOf, mortgage.maturity());
+            return new MortgagePayoff(principalAndInterest, firstMonthInterest, true, 0, asOf);
         }
 
         boolean covered = principalAndInterest.compareTo(firstMonthInterest) > 0;
         if (!covered) {
-            return new MortgagePayoff(
-                    principalAndInterest, firstMonthInterest, false, null, null, MaturityComparison.UNKNOWN, 0);
+            return new MortgagePayoff(principalAndInterest, firstMonthInterest, false, null, null);
         }
 
         Integer months = monthsToPayoff(mortgage.balance(), principalAndInterest, monthlyRate);
         if (months == null) {
-            return new MortgagePayoff(
-                    principalAndInterest, firstMonthInterest, true, null, null, MaturityComparison.UNKNOWN, 0);
+            return new MortgagePayoff(principalAndInterest, firstMonthInterest, true, null, null);
         }
-        YearMonth payoffMonth = asOf.plusMonths(months);
-        return withComparison(
-                principalAndInterest, firstMonthInterest, true, months, payoffMonth, payoffMonth, mortgage.maturity());
+        return new MortgagePayoff(principalAndInterest, firstMonthInterest, true, months, asOf.plusMonths(months));
     }
 
     /**
@@ -80,43 +71,5 @@ public final class MortgagePayoffCalculator {
             return null;
         }
         return null;
-    }
-
-    /** Builds the result, filling in the maturity comparison for {@code payoffMonth} against {@code maturity}. */
-    private static MortgagePayoff withComparison(
-            Money principalAndInterest,
-            Money firstMonthInterest,
-            boolean covered,
-            Integer monthsToPayoff,
-            YearMonth payoffMonth,
-            YearMonth comparisonMonth,
-            YearMonth maturity) {
-        if (maturity == null) {
-            return new MortgagePayoff(
-                    principalAndInterest,
-                    firstMonthInterest,
-                    covered,
-                    monthsToPayoff,
-                    payoffMonth,
-                    MaturityComparison.UNKNOWN,
-                    0);
-        }
-        long diff = ChronoUnit.MONTHS.between(maturity, comparisonMonth);
-        MaturityComparison comparison;
-        if (Math.abs(diff) <= MATCHES_TOLERANCE_MONTHS) {
-            comparison = MaturityComparison.MATCHES;
-        } else if (diff < 0) {
-            comparison = MaturityComparison.AHEAD;
-        } else {
-            comparison = MaturityComparison.BEHIND;
-        }
-        return new MortgagePayoff(
-                principalAndInterest,
-                firstMonthInterest,
-                covered,
-                monthsToPayoff,
-                payoffMonth,
-                comparison,
-                (int) Math.abs(diff));
     }
 }

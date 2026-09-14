@@ -1,32 +1,21 @@
 package com.rungs.readiness.web;
 
-import com.rungs.readiness.domain.model.Money;
-import com.rungs.readiness.domain.model.Mortgage;
-import com.rungs.readiness.domain.model.MortgagePayoff;
-import com.rungs.readiness.domain.model.MortgagePayoffCalculator;
-import java.math.BigDecimal;
 import java.time.YearMonth;
 
 /**
  * The five sample households the "Load sample data" control offers (design.md 039 section 4), each a fully
- * populated {@link SnapshotForm} keyed by its id. The debt-free and homestretch mortgage payments and rates are
- * fixed, but their maturity is computed relative to the {@code asOf} the caller supplies (the assessment month the
- * running {@link java.time.Clock} produces), using {@link MortgagePayoffCalculator} itself so the samples can never
- * drift out of sync with it: debt-free's maturity always lands exactly on its computed payoff month, and
- * homestretch's always lands {@value #HOMESTRETCH_AHEAD_MONTHS} months after its own (design.md 039 review; see
- * claude-progress.txt for the underlying loan numbers).
+ * populated {@link SnapshotForm} keyed by its id. The mortgage payments, balances, and rates are fixed; the
+ * mortgage no longer has a maturity to compute (design.md 041 section 1).
  */
 final class SampleHouseholds {
-
-    /** How far ahead of its own computed payoff month homestretch's maturity is set. */
-    private static final int HOMESTRETCH_AHEAD_MONTHS = 13;
 
     private SampleHouseholds() {
     }
 
     /**
-     * Returns the sample household form for {@code id} as of {@code asOf}, or null when {@code id} names none.
-     * {@code asOf} only affects the debt-free and homestretch households' maturity; the others ignore it.
+     * Returns the sample household form for {@code id}, or null when {@code id} names none. {@code asOf} is
+     * accepted for the caller's convenience but no longer affects any sample, now that the mortgage carries no
+     * maturity to compute (design.md 041 section 1).
      */
     static SnapshotForm byId(String id, YearMonth asOf) {
         if (id == null) {
@@ -35,8 +24,8 @@ final class SampleHouseholds {
         return switch (id) {
             case "buried" -> buried();
             case "board" -> board();
-            case "debt-free" -> debtFree(asOf);
-            case "homestretch" -> homestretch(asOf);
+            case "debt-free" -> debtFree();
+            case "homestretch" -> homestretch();
             case "paid-off" -> paidOff();
             default -> null;
         };
@@ -75,7 +64,7 @@ final class SampleHouseholds {
         return form;
     }
 
-    private static SnapshotForm debtFree(YearMonth asOf) {
+    private static SnapshotForm debtFree() {
         SnapshotForm form = new SnapshotForm();
         form.setSample("debt-free");
         form.setMonthlyTakeHomeIncome("7800");
@@ -87,11 +76,10 @@ final class SampleHouseholds {
         form.setMortgageBalance("285000");
         form.setMortgageRate("6.5");
         form.setMortgagePayment("2269");
-        setMaturity(form, matchingMaturity(form, asOf, 0));
         return form;
     }
 
-    private static SnapshotForm homestretch(YearMonth asOf) {
+    private static SnapshotForm homestretch() {
         SnapshotForm form = new SnapshotForm();
         form.setSample("homestretch");
         form.setMonthlyTakeHomeIncome("11500");
@@ -103,28 +91,7 @@ final class SampleHouseholds {
         form.setMortgageBalance("198000");
         form.setMortgageRate("3.25");
         form.setMortgagePayment("1900");
-        setMaturity(form, matchingMaturity(form, asOf, HOMESTRETCH_AHEAD_MONTHS));
         return form;
-    }
-
-    /**
-     * Returns the maturity that keeps {@code form}'s already-set mortgage fields' payoff, computed as of
-     * {@code asOf}, exactly {@code aheadMonths} months ahead of its stated maturity (0 for an exact match).
-     */
-    private static YearMonth matchingMaturity(SnapshotForm form, YearMonth asOf, int aheadMonths) {
-        Mortgage probe = new Mortgage(
-                Money.parse(form.getMortgageBalance()),
-                new BigDecimal(form.getMortgageRate()),
-                Money.parse(form.getMortgagePayment()),
-                null);
-        MortgagePayoff payoff = MortgagePayoffCalculator.payoff(probe, asOf);
-        return asOf.plusMonths(payoff.monthsToPayoff() + aheadMonths);
-    }
-
-    /** Sets {@code form}'s maturity month and year fields from {@code maturity}. */
-    private static void setMaturity(SnapshotForm form, YearMonth maturity) {
-        form.setMaturityMonth(Integer.toString(maturity.getMonthValue()));
-        form.setMaturityYear(Integer.toString(maturity.getYear()));
     }
 
     private static SnapshotForm paidOff() {

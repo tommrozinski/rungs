@@ -1,0 +1,84 @@
+Implementation progress: 041 snowball and payoff dates
+
+Phase 2 — domain
+-----------------
+Scope: design.md sections 1, 3, and 5 (snowball ordering, the two schedule payoff-date helpers, and maturity
+removal), plus the minimal web changes needed to keep everything compiling and green.
+
+What changed:
+
+1. Snowball order (design.md 041 section 1). `PayoffScheduleCalculator.orderedLoans` now sorts debts by starting
+   balance ascending (`Comparator.comparing(Debt::balance)`, a stable sort so ties keep the supplied order), then
+   appends the mortgage last, unconditionally, exactly as before. The hand-verified cascade test was reworked with
+   a debt that has a smaller balance but a lower rate than the other, so the new order provably differs from the
+   old rate-descending order (see the corrected hand table in
+   PayoffScheduleCalculatorTests.handVerifiedTwoDebtCaseMatchesTheFirstThreeMonthsExactly's comment). The ordering
+   test and the "mortgage always last" test were reworked the same way (balance-based scenarios instead of
+   rate-based ones).
+
+2. Payoff-date helpers (design.md 041 section 3). `ScheduleLoan` gained a `boolean mortgage` component so
+   `PayoffSchedule` can tell mortgage rows from debt rows without string-matching on the name "Mortgage".
+   `PayoffSchedule` gained a `YearMonth asOf` component (so the payoff-date helpers have a month to report even
+   with zero loans, when `months` is empty) and two instance methods:
+     - `Optional<YearMonth> debtFreeMonth()`: the latest of every non-mortgage loan's closing month (the first
+       month its `LoanMonth.end()` is zero), empty if any debt never closes within the schedule. With no debts at
+       all (renter or mortgage-only), returns `Optional.of(asOf)` — documented on the method and the record's
+       `asOf` component as the chosen representation of the "trivially already debt-free" case.
+     - `Optional<YearMonth> mortgagePayoffMonth()`: the mortgage row's own closing month, empty if there is no
+       mortgage row or it never closes within the schedule.
+   Both are computed from the existing `loans`/`months` data (no additional per-month bookkeeping needed).
+
+3. Maturity removal (design.md 041 section 1). `Mortgage` no longer has a `maturity` component (now a 3-arg
+   record: balance, annualInterestRate, monthlyPayment). `MortgagePayoff` dropped `maturityComparison` and
+   `monthsDifference`; `MortgagePayoff.MaturityComparison` is gone. `MortgagePayoffCalculator.payoff` no longer
+   takes or compares against a maturity — it just returns `principalAndInterest`, `firstMonthInterest`, `covered`,
+   `monthsToPayoff` (null if not covered or capped), and `payoffMonth`. `MortgageEvaluator`'s blocker is now only
+   the current-payment sentence, per design.md 041 section 2:
+     - covered and finishes: "At your current payment it's paid off in {Month YYYY}."
+     - not covered: "Your $P payment doesn't cover the $I monthly interest." (unchanged wording)
+     - capped: "At your current payment it won't be paid off within 50 years." (new wording, was "This payment
+       won't pay the loan off within 50 years.")
+   The duration/maturity-comparison helpers (word/duration/monthYear-follow-up) were deleted from
+   MortgageEvaluator; only `monthYear` remains, for the payoff-line sentence.
+
+Web stopgaps (minimal, compile-keeping only; full copy/ResultViews/templates work is phase 3):
+  - `SnapshotFormMapper` no longer reads `maturityMonth`/`maturityYear` from the form at all (the mapper's
+    `maturity(...)`/`parseInt(...)` helpers and the maturity range constants were deleted). `SnapshotForm`'s
+    maturity fields and `form.html`'s maturity inputs are untouched — they still round-trip through
+    `/edit`/`/debts/add` etc. as plain hidden-field echoes, just no longer consumed into the domain.
+  - `SampleHouseholds.debtFree()`/`homestretch()` no longer compute or set a maturity (the `matchingMaturity`/
+    `setMaturity`/`HOMESTRETCH_AHEAD_MONTHS` machinery was deleted); `byId(id, asOf)` keeps its `asOf` parameter
+    for the caller's (SnapshotController's) sake, but no sample branch uses it anymore.
+  - `ResultViews.stage6VerdictSub` was not touched — it already only used `covered`/`monthsToPayoff`/
+    `payoffMonth`, none of which moved.
+  - `ScheduleViews` was not touched — it doesn't read `ScheduleLoan.mortgage()` or the new schedule helpers.
+
+Test changes beyond straightforward constructor-arg fixups:
+  - `MortgagePayoffCalculatorTests`: removed the maturity-comparison test group and the two zero-balance/maturity
+    tests that relied on it (11 tests remain, all payoff-shape tests, unchanged behavior).
+  - `MortgageEvaluatorTests`: replaced the maturity-follow-up tests (matches/ahead/behind/singular-duration) with
+    one test per current-payment branch (not covered, payoff line, capped); 6 tests, matching the new blocker
+    contract exactly.
+  - Deleted `SampleHouseholdsTests` and `SampleHouseholdMaturityAcrossClocksTests` outright: both tested the
+    debt-free/homestretch maturity computation, which design.md 041 section 1 removes entirely.
+  - `SnapshotFormMapperTests`: removed the four maturity-parsing tests (`maturityMonthOutsideOneToTwelve...`,
+    `maturityYearOutsideTheAllowedRange...`, `blankMaturityFieldsBecomeUnknown`,
+    `unparseableMaturityFieldsBecomeUnknown` — `Mortgage.maturity()` no longer exists to assert against); added
+    `mortgageModeIgnoresTheMaturityFields` in their place, asserting the posted maturity fields have no effect on
+    the mapped `Mortgage`.
+  - `SnapshotControllerTests`: the two sample-maturity assertions ("value=\"2044\"...", "value=\"2038\"...") on
+    `loadSampleFillsTheFormWithThe{DebtFree,Homestretch}Household` were dropped (the samples no longer compute
+    those values). `assessAssignsTheDebtFreeSampleHouseholdToStageThreeMatchingItsMaturity` and
+    `...HomestretchSampleHouseholdToStageSixAheadOfItsMaturity` were renamed to
+    `...AndIgnoresThePostedMaturityFields` and stripped of their maturity-comparison-text assertions ("That
+    matches your loan's", "ahead of your"); stage-assignment assertions (unaffected, since stage assignment never
+    depended on maturity) were kept, and the homestretch one gained an assertion on the new current-payment
+    sentence instead.
+  - `PayoffScheduleControllerTests.breakdownRendersTheFirstMonthFiguresAndLoanNamesInPayoffOrder`: the board
+    household's three debts (Store card $840/26.99%, Car loan $9,140/6.40%, Student loan $2,500/4.50%) render in
+    balance order under the snowball (Store card, Student loan, Car loan, Mortgage) rather than the old rate order
+    (Store card, Car loan, Student loan, Mortgage); updated the ordering assertions accordingly. The first-month
+    dollar-figure assertions were untouched since Store card is first under both orderings.
+
+Verify: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B -ntp clean verify`
+BUILD SUCCESS, Tests run: 819, Failures: 0, Errors: 0, Skipped: 0.

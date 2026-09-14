@@ -106,14 +106,16 @@ class PayoffScheduleControllerTests {
                 .getContentAsString();
 
         assertThat(body).contains("PAYOFF SCHEDULE");
+        // Debt snowball order (design.md 041 section 1): smallest starting balance first — Store card $840,
+        // Student loan $2,500, Car loan $9,140 — then the mortgage last.
         int storeIndex = body.indexOf("Store card");
-        int carIndex = body.indexOf("Car loan");
         int studentIndex = body.indexOf("Student loan");
+        int carIndex = body.indexOf("Car loan");
         int mortgageIndex = body.indexOf(">Mortgage<");
         assertThat(storeIndex).isGreaterThan(-1);
-        assertThat(storeIndex).isLessThan(carIndex);
-        assertThat(carIndex).isLessThan(studentIndex);
-        assertThat(studentIndex).isLessThan(mortgageIndex);
+        assertThat(storeIndex).isLessThan(studentIndex);
+        assertThat(studentIndex).isLessThan(carIndex);
+        assertThat(carIndex).isLessThan(mortgageIndex);
 
         assertThat(body).contains("$840.00");
         assertThat(body).contains("$18.89");

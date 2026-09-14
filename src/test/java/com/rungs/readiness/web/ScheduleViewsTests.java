@@ -65,7 +65,7 @@ class ScheduleViewsTests {
     @Test
     void theMortgageIsTheLastLoanAndAppearsInLoanNames() {
         Mortgage mortgage = new Mortgage(
-                Money.ofDollars(185_000), new BigDecimal("5.250"), Money.ofDollars(1_650), null);
+                Money.ofDollars(185_000), new BigDecimal("5.250"), Money.ofDollars(1_650));
         FinancialSnapshot snapshot = aSnapshot()
                 .withMonthlyTakeHomeIncome(Money.ofDollars(9500))
                 .withMonthlyEssentialExpenses(Money.ofDollars(2100))

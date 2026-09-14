@@ -13,11 +13,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Computes the avalanche payoff schedule for a household's debts and mortgage (design.md 040 section 3): every
- * debt highest-rate first (ties in supplied order), then the mortgage last when it has a balance. Each month the
- * household's surplus, plus the minimum payments of loans already closed, goes to the loan at the front of the
- * line; the rest of every open loan gets at least its own minimum. Pure and deterministic: every fact comes from
- * the supplied {@link FinancialSnapshot}; nothing here reads a clock.
+ * Computes the debt snowball payoff schedule for a household's debts and mortgage (design.md 040 section 3 for the
+ * month-by-month pool mechanics; design.md 041 section 1 for the order): every debt smallest starting balance
+ * first (ties in supplied order), then the mortgage last when it has a balance. Each month the household's
+ * surplus, plus the minimum payments of loans already closed, goes to the loan at the front of the line; the rest
+ * of every open loan gets at least its own minimum. Pure and deterministic: every fact comes from the supplied
+ * {@link FinancialSnapshot}; nothing here reads a clock.
  */
 public final class PayoffScheduleCalculator {
 
@@ -38,7 +39,7 @@ public final class PayoffScheduleCalculator {
 
         List<ScheduleLoan> loans = orderedLoans(snapshot);
         if (loans.isEmpty()) {
-            return new PayoffSchedule(loans, List.of(), Money.ZERO, List.of(), Money.ZERO, false);
+            return new PayoffSchedule(loans, List.of(), Money.ZERO, List.of(), Money.ZERO, false, snapshot.asOf());
         }
 
         Money extraCash = snapshot.monthlySurplus().max(Money.ZERO);
@@ -46,19 +47,21 @@ public final class PayoffScheduleCalculator {
     }
 
     /**
-     * Returns every debt ordered by annual rate descending (ties in supplied order), followed by the mortgage when
-     * the household has one with a balance above $0.
+     * Returns every debt ordered by starting balance ascending (ties in supplied order, a stable sort), followed by
+     * the mortgage when the household has one with a balance above $0 (design.md 041 section 1: the mortgage
+     * always comes last, regardless of its own balance).
      */
     private static List<ScheduleLoan> orderedLoans(FinancialSnapshot snapshot) {
         List<ScheduleLoan> loans = new ArrayList<>();
         List<Debt> debts = new ArrayList<>(snapshot.debts());
-        debts.sort(Comparator.comparing(Debt::annualInterestRate).reversed());
+        debts.sort(Comparator.comparing(Debt::balance));
         for (Debt debt : debts) {
-            loans.add(new ScheduleLoan(debt.label(), debt.balance(), debt.annualInterestRate(), debt.minimumPayment()));
+            loans.add(new ScheduleLoan(
+                    debt.label(), debt.balance(), debt.annualInterestRate(), debt.minimumPayment(), false));
         }
         if (snapshot.housing() instanceof Mortgage mortgage && mortgage.balance().isPositive()) {
             loans.add(new ScheduleLoan(
-                    MORTGAGE_NAME, mortgage.balance(), mortgage.annualInterestRate(), mortgage.monthlyPayment()));
+                    MORTGAGE_NAME, mortgage.balance(), mortgage.annualInterestRate(), mortgage.monthlyPayment(), true));
         }
         return loans;
     }
@@ -146,6 +149,7 @@ public final class PayoffScheduleCalculator {
             truncated = true;
         }
 
-        return new PayoffSchedule(loans, months, totalExtraCash, List.of(paidPerLoan), cumulativeInterest, truncated);
+        return new PayoffSchedule(
+                loans, months, totalExtraCash, List.of(paidPerLoan), cumulativeInterest, truncated, asOf);
     }
 }

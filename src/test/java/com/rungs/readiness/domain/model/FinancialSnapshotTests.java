@@ -23,7 +23,7 @@ class FinancialSnapshotTests {
     private static final Debt CLINIC = new Debt(
             "debt-3", "Clinic", DebtType.MEDICAL, Money.ofCents(80_050), BigDecimal.ZERO, Money.ZERO);
 
-    private static final Mortgage MORTGAGE = new Mortgage(Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800), null);
+    private static final Mortgage MORTGAGE = new Mortgage(Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800));
 
     @Test
     void builderDefaultIsAValidEmptyHousehold() {
@@ -319,7 +319,7 @@ class FinancialSnapshotTests {
 
     @Test
     void monthlyHousingCostIsThePaymentWhenTheMortgagePaymentIsAboveZero() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(180_000), new BigDecimal("6.5"), Money.ofDollars(1_800), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(180_000), new BigDecimal("6.5"), Money.ofDollars(1_800));
         FinancialSnapshot snapshot = aSnapshot().withHousing(mortgage).build();
 
         assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ofDollars(1_800));
@@ -327,7 +327,7 @@ class FinancialSnapshotTests {
 
     @Test
     void monthlyHousingCostIsZeroWhenTheMortgagePaymentIsZero() {
-        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, null);
+        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO);
         FinancialSnapshot snapshot = aSnapshot().withHousing(paidOff).build();
 
         assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
@@ -349,7 +349,7 @@ class FinancialSnapshotTests {
 
     @Test
     void monthlySurplusSubtractsExpensesHousingAndEveryMinimumPayment() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800));
         FinancialSnapshot snapshot = aSnapshot()
                 .withMonthlyTakeHomeIncome(Money.ofDollars(5_000))
                 .withMonthlyEssentialExpenses(Money.ofDollars(3_000))

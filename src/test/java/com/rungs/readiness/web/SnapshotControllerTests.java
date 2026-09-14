@@ -525,8 +525,6 @@ class SnapshotControllerTests {
                 .getContentAsString();
 
         assertThat(body).contains("name=\"mortgageBalance\" value=\"285000\"");
-        assertThat(body).contains("name=\"maturityYear\"");
-        assertThat(body).contains("value=\"2044\" aria-label=\"Maturity year\"");
         assertThat(body).contains("<option value=\"debt-free\" selected");
     }
 
@@ -539,8 +537,6 @@ class SnapshotControllerTests {
                 .getContentAsString();
 
         assertThat(body).contains("name=\"mortgageBalance\" value=\"198000\"");
-        assertThat(body).contains("name=\"maturityYear\"");
-        assertThat(body).contains("value=\"2038\" aria-label=\"Maturity year\"");
         assertThat(body).contains("<option value=\"homestretch\" selected");
     }
 
@@ -615,7 +611,7 @@ class SnapshotControllerTests {
     }
 
     @Test
-    void assessAssignsTheDebtFreeSampleHouseholdToStageThreeMatchingItsMaturity() throws Exception {
+    void assessAssignsTheDebtFreeSampleHouseholdToStageThreeAndIgnoresThePostedMaturityFields() throws Exception {
         String body = mockMvc.perform(post("/assess")
                         .param("monthlyTakeHomeIncome", "7800")
                         .param("monthlyEssentialExpenses", "2600")
@@ -634,11 +630,10 @@ class SnapshotControllerTests {
                 .getContentAsString();
 
         assertThat(body).contains("You're on stage 3 of 7");
-        assertThat(body).contains("That matches your loan's");
     }
 
     @Test
-    void assessAssignsTheHomestretchSampleHouseholdToStageSixAheadOfItsMaturity() throws Exception {
+    void assessAssignsTheHomestretchSampleHouseholdToStageSixAndIgnoresThePostedMaturityFields() throws Exception {
         String body = mockMvc.perform(post("/assess")
                         .param("monthlyTakeHomeIncome", "11500")
                         .param("monthlyEssentialExpenses", "3400")
@@ -657,7 +652,7 @@ class SnapshotControllerTests {
                 .getContentAsString();
 
         assertThat(body).contains("You're on stage 6 of 7");
-        assertThat(body).contains("ahead of your");
+        assertThat(body).contains("At your current payment it's paid off in");
     }
 
     @Test

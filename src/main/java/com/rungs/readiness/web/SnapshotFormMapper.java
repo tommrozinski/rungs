@@ -24,8 +24,8 @@ import java.util.regex.Pattern;
  * 1-based position as submitted), and an unrecognized debt type becomes {@link DebtType#OTHER}. Only the first
  * {@value #MAX_DEBT_ROWS} non-zero-balance rows, in submitted order, become debts; any further rows are dropped
  * (design.md 040 review), keeping the payoff schedule's rendered size bounded. A blank or
- * unrecognized {@code housing} becomes {@code MORTGAGE}; whichever mode is not selected has its fields ignored, and
- * a maturity month outside 1-12 or year outside 1900-2200 (or either one blank) becomes an unknown maturity.
+ * unrecognized {@code housing} becomes {@code MORTGAGE}; whichever mode is not selected has its fields ignored.
+ * The form's maturity fields are not read (design.md 041 section 1: {@link Mortgage} has no maturity).
  * Nothing here rejects input or throws; every bad case resolves to a plain default instead, so a submission can
  * never 500.
  *
@@ -62,11 +62,6 @@ final class SnapshotFormMapper {
     private static final BigDecimal MAX_MONEY_DOLLARS = BigDecimal.valueOf(1_000_000_000);
 
     private static final String RENT_MODE = "RENT";
-
-    private static final int MIN_MATURITY_MONTH = 1;
-    private static final int MAX_MATURITY_MONTH = 12;
-    private static final int MIN_MATURITY_YEAR = 1900;
-    private static final int MAX_MATURITY_YEAR = 2200;
 
     /**
      * Longest text {@link #parseDecimal} accepts, mirroring {@link Money#parse}'s own cap; this keeps the
@@ -133,43 +128,7 @@ final class SnapshotFormMapper {
         return new Mortgage(
                 money(form.getMortgageBalance()),
                 percent(form.getMortgageRate(), INTEREST_RATE_SCALE),
-                money(form.getMortgagePayment()),
-                maturity(form.getMaturityMonth(), form.getMaturityYear()));
-    }
-
-    /**
-     * Returns the maturity month built from {@code monthText} and {@code yearText}, or null when either is blank
-     * or unparseable, the month is outside 1-12, or the year is outside 1900-2200.
-     */
-    private static YearMonth maturity(String monthText, String yearText) {
-        Integer month = parseInt(monthText);
-        Integer year = parseInt(yearText);
-        if (month == null || year == null) {
-            return null;
-        }
-        if (month < MIN_MATURITY_MONTH || month > MAX_MATURITY_MONTH) {
-            return null;
-        }
-        if (year < MIN_MATURITY_YEAR || year > MAX_MATURITY_YEAR) {
-            return null;
-        }
-        return YearMonth.of(year, month);
-    }
-
-    /** Returns {@code text} parsed as a plain integer, or null when it is null, blank, or unparseable. */
-    private static Integer parseInt(String text) {
-        if (text == null) {
-            return null;
-        }
-        String trimmed = text.strip();
-        if (trimmed.isEmpty()) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(trimmed);
-        } catch (NumberFormatException notAnInteger) {
-            return null;
-        }
+                money(form.getMortgagePayment()));
     }
 
     /**
