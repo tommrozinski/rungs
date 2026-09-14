@@ -386,7 +386,7 @@ class SnapshotControllerTests {
 
         assertThat(body).contains("name=\"mortgageBalance\" value=\"285000\"");
         assertThat(body).contains("name=\"maturityYear\"");
-        assertThat(body).contains("value=\"2053\" aria-label=\"Maturity year\"");
+        assertThat(body).contains("value=\"2044\" aria-label=\"Maturity year\"");
         assertThat(body).contains("<option value=\"debt-free\" selected");
     }
 
@@ -400,7 +400,7 @@ class SnapshotControllerTests {
 
         assertThat(body).contains("name=\"mortgageBalance\" value=\"198000\"");
         assertThat(body).contains("name=\"maturityYear\"");
-        assertThat(body).contains("value=\"2042\" aria-label=\"Maturity year\"");
+        assertThat(body).contains("value=\"2038\" aria-label=\"Maturity year\"");
         assertThat(body).contains("<option value=\"homestretch\" selected");
     }
 
@@ -487,8 +487,8 @@ class SnapshotControllerTests {
                         .param("mortgageRate", "6.5")
                         .param("mortgagePayment", "2269")
                         .param("annualPropertyTaxes", "4800")
-                        .param("maturityMonth", "9")
-                        .param("maturityYear", "2053"))
+                        .param("maturityMonth", "5")
+                        .param("maturityYear", "2044"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()

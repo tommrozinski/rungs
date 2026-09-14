@@ -78,16 +78,11 @@ public record FinancialSnapshot(
         return Money.sum(debts.stream().map(Debt::balance).toList());
     }
 
-    /**
-     * Returns the household's monthly housing cost: the rent when renting, or the mortgage payment, or when that
-     * payment is $0, the annual property taxes divided by 12, rounded half-even to the cent.
-     */
+    /** Returns the household's monthly housing cost: the rent when renting, or the mortgage payment. */
     public Money monthlyHousingCost() {
         return switch (housing) {
             case Rent rent -> rent.monthlyRent();
-            case Mortgage mortgage -> mortgage.monthlyPayment().isZero()
-                    ? mortgage.monthlyPropertyTaxes()
-                    : mortgage.monthlyPayment();
+            case Mortgage mortgage -> mortgage.monthlyPayment();
         };
     }
 

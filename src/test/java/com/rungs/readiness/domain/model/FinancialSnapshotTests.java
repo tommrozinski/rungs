@@ -23,8 +23,7 @@ class FinancialSnapshotTests {
     private static final Debt CLINIC = new Debt(
             "debt-3", "Clinic", DebtType.MEDICAL, Money.ofCents(80_050), BigDecimal.ZERO, Money.ZERO);
 
-    private static final Mortgage MORTGAGE = new Mortgage(
-            Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800), Money.ZERO, null);
+    private static final Mortgage MORTGAGE = new Mortgage(Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800), null);
 
     @Test
     void builderDefaultIsAValidEmptyHousehold() {
@@ -320,27 +319,18 @@ class FinancialSnapshotTests {
 
     @Test
     void monthlyHousingCostIsThePaymentWhenTheMortgagePaymentIsAboveZero() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(180_000), new BigDecimal("6.5"), Money.ofDollars(1_800),
-                Money.ofDollars(4_800), null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(180_000), new BigDecimal("6.5"), Money.ofDollars(1_800), null);
         FinancialSnapshot snapshot = aSnapshot().withHousing(mortgage).build();
 
         assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ofDollars(1_800));
     }
 
     @Test
-    void monthlyHousingCostIsTaxesDividedByTwelveWhenThePaymentIsZero() {
-        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ofDollars(6_300), null);
+    void monthlyHousingCostIsZeroWhenTheMortgagePaymentIsZero() {
+        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, null);
         FinancialSnapshot snapshot = aSnapshot().withHousing(paidOff).build();
 
-        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ofDollars(525));
-    }
-
-    @Test
-    void monthlyHousingCostRoundsTaxesDividedByTwelveHalfEvenToTheCentWhenThePaymentIsZero() {
-        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ofDollars(1_000), null);
-        FinancialSnapshot snapshot = aSnapshot().withHousing(paidOff).build();
-
-        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ofCents(8_333));
+        assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
     }
 
     // monthlyEssentialCosts
@@ -359,8 +349,7 @@ class FinancialSnapshotTests {
 
     @Test
     void monthlySurplusSubtractsExpensesHousingAndEveryMinimumPayment() {
-        Mortgage mortgage = new Mortgage(Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800),
-                Money.ZERO, null);
+        Mortgage mortgage = new Mortgage(Money.ofDollars(90_000), new BigDecimal("3.75"), Money.ofDollars(800), null);
         FinancialSnapshot snapshot = aSnapshot()
                 .withMonthlyTakeHomeIncome(Money.ofDollars(5_000))
                 .withMonthlyEssentialExpenses(Money.ofDollars(3_000))

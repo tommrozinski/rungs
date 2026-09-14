@@ -6,8 +6,7 @@ import java.time.YearMonth;
  * The facts a mortgage's payoff schedule produces at a point in time, computed by
  * {@link MortgagePayoffCalculator}.
  *
- * @param principalAndInterest the monthly payment minus the monthly property taxes; may be negative when the
- *     payment does not even cover the taxes
+ * @param principalAndInterest the full monthly payment
  * @param firstMonthInterest the interest the first month's payment accrues on the balance as supplied
  * @param covered whether {@code principalAndInterest} is above {@code firstMonthInterest}, so the loan amortizes
  *     at all

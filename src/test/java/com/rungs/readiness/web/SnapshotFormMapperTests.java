@@ -225,7 +225,7 @@ class SnapshotFormMapperTests {
 
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
-        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null));
+        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, null));
     }
 
     @Test
@@ -268,11 +268,7 @@ class SnapshotFormMapperTests {
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
         assertThat(snapshot.housing()).isEqualTo(new Mortgage(
-                Money.ofDollars(285_000),
-                new BigDecimal("6.500"),
-                Money.ofDollars(2_200),
-                Money.ofDollars(4_800),
-                YearMonth.of(2051, 8)));
+                Money.ofDollars(285_000), new BigDecimal("6.500"), Money.ofDollars(2_200), YearMonth.of(2051, 8)));
     }
 
     @Test
@@ -281,7 +277,7 @@ class SnapshotFormMapperTests {
 
         FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
 
-        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null));
+        assertThat(snapshot.housing()).isEqualTo(new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, null));
         assertThat(snapshot.monthlyHousingCost()).isEqualTo(Money.ZERO);
     }
 

@@ -272,7 +272,7 @@ class ResultViewsTests {
 
     @Test
     void stage6DoneWithAPaidOffMortgage() {
-        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, Money.ZERO, null);
+        Mortgage paidOff = new Mortgage(Money.ZERO, BigDecimal.ZERO, Money.ZERO, null);
         FinancialSnapshot snapshot = aSnapshot().withHousing(paidOff).build();
 
         StageView view = stage(build(snapshot), 6);
@@ -475,7 +475,7 @@ class ResultViewsTests {
                 .withRetirementContributionPercent("15")
                 .withHouseholdFlags(new HouseholdFlags(false, false))
                 .withHousing(new Mortgage(
-                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(1_200), Money.ZERO, null))
+                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(1_200), null))
                 .build();
 
         ResultView result = build(snapshot);
@@ -494,13 +494,13 @@ class ResultViewsTests {
                 .withRetirementContributionPercent("15")
                 .withHouseholdFlags(new HouseholdFlags(false, false))
                 .withHousing(new Mortgage(
-                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(400), Money.ZERO, null))
+                        Money.ofDollars(100_000), new BigDecimal("6.125"), Money.ofDollars(400), null))
                 .build();
 
         ResultView result = build(snapshot);
 
         assertThat(result.verdictSub())
-                .isEqualTo("After property taxes, your $400.00 payment doesn't cover the $510.42 monthly interest.");
+                .isEqualTo("Your $400.00 payment doesn't cover the $510.42 monthly interest.");
     }
 
     @Test

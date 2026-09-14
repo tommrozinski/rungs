@@ -126,7 +126,6 @@ final class SnapshotFormMapper {
                 money(form.getMortgageBalance()),
                 percent(form.getMortgageRate(), INTEREST_RATE_SCALE),
                 money(form.getMortgagePayment()),
-                money(form.getAnnualPropertyTaxes()),
                 maturity(form.getMaturityMonth(), form.getMaturityYear()));
     }
 

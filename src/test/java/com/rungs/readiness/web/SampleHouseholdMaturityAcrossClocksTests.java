@@ -19,9 +19,8 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * Proves {@link SnapshotController#loadSample} feeds {@link SampleHouseholds#byId} the running {@link Clock}'s own
  * assessment month rather than a value calibrated for a single month (design.md 039 review): at a fixed clock far
- * from September 2026, the debt-free and homestretch samples' rendered maturity still sits exactly 27 and 16 years
- * (324 and 192 months — both whole multiples of 12) ahead of that month, so the month component matches the
- * assessment month and only the year moves.
+ * from September 2026, the debt-free and homestretch samples' rendered maturity year still lands exactly where each
+ * sample's own payoff computation (from this clock's assessment month) puts it.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -49,7 +48,7 @@ class SampleHouseholdMaturityAcrossClocksTests {
                 .getResponse()
                 .getContentAsString();
 
-        assertThat(body).contains("value=\"2058\" aria-label=\"Maturity year\"");
+        assertThat(body).contains("value=\"2048\" aria-label=\"Maturity year\"");
     }
 
     @Test
@@ -60,6 +59,6 @@ class SampleHouseholdMaturityAcrossClocksTests {
                 .getResponse()
                 .getContentAsString();
 
-        assertThat(body).contains("value=\"2047\" aria-label=\"Maturity year\"");
+        assertThat(body).contains("value=\"2042\" aria-label=\"Maturity year\"");
     }
 }

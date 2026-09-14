@@ -34,7 +34,7 @@ public final class MortgagePayoffCalculator {
         Objects.requireNonNull(mortgage, "mortgage");
         Objects.requireNonNull(asOf, "asOf");
 
-        Money principalAndInterest = mortgage.monthlyPayment().minus(mortgage.monthlyPropertyTaxes());
+        Money principalAndInterest = mortgage.monthlyPayment();
         BigDecimal monthlyRate = mortgage.annualInterestRate().divide(PERCENT_MONTHS, MathContext.DECIMAL128);
         Money firstMonthInterest = mortgage.balance().times(monthlyRate);
 

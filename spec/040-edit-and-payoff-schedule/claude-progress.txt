@@ -1,0 +1,83 @@
+Implementation progress: 040 edit and payoff schedule
+
+Phase 2 — domain
+-----------------
+Scope: design.md section 3 (Mortgage simplification + PayoffScheduleCalculator), with its section 5 tests.
+Ran with `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B -ntp clean verify`.
+
+1. Simpler mortgage (annualPropertyTaxes removed)
+   - Mortgage record dropped `annualPropertyTaxes` and `monthlyPropertyTaxes()`. P&I is now the full
+     `monthlyPayment`.
+   - MortgagePayoffCalculator.payoff: `principalAndInterest` is now `mortgage.monthlyPayment()` directly (no
+     taxes subtraction).
+   - FinancialSnapshot.monthlyHousingCost(): mortgage case is now just `mortgage.monthlyPayment()` (no
+     taxes-fallback when the payment is $0).
+   - MortgageEvaluator's not-covered sentence: "Your $P payment doesn't cover the $I monthly interest."
+     (dropped "After property taxes, ").
+   - Web stopgaps (per task instructions, so phase 3 can finish the removal):
+     - SnapshotFormMapper.housing() no longer reads `form.getAnnualPropertyTaxes()`, but `SnapshotForm` keeps
+       the field/getter/setter, and `templates/form.html` keeps the input, unchanged. Both are dead weight the
+       phase-3 agent should remove alongside the note text and hint per design.md 040 section 2.
+     - SampleHouseholds: debt-free and homestretch keep their existing payment figures (2269, 1900) and still
+       compute their maturity from `MortgagePayoffCalculator`/`asOf`, now naturally on the new (taxes-free)
+       P&I. Paid-off's payment changed from $0 to $650 per the task (taxes+insurance now folded into the one
+       payment field); its balance stays $0 so stage 6 is still immediately satisfied regardless of the
+       payment figure.
+   - Deleted: MortgageTests' three `monthlyPropertyTaxes*` tests and its `annualPropertyTaxes`
+     negative/null-rejection cases; FinancialSnapshotTests' two `monthlyHousingCostIsTaxesDividedByTwelve*`
+     tests, replaced by one `monthlyHousingCostIsZeroWhenTheMortgagePaymentIsZero` test.
+   - Web test expectations that changed because P&I is no longer taxes-reduced (so the sample mortgages now
+     amortize faster, moving their computed maturities earlier):
+     - MortgageEvaluatorTests / ResultViewsTests: not-covered sentence text, and the $500.00 principal-and-
+       interest figure in the not-covered case became $900.00 (payment no longer minus $400 taxes).
+     - SnapshotControllerTests: debt-free sample's rendered/matching maturity moved from September 2053 to
+       May 2044 (both the `/sample` render and the manual `/assess` "matches" case); homestretch sample's
+       rendered maturity (via `/sample`) moved from September 2042 to January 2038 (the manual "ahead" case
+       at maturityMonth=9/maturityYear=2042 needed no change, since payoff June-2036-12 is still well ahead
+       of that maturity either way).
+     - SampleHouseholdMaturityAcrossClocksTests (asOf Feb 2031): debt-free's expected maturity year moved
+       2058 -> 2048, homestretch's 2047 -> 2042; the class javadoc's "always whole years ahead" claim no
+       longer holds now that P&I isn't taxes-reduced, so it was reworded to describe the invariant actually
+       under test (the rendered year always matches this clock's own payoff computation) rather than a
+       specific month/year offset.
+
+2. New package `domain.projection`: PayoffScheduleCalculator
+   - Records: ScheduleLoan(name, startingBalance, annualRate, minimumPayment), LoanMonth(open, interest,
+     payment, end), ScheduleMonth(month, extraCash, cascade, totalAvailable, loanMonths, monthInterest,
+     totalBalance, cumulativeInterest), PayoffSchedule(loans, months, totalExtraCash, totalPaidPerLoan,
+     totalInterest, truncated).
+   - PayoffScheduleCalculator.schedule(FinancialSnapshot): debts sorted by rate descending (stable sort keeps
+     supplied order on ties), mortgage appended last only when its balance is above $0 (name "Mortgage",
+     minimum = its monthly payment). extraCash = max(monthlySurplus, $0), constant every month. Each month:
+     cascade = sum of minimums of loans closed by an earlier month (freed minimum counted once, the month
+     after it closes, not the closing month itself); totalAvailable = extraCash + cascade; for each open loan
+     in order, interest = open * rate/1200 (DECIMAL128 monthly rate, Money.times half-even cents, same
+     pattern as MortgagePayoffCalculator), payment = min(open+interest, minimum+pool), pool reduced by
+     max(payment-minimum, 0) after each loan; end = open+interest-payment (always >= 0 since payment is
+     capped at open+interest). Closed loans render as an all-$0 LoanMonth. Stops the month the last loan's
+     balance reaches $0, or at 600 months (`truncated=true`); any ArithmeticException (overflow) part-way
+     through a month is caught and also treated as truncated, per the task's "must not throw" requirement,
+     rather than propagating.
+   - No loans (renter with no debts, or a paid-off mortgage and no debts) returns an empty schedule with all
+     totals at $0 and `truncated=false`, without entering the simulation loop.
+
+Tests added (`domain.projection.PayoffScheduleCalculatorTests`, 11 tests, all passing):
+   - aHouseholdWithNoLoansHasAnEmptySchedule
+   - handVerifiedTwoDebtCaseMatchesTheFirstThreeMonthsExactly — two debts ($300 @ 12%/$20 min, $2,000 @
+     6%/$100 min), $200/month extra cash; hand-computed month 1-3 table in the test's comment, asserted to
+     the cent (interest, payment, end, cascade appearing in month 3 after debt A closes in month 2).
+   - ordersLoansByRateDescendingWithTiesInSuppliedOrder
+   - theMortgageIsAlwaysLastEvenWithAHigherRateThanADebt
+   - aRenterHasNoMortgageRow
+   - aPaidOffMortgageHasNoRow
+   - aNegativeSurplusBecomesZeroExtraCash
+   - aLoanWhoseMinimumNeverCoversInterestHitsTheSixHundredMonthCap
+   - aLoanThatPaysOffWellBeforeTheCapIsNotTruncated
+   - totalsMatchTheSumsOfTheMonths
+   - isDeterministic
+   - Every test above ends with a shared `assertInvariants(schedule)` helper: per-loan paid = start - final
+     end + interest, no negative balance in any month, and no month's total payment exceeds that month's
+     open-loan minimums plus its totalAvailable.
+
+Verify result: `./mvnw -B -ntp clean verify` — BUILD SUCCESS, Tests run: 817, Failures: 0, Errors: 0,
+Skipped: 0 (806 pre-existing + 11 new PayoffScheduleCalculatorTests).

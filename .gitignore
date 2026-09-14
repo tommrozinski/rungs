@@ -17,3 +17,6 @@ target/
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# Personal workbooks used only as format references
+prd/*.xlsx

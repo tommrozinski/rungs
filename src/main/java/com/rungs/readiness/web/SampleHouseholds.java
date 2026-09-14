@@ -118,7 +118,6 @@ final class SampleHouseholds {
                 Money.parse(form.getMortgageBalance()),
                 new BigDecimal(form.getMortgageRate()),
                 Money.parse(form.getMortgagePayment()),
-                Money.parse(form.getAnnualPropertyTaxes()),
                 null);
         MortgagePayoff payoff = MortgagePayoffCalculator.payoff(probe, asOf);
         return asOf.plusMonths(payoff.monthsToPayoff() + aheadMonths);
@@ -141,7 +140,7 @@ final class SampleHouseholds {
         form.setHousing("MORTGAGE");
         form.setMortgageBalance("0");
         form.setMortgageRate("0");
-        form.setMortgagePayment("0");
+        form.setMortgagePayment("650");
         form.setAnnualPropertyTaxes("6300");
         return form;
     }

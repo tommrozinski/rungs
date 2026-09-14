@@ -22,8 +22,7 @@ public final class MortgageEvaluator implements StageEvaluator {
 
     private static final String RENTS_REASON = "You rent, so there's no mortgage to pay down.";
 
-    private static final String NOT_COVERED =
-            "After property taxes, your %s payment doesn't cover the %s monthly interest.";
+    private static final String NOT_COVERED = "Your %s payment doesn't cover the %s monthly interest.";
 
     private static final String CAPPED = "This payment won't pay the loan off within 50 years.";
 
