@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rungs — Snapshot</title>
+<link rel="stylesheet" href="/css/rungs.css">
+</head>
+<body>
+
+  <div class="appbar">
+    <div class="wordmark"><span class="glyph">R</span> Rungs</div>
+    <nav><a href="/" class="on">Snapshot</a><span>Results</span></nav>
+  </div>
+
+  <div class="screen">
+    <h1 class="h1">Where do you stand today?</h1>
+    <p class="body">Nothing here is saved. Fill it in, get your answer, close the tab.</p>
+
+    <form id="snapshot-form" method="post" action="/assess">
+
+      <div class="card">
+        <h2 class="h2" style="margin-bottom:14px;">Money in and out</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="monthlyTakeHomeIncome">Monthly take-home pay</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyTakeHomeIncome"
+                   name="monthlyTakeHomeIncome" th:value="${form.monthlyTakeHomeIncome}" required>
+          </div>
+          <div class="field">
+            <label for="monthlyEssentialExpenses">Essential monthly expenses</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyEssentialExpenses"
+                   name="monthlyEssentialExpenses" th:value="${form.monthlyEssentialExpenses}" required>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="starterEmergencyFund">Starter emergency fund</label>
+            <input class="input" type="number" step="0.01" min="0" id="starterEmergencyFund"
+                   name="starterEmergencyFund" th:value="${form.starterEmergencyFund}" required>
+          </div>
+          <div class="field">
+            <label for="fullEmergencyFund">Full emergency fund saved</label>
+            <input class="input" type="number" step="0.01" min="0" id="fullEmergencyFund"
+                   name="fullEmergencyFund" th:value="${form.fullEmergencyFund}" required>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="retirementContributionPercent">Retirement contribution</label>
+          <input class="input" type="number" step="0.1" min="0" max="100" id="retirementContributionPercent"
+                 name="retirementContributionPercent" th:value="${form.retirementContributionPercent}" style="max-width:140px" required>
+          <div class="hint">Percent of household income going into retirement accounts.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h2 class="h2">Debts you owe</h2>
+          <button type="submit" formaction="/debts/add" formnovalidate class="btn btn-secondary btn-sm">Add a debt</button>
+        </div>
+        <table class="debts" id="debt-table">
+          <thead>
+            <tr><th>Name</th><th>Type</th><th>Balance</th><th>Rate %</th><th>Minimum</th><th></th></tr>
+          </thead>
+          <tbody id="debt-rows">
+            <tr th:each="row, iter : ${form.debts}">
+              <td><input class="input" type="text" th:name="|debts[${iter.index}].label|" th:value="${row.label}" required></td>
+              <td>
+                <select class="input" th:name="|debts[${iter.index}].type|">
+                  <option value="CREDIT_CARD" th:selected="${row.type == 'CREDIT_CARD'}">CREDIT CARD</option>
+                  <option value="AUTO" th:selected="${row.type == 'AUTO'}">AUTO</option>
+                  <option value="STUDENT_LOAN" th:selected="${row.type == 'STUDENT_LOAN'}">STUDENT LOAN</option>
+                  <option value="MEDICAL" th:selected="${row.type == 'MEDICAL'}">MEDICAL</option>
+                  <option value="PERSONAL" th:selected="${row.type == 'PERSONAL'}">PERSONAL</option>
+                  <option value="OTHER" th:selected="${row.type == 'OTHER'}">OTHER</option>
+                </select>
+              </td>
+              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].balance|" th:value="${row.balance}" required></td>
+              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].annualInterestRate|" th:value="${row.annualInterestRate}" required></td>
+              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].minimumPayment|" th:value="${row.minimumPayment}" required></td>
+              <td class="rm"><button type="submit" th:formaction="|/debts/remove/${iter.index}|" formnovalidate class="rm-btn" title="Remove">✕</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2 class="h2" style="margin-bottom:12px;">About your household</h2>
+        <div class="check">
+          <input type="checkbox" id="rents" name="rents" th:checked="${form.rents}">
+          <label for="rents" style="font-weight:400;">We rent our home</label>
+        </div>
+        <div class="check">
+          <input type="checkbox" id="intendsToFundCollege" name="intendsToFundCollege" th:checked="${form.intendsToFundCollege}">
+          <label for="intendsToFundCollege" style="font-weight:400;">We plan to fund college for our kids</label>
+        </div>
+        <div class="check">
+          <input type="checkbox" id="retired" name="retired" th:checked="${form.retired}">
+          <label for="retired" style="font-weight:400;">We're retired</label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Check my stage</button>
+      </div>
+    </form>
+  </div>
+
+</body>
+</html>

@@ -97,3 +97,99 @@ README.md, or .github/.
 
 Not committed: implementer role does not run `git commit`; the orchestrator commits
 this change set.
+
+## Phase 2 — form and echo
+
+Implemented the web layer per design.md §3 and the build-order step 3 (echo mode), copying
+markup literally from prd/snapshot-form.html and prd/assessment-result.html with only the
+allowed edits.
+
+New main sources (package com.rungs.readiness.web):
+- SnapshotForm: plain mutable JavaBean (not a record) with getters/setters, so Spring's
+  classic WebDataBinder can auto-grow `List<SnapshotForm.DebtRow> debts` for indexed
+  properties (debts[0].label, ...). All scalar fields are raw Strings, defaulted to "";
+  booleans (rents, intendsToFundCollege, retired) default to false, matching "unchecked
+  boxes -> false". DebtRow nested static class mirrors the six field names from the mock's
+  JS (label, type, balance, annualInterestRate, minimumPayment), type defaulting to
+  "CREDIT_CARD".
+- SnapshotController: GET / builds an empty SnapshotForm with one empty DebtRow and renders
+  "form". POST /debts/add appends a DebtRow and re-renders "form". POST /debts/remove/{index}
+  removes that row if 0 <= index < size (out-of-range index silently ignored) and re-renders
+  "form". POST /assess builds the echo text and renders "result". @InitBinder sets
+  binder.setAutoGrowCollectionLimit(100). An @ExceptionHandler(InvalidPropertyException.class)
+  catches the case where the binder still can't reach an index (e.g. debts[99999] against an
+  empty/short list or past the grow limit) and returns 400 instead of letting it surface as a
+  500.
+- SnapshotEcho: package-private helper that renders the submitted SnapshotForm as
+  "name=value" lines (including every debt row), used only for the phase-2 echo panel at the
+  bottom of the result page.
+
+Templates (src/main/resources/templates):
+- form.html: literal copy of prd/snapshot-form.html. Allowed edits only: <style> replaced
+  with <link rel="stylesheet" href="/css/rungs.css">; title "Gazelle — Snapshot (v0 static)"
+  -> "Rungs — Snapshot"; wordmark "Gazelle"/glyph "G" -> "Rungs"/"R"; appbar nav "Snapshot"
+  is now `<a href="/" class="on">`; every <script> removed; the build-note div removed; the
+  hidden .echo panel div removed; "Load an example" button removed; "Add a debt" button
+  changed to `<button type="submit" formaction="/debts/add" formnovalidate ...>`; each debt
+  row's ✕ button changed to `<button type="submit" th:formaction="'/debts/remove/'+index"
+  formnovalidate class="rm-btn">`; the three sample debt rows (previously injected by JS)
+  replaced with `th:each="row, iter : ${form.debts}"` over the bound form's debts, one empty
+  row on first GET; every input's `value="..."` becomes `th:value="${form.xxx}"` (blank
+  strings on first GET, so the form starts empty as required); checkboxes get
+  `th:checked="${form.xxx}"`. The `<select>` keeps the same six options in the same order as
+  the mock's JS array (CREDIT_CARD, AUTO, STUDENT_LOAN, MEDICAL, PERSONAL, OTHER) with the
+  same underscore-to-space label text, now with `th:selected` per row's type. All other
+  markup, classes, ids, and inline `style="..."` attributes are unchanged from the mock.
+- result.html: literal copy of prd/assessment-result.html, still showing the board's fixed
+  example ladder/verdict/stats for this phase (per build-order step 3). Allowed edits: same
+  CSS-link/title/wordmark/nav changes as above (nav "Snapshot" is `<a href="/">`); every
+  <script> removed; the build-note div removed; the mock's hidden echo panel div removed;
+  per design.md §1, the warning banner (`.banner`) is removed, and inside the stage-2
+  `.stage-open` card the progress bar, the "41% paid down" / "$8,660 of $21,140 cleared"
+  line, and the "See the payoff plan" button are removed, keeping only the title chip and
+  the blocker paragraph. Added a small server-rendered echo section at the bottom (an <h2>
+  and a plain `<pre th:text="${echo}">`, no inline style, no class) listing every submitted
+  value via SnapshotEcho, proving the round trip. Phase 3 replaces the fixed ladder content
+  with the real assessment and removes this echo section.
+
+CSS (src/main/resources/static/css/rungs.css): the two mock `<style>` blocks merged. Rules
+with identical selector+declarations across both files appear once (body, .appbar, .wordmark,
+.glyph, .appbar nav, .appbar nav .on, .screen, .h2, .small, table/card/field/input/button
+rules, etc.). Rules only in one file are kept as-is (.appbar a and the whole verdict/stat/
+ladder/disc/chip/bar/stage-open/blocker/btn-sm-primary block from the result mock; .body,
+.field, table.debts, .rm-btn, .btn*, .actions from the form mock). The one non-identical,
+same-selector case was `.h1` (form: `margin: 0 0 6px`; result: `margin: 0`) — result.html
+never actually uses the `.h1` class in its body, so the form's version was kept and the
+unused duplicate dropped; there is no visual conflict. `.echo` and `.note` rules dropped
+from both, per instructions. The `:root` variables are the union of both files' custom
+properties (form.html's block is the superset; it has `--red-100`, which result.html's
+block lacked but never referenced either).
+
+Tests (src/test/java/com/rungs/readiness/web/SnapshotControllerTests.java), plain JUnit 5 +
+MockMvc (@SpringBootTest + @AutoConfigureMockMvc), assertions via AssertJ `contains`:
+- getRootRendersEmptyFormWithOneDebtRow: GET / is 200, has the <form>, action="/assess",
+  every top-level field name, exactly one debts[0] row (no debts[1]), no <script>.
+- addDebtKeepsTypedValuesAndAddsARow: POST /debts/add with typed values re-renders them via
+  th:value and appends a debts[1] row.
+- removeDropsTheRightRowAndKeepsOthers: POST /debts/remove/0 with two rows keeps row 1's
+  value and re-indexes it to debts[0], dropping the removed row's value entirely.
+- removeWithOutOfRangeIndexDoesNotFail: POST /debts/remove/99 against a one-row form returns
+  200 (index silently ignored).
+- largeDebtIndexDoesNotFail: POST /assess with debts[99999].label returns a 4xx (400, via the
+  new InvalidPropertyException handler), never a 500.
+- assessEchoesSubmittedValuesAndCheckboxStates: POST /assess with a full snapshot + one debt
+  row + rents=true renders every field (including the two unchecked booleans as "false") in
+  the echo section.
+- cssIsServedAtItsPath: GET /css/rungs.css is 200.
+
+Test run: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home &&
+./mvnw -B -ntp clean verify` -> BUILD SUCCESS. Tests run: 672, Failures: 0, Errors: 0,
+Skipped: 0 (665 domain tests carried over from phase 1 + 7 new SnapshotControllerTests).
+
+Manual check: `./mvnw spring-boot:run` starts cleanly (verified on an alternate port, since
+port 8080 was already held by an unrelated stray process on this machine) and serves GET /,
+GET /css/rungs.css, and POST /assess correctly; the rendered form and result HTML were
+inspected by curl and match the expected literal markup with the allowed substitutions.
+
+Not committed: implementer role does not run `git commit`; the orchestrator commits this
+change set.
