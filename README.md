@@ -50,16 +50,16 @@ first run needs an internet connection.
   Thymeleaf templates.
 
 **Request flow:** `GET /` renders the form. `POST /assess` builds a snapshot from the
-submitted values and renders the result. Hidden fields on the result page carry every
-submitted value back onto the page, so "Change my numbers" and "Show payoff schedule"
-both work with no session, no cookies, and no JavaScript.
+submitted values and renders the result. The result page carries every submitted value
+in hidden fields and posts them back to the server, so "Change my numbers" and "Show
+payoff schedule" both work with no session, no cookies, and no JavaScript.
 
 ## Key design decisions
 
 - Money is exact cents throughout, with half-even rounding at every calculation
   boundary — no floating point.
-- The domain is pure and takes an injected `Clock`; nothing in `domain` reads the
-  system clock directly.
+- The domain is pure: the controller reads an injected `Clock` and passes the current
+  month into the snapshot, so nothing in `domain` reads the system clock.
 - Form input parsing is lenient: a blank or invalid field becomes 0 rather than a
   validation error, amounts are capped at $1B, and a household can enter up to 20
   debts.
@@ -76,8 +76,9 @@ suite on every push.
 
 ## Project history
 
-An earlier, larger version of this project scoped out APIs, payoff projections, CSV
-import/export, and an architecture test suite; that scope was deliberately cut back to
-the focused version described above. Design notes for the current version live in
+An earlier, larger version of this project scoped out JSON APIs, CSV import/export, a
+JavaScript-driven UI, and an architecture test suite; that scope was deliberately cut
+back to the focused version described above, then grown again one visually checked
+feature at a time. Design notes for the current version live in
 [`docs/design/`](docs/design/) and [`docs/scope.md`](docs/scope.md); the rest of the
 history is in git.
