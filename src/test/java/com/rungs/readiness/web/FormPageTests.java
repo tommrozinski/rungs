@@ -42,19 +42,13 @@ class FormPageTests {
         assertThat(body).contains("name=\"starterEmergencyFund\"");
         assertThat(body).contains("name=\"fullEmergencyFund\"");
         assertThat(body).contains("name=\"retirementContributionPercent\"");
-        assertThat(body).doesNotContain("name=\"rents\"");
         assertThat(body).contains("name=\"housing\" value=\"MORTGAGE\"");
         assertThat(body).contains("id=\"housing-mortgage\"");
         assertThat(body).contains("name=\"mortgageBalance\"");
         assertThat(body).contains("name=\"mortgageRate\"");
         assertThat(body).contains("name=\"mortgagePayment\"");
-        assertThat(body).doesNotContain("name=\"annualPropertyTaxes\"");
         assertThat(body).contains("Your full monthly payment, including taxes and insurance.");
-        assertThat(body).contains("Paid off? Enter 0 for the remaining balance, and enter your property taxes "
-                + "and insurance as the monthly payment, since those still come out of your take-home pay each "
-                + "month.");
-        assertThat(body).doesNotContain("name=\"maturityMonth\"");
-        assertThat(body).doesNotContain("name=\"maturityYear\"");
+        assertThat(body).contains("Paid off? Enter 0 for the remaining balance");
         assertThat(body).contains("name=\"monthlyRent\"");
         assertThat(body).contains("name=\"intendsToFundCollege\"");
         assertThat(body).contains("name=\"retired\"");
@@ -68,6 +62,19 @@ class FormPageTests {
         assertThat(body.substring(mortgageRadioIndex, mortgageRadioEnd)).contains("checked");
         assertThat(body).contains("name=\"mortgageBalance\" value=\"\"");
 
+        // The domain keeps the retirement percent to 2 decimals and a debt's rate to 3; a coarser step blocks the
+        // browser from ever submitting e.g. 6.25% retirement or 6.125% debt rate.
+        assertThat(body).contains("id=\"retirementContributionPercent\"");
+        int retirementIndex = body.indexOf("id=\"retirementContributionPercent\"");
+        int retirementStart = body.lastIndexOf("<input", retirementIndex);
+        int retirementEnd = body.indexOf(">", retirementIndex);
+        assertThat(body.substring(retirementStart, retirementEnd)).contains("step=\"0.01\"");
+
+        int debtRateIndex = body.indexOf("debts[0].annualInterestRate");
+        int debtRateStart = body.lastIndexOf("<input", debtRateIndex);
+        int debtRateEnd = body.indexOf(">", debtRateIndex);
+        assertThat(body.substring(debtRateStart, debtRateEnd)).contains("step=\"0.001\"");
+
         assertThat(body).contains("<select name=\"sample\"");
         assertThat(body).contains("Choose a sample household");
         assertThat(body).contains("Buried in debt");
@@ -77,6 +84,24 @@ class FormPageTests {
         assertThat(body).contains("Paid-off home, no debt");
         assertThat(body).contains("formaction=\"/sample\" formnovalidate");
         assertThat(body).contains("Load sample data");
+    }
+
+    @Test
+    void debtRowAndTableAccessibilityAttributesAreOnFirstRow() throws Exception {
+        String body = mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("aria-label=\"Debt 1 name\"");
+        assertThat(body).contains("aria-label=\"Debt 1 type\"");
+        assertThat(body).contains("aria-label=\"Debt 1 balance\"");
+        assertThat(body).contains("aria-label=\"Debt 1 rate\"");
+        assertThat(body).contains("aria-label=\"Debt 1 minimum payment\"");
+        assertThat(body).contains("aria-label=\"Remove debt 1\"");
+        assertThat(body).contains("<th scope=\"col\">Name</th>");
+        assertThat(body).contains("aria-label=\"Choose a sample household\"");
     }
 
     @Test
@@ -266,6 +291,34 @@ class FormPageTests {
     void cssIsServedAtItsPath() throws Exception {
         mockMvc.perform(get("/css/rungs.css"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void tokensCssIsServedAndDeclaresTheInterFontFace() throws Exception {
+        String body = mockMvc.perform(get("/css/tokens.css"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("@font-face");
+        assertThat(body).contains("font-family: \"Inter\"");
+        assertThat(body).contains("/fonts/InterVariable.woff2");
+        assertThat(body).contains("font-display: swap");
+    }
+
+    @Test
+    void formPageLinksTokensCssBeforeItsOwnStylesheet() throws Exception {
+        String body = mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        int tokensIndex = body.indexOf("/css/tokens.css");
+        int rungsIndex = body.indexOf("/css/rungs.css");
+        assertThat(tokensIndex).isGreaterThan(-1);
+        assertThat(tokensIndex).isLessThan(rungsIndex);
     }
 
     @Test

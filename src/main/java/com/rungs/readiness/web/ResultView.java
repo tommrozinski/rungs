@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * The result page's view model: the verdict, the three stats, and the seven-stage ladder.
  *
- * @param eyebrow "You're on stage N of 7", or "All seven stages are done or skipped" when stage 7 is satisfied
+ * @param eyebrow "You're on stage N of 7", or "Every stage that applies to you is done" when stage 7 is satisfied
  * @param verdictLine the current stage's headline
  * @param verdictSub the current stage's supporting line
  * @param monthlySurplus the monthly surplus, formatted

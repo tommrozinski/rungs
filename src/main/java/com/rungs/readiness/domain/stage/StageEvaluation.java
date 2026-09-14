@@ -12,7 +12,8 @@ import java.util.Objects;
  *       has exactly scale 1 (it is not normalized; evaluators produce it with {@link Percentages}) and is 0.0 to
  *       100.0;
  *   <li>{@code SATISFIED}: percent is 100.0, and remaining amount, blocker, and skip reason are null;
- *   <li>{@code IN_PROGRESS}: percent is at most 99.9 (0.0 is allowed for stage 2), blocker is non-blank, and skip
+ *   <li>{@code IN_PROGRESS}: percent is 0.0 to 99.9 inclusive (0.0 is allowed: some stages, such as stage 2, have no
+ *       usable progress metric and report 0.0 rather than {@code NOT_STARTED}), blocker is non-blank, and skip
  *       reason is null;
  *   <li>{@code NOT_STARTED}: percent is 0.0, blocker is non-blank, and skip reason is null;
  *   <li>{@code SKIPPED}: percent is 0.0, skip reason is non-blank, and remaining amount and blocker are null.
@@ -45,12 +46,12 @@ public record StageEvaluation(
     /** The only scale a percentage may have. */
     private static final int PERCENT_SCALE = 1;
 
-    private static final BigDecimal ZERO_PERCENT = new BigDecimal("0.0");
+    private static final BigDecimal ZERO_PERCENT = Percentages.ZERO_PERCENT;
 
-    private static final BigDecimal FULL_PERCENT = new BigDecimal("100.0");
+    private static final BigDecimal FULL_PERCENT = Percentages.FULL_PERCENT;
 
     /** Highest percentage a stage that is not satisfied may report. */
-    private static final BigDecimal UNMET_CAP = new BigDecimal("99.9");
+    private static final BigDecimal UNMET_CAP = Percentages.UNMET_CAP;
 
     /** Validates the components; see the class Javadoc for the rules. */
     public StageEvaluation {

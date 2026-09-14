@@ -28,4 +28,10 @@ record ScheduleView(
         List<String> totalPaidPerLoan,
         String totalInterest,
         boolean truncated) {
+
+    /** Returns the view for a household with no debt or mortgage balance to pay down: no loans, no months, and
+     * every totals figure absent rather than a formatted zero. */
+    static ScheduleView empty() {
+        return new ScheduleView(false, List.of(), List.of(), null, null, List.of(), null, List.of(), null, false);
+    }
 }

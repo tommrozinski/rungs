@@ -76,6 +76,23 @@
   .housing-card:has(.housing-toggle input[value="RENT"]:checked) .housing-mortgage { display: none; }
   .housing-card:has(.housing-toggle input[value="MORTGAGE"]:checked) .housing-rent { display: none; }
 
+  .row-between { display: flex; justify-content: space-between; align-items: center; }
+  .mb-0 { margin-bottom: 0; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-14 { margin-bottom: 14px; }
+  .mt-10 { margin-top: 10px; }
+  .mb-16 { margin-bottom: 16px; }
+  .max-w-140 { max-width: 140px; }
+  .max-w-220 { max-width: 220px; }
+
+  @font-face {
+    font-family: "Inter";
+    src: url("/fonts/InterVariable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
   /* echo panel — stands in for the real result screen until the Java side exists */
   .echo { display: none; background: var(--navy-900); color: var(--white); border-radius: var(--r-md);
     padding: 16px 18px; margin-top: 20px; font-size: 13px; line-height: 1.7; }
@@ -101,7 +118,7 @@
     <form id="snapshot-form" method="post" action="/assess">
 
       <div class="card">
-        <h2 class="h2" style="margin-bottom:14px;">Money in and out</h2>
+        <h2 class="h2 mb-14">Money in and out</h2>
         <div class="field-row">
           <div class="field">
             <label for="monthlyTakeHomeIncome">Monthly take-home pay</label>
@@ -127,22 +144,22 @@
                    name="fullEmergencyFund" value="0" required>
           </div>
         </div>
-        <div class="field" style="margin-bottom:0;">
+        <div class="field mb-0">
           <label for="retirementContributionPercent">Retirement contribution</label>
-          <input class="input" type="number" step="0.1" min="0" max="100" id="retirementContributionPercent"
-                 name="retirementContributionPercent" value="6" style="max-width:140px" required>
+          <input class="input max-w-140" type="number" step="0.01" min="0" max="100" id="retirementContributionPercent"
+                 name="retirementContributionPercent" value="6" required>
           <div class="hint">Percent of household income going into retirement accounts.</div>
         </div>
       </div>
 
       <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="row-between mb-12">
           <h2 class="h2">Debts you owe</h2>
           <button type="button" class="btn btn-secondary btn-sm" id="add-debt">Add a debt</button>
         </div>
         <table class="debts" id="debt-table">
           <thead>
-            <tr><th>Name</th><th>Type</th><th>Balance</th><th>Rate %</th><th>Minimum</th><th></th></tr>
+            <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Balance</th><th scope="col">Rate %</th><th scope="col">Minimum</th><th scope="col"></th></tr>
           </thead>
           <tbody id="debt-rows">
             <!-- rows injected by JS; three sample rows for a working demo -->
@@ -151,7 +168,7 @@
       </div>
 
       <div class="card housing-card">
-        <h2 class="h2" style="margin-bottom:12px;">About your household</h2>
+        <h2 class="h2 mb-12">About your household</h2>
 
         <div class="housing-toggle">
           <input type="radio" class="visually-hidden" id="housing-mortgage" name="housing" value="MORTGAGE" checked>
@@ -175,11 +192,11 @@
           </div>
           <div class="field">
             <label for="mortgagePayment">Monthly payment</label>
-            <input class="input" type="number" step="0.01" min="0" id="mortgagePayment"
-                   name="mortgagePayment" value="2200" style="max-width:220px">
+            <input class="input max-w-220" type="number" step="0.01" min="0" id="mortgagePayment"
+                   name="mortgagePayment" value="2200">
             <div class="hint">Your full monthly payment, including taxes and insurance.</div>
           </div>
-          <p class="small" style="margin-top:10px; margin-bottom:16px;">Paid off? Enter 0 for the remaining balance, and enter your property taxes and insurance as the monthly payment, since those still come out of your take-home pay each month.</p>
+          <p class="small mt-10 mb-16">Paid off? Enter 0 for the remaining balance, and enter your property taxes and insurance as the monthly payment, since those still come out of your take-home pay each month.</p>
         </div>
 
         <div class="housing-rent">
@@ -192,17 +209,17 @@
 
         <div class="check">
           <input type="checkbox" id="intendsToFundCollege" name="intendsToFundCollege">
-          <label for="intendsToFundCollege" style="font-weight:400;">We plan to fund college for our kids</label>
+          <label for="intendsToFundCollege">We plan to fund college for our kids</label>
         </div>
         <div class="check">
           <input type="checkbox" id="retired" name="retired">
-          <label for="retired" style="font-weight:400;">We're retired</label>
+          <label for="retired">We're retired</label>
         </div>
       </div>
 
       <div class="actions">
         <button type="submit" class="btn btn-primary">Check my stage</button>
-        <select name="sample" class="input">
+        <select name="sample" class="input" aria-label="Choose a sample household">
           <option value="">Choose a sample household</option>
           <option value="buried">Buried in debt</option>
           <option value="board">Paying down debt</option>
@@ -240,17 +257,18 @@
     const tbody = document.getElementById("debt-rows");
     const idx = tbody.children.length;
     const tr = document.createElement("tr");
+    const row = idx + 1;
     tr.innerHTML = `
-      <td><input class="input" type="text" name="debts[${idx}].label" value="${name ?? ""}" required></td>
+      <td><input class="input" type="text" name="debts[${idx}].label" value="${name ?? ""}" aria-label="Debt ${row} name" required></td>
       <td>
-        <select class="input" name="debts[${idx}].type">
+        <select class="input" name="debts[${idx}].type" aria-label="Debt ${row} type">
           ${debtTypes.map(t => `<option value="${t}" ${t === type ? "selected" : ""}>${t.replace("_"," ")}</option>`).join("")}
         </select>
       </td>
-      <td><input class="input" type="number" step="0.01" min="0" name="debts[${idx}].balance" value="${balance ?? ""}" required></td>
-      <td><input class="input" type="number" step="0.01" min="0" name="debts[${idx}].annualInterestRate" value="${rate ?? ""}" required></td>
-      <td><input class="input" type="number" step="0.01" min="0" name="debts[${idx}].minimumPayment" value="${minimum ?? ""}" required></td>
-      <td class="rm"><button type="button" class="rm-btn" title="Remove">✕</button></td>
+      <td><input class="input" type="number" step="0.01" min="0" name="debts[${idx}].balance" value="${balance ?? ""}" aria-label="Debt ${row} balance" required></td>
+      <td><input class="input" type="number" step="0.001" min="0" name="debts[${idx}].annualInterestRate" value="${rate ?? ""}" aria-label="Debt ${row} rate" required></td>
+      <td><input class="input" type="number" step="0.01" min="0" name="debts[${idx}].minimumPayment" value="${minimum ?? ""}" aria-label="Debt ${row} minimum payment" required></td>
+      <td class="rm"><button type="button" class="rm-btn" title="Remove" aria-label="Remove debt ${row}">✕</button></td>
     `;
     tr.querySelector(".rm-btn").addEventListener("click", () => { tr.remove(); reindexDebtRows(); });
     tbody.appendChild(tr);

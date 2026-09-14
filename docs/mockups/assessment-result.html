@@ -85,6 +85,17 @@
   .btn-secondary { background: var(--white); color: var(--blue-600); border-color: var(--blue-600); }
   .btn-secondary:hover { background: var(--blue-50); }
   .actions { display: flex; gap: 12px; align-items: center; margin: 24px 0; flex-wrap: wrap; }
+  .mb-14 { margin-bottom: 14px; }
+  .mt-6 { margin-top: 6px; }
+  .pt-0 { padding-top: 0; }
+
+  @font-face {
+    font-family: "Inter";
+    src: url("/fonts/InterVariable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
 
   #breakdown { margin-top: 4px; }
   .breakdown-frame { display: block; width: 100%; height: 600px; border: 1px solid var(--slate-200);
@@ -129,11 +140,12 @@
       <div>The minimum on Store card doesn't cover its monthly interest. It's excluded from the payoff estimate until the payment goes up.</div>
     </div>
 
-    <h2 class="h2" style="margin-bottom:14px;">Your seven stages</h2>
+    <h2 class="h2 mb-14">Your seven stages</h2>
     <div class="ladder">
 
       <div class="stage">
-        <div class="disc done">✓</div>
+        <div class="disc done" aria-hidden="true">✓</div>
+        <span class="visually-hidden">Done</span>
         <div class="stage-body">
           <div class="stage-title"><span>Save $1,000 to start</span><span class="chip chip-done">Done</span></div>
           <div class="small">$1,000 of $1,000.</div>
@@ -142,7 +154,7 @@
 
       <div class="stage">
         <div class="disc active">2</div>
-        <div class="stage-body" style="padding-top:0">
+        <div class="stage-body pt-0">
           <div class="stage-open">
             <div class="stage-title"><span>Pay off everything but the house</span><span class="chip chip-active">In progress</span></div>
             <p class="blocker">Three debts remain, totalling <b>$12,480</b>. Smallest first, the store card clears in <b>one month</b>.</p>
@@ -166,12 +178,13 @@
         <div class="stage-body">
           <div class="stage-title"><span>Put 15% toward retirement</span><span class="chip chip-active">In progress</span></div>
           <div class="bar"><i style="width:40%"></i></div>
-          <div class="small" style="margin-top:6px;">You're at 6%. Nine points to go.</div>
+          <div class="small mt-6">You're at 6%. Nine points to go.</div>
         </div>
       </div>
 
       <div class="stage">
-        <div class="disc skipped">–</div>
+        <div class="disc skipped" aria-hidden="true">–</div>
+        <span class="visually-hidden">Skipped</span>
         <div class="stage-body">
           <div class="stage-title"><span>Save for college</span><span class="chip chip-skipped">Skipped</span></div>
           <div class="small">You told us you're not funding college.</div>
@@ -179,7 +192,8 @@
       </div>
 
       <div class="stage">
-        <div class="disc skipped">–</div>
+        <div class="disc skipped" aria-hidden="true">–</div>
+        <span class="visually-hidden">Skipped</span>
         <div class="stage-body">
           <div class="stage-title"><span>Pay off the house</span><span class="chip chip-skipped">Skipped</span></div>
           <div class="small">You rent, so there's no mortgage to pay down.</div>
@@ -204,7 +218,7 @@
     </form>
 
     <section id="breakdown">
-      <h2 class="h2" style="margin-bottom:14px;">Payoff schedule</h2>
+      <h2 class="h2 mb-14">Payoff schedule</h2>
       <iframe title="Payoff schedule" class="breakdown-frame" src="payoff-schedule.html"></iframe>
     </section>
 

@@ -8,7 +8,7 @@ import java.util.List;
  * parsing or validation happens here. Unchecked boxes bind to {@code false} because the
  * fields are primitive {@code boolean}.
  */
-public class SnapshotForm {
+class SnapshotForm {
 
     private String monthlyTakeHomeIncome = "";
     private String monthlyEssentialExpenses = "";
@@ -138,7 +138,7 @@ public class SnapshotForm {
     }
 
     /** One row of the debts table. */
-    public static class DebtRow {
+    static class DebtRow {
 
         private String label = "";
         private String type = "CREDIT_CARD";

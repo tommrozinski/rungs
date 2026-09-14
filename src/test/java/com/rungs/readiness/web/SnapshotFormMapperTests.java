@@ -88,6 +88,18 @@ class SnapshotFormMapperTests {
     }
 
     @Test
+    void commaGroupedAndOverPreciseMoneyFieldBecomesZero() {
+        // Money#parse rejects this for having more than two decimal places, and the over-precise fallback rejects
+        // it right back for having a comma: the two leniencies don't compose, so the field becomes zero.
+        SnapshotForm form = new SnapshotForm();
+        form.setMonthlyTakeHomeIncome("1,000.555");
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ZERO);
+    }
+
+    @Test
     void moneyFieldAboveTheBillionDollarCapIsCappedRatherThanOverflowing() {
         SnapshotForm form = new SnapshotForm();
         form.setMonthlyTakeHomeIncome("92233720368547748.07");

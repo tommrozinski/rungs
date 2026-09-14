@@ -37,7 +37,7 @@ public record Money(long cents) implements Comparable<Money> {
     private static final int RADIX = 10;
 
     /** Longest text {@link #parse} inspects, counted before trimming, so oversized input is rejected cheaply. */
-    private static final int MAX_TEXT_LENGTH = 32;
+    public static final int MAX_TEXT_LENGTH = 32;
 
     /** Whole-dollar digits between comma separators in the display format. */
     private static final int GROUP_SIZE = 3;

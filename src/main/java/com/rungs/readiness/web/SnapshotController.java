@@ -3,15 +3,8 @@ package com.rungs.readiness.web;
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.projection.PayoffSchedule;
 import com.rungs.readiness.domain.projection.PayoffScheduleCalculator;
-import com.rungs.readiness.domain.stage.CollegeEvaluator;
-import com.rungs.readiness.domain.stage.DebtFreeEvaluator;
-import com.rungs.readiness.domain.stage.FullEmergencyFundEvaluator;
 import com.rungs.readiness.domain.stage.LadderResult;
-import com.rungs.readiness.domain.stage.MortgageEvaluator;
-import com.rungs.readiness.domain.stage.RetirementEvaluator;
 import com.rungs.readiness.domain.stage.StageLadder;
-import com.rungs.readiness.domain.stage.StarterFundEvaluator;
-import com.rungs.readiness.domain.stage.WealthBuildingEvaluator;
 import java.time.Clock;
 import java.time.YearMonth;
 import java.util.List;
@@ -36,7 +29,7 @@ import org.thymeleaf.context.Context;
  * including its inline payoff schedule breakdown and the standalone {@code /breakdown} page.
  */
 @Controller
-public class SnapshotController {
+class SnapshotController {
 
     private static final String FORM_VIEW = "form";
     private static final String RESULT_VIEW = "result";
@@ -46,17 +39,10 @@ public class SnapshotController {
     private final Clock clock;
     private final ITemplateEngine templateEngine;
 
-    public SnapshotController(Clock clock, ITemplateEngine templateEngine) {
+    SnapshotController(StageLadder ladder, Clock clock, ITemplateEngine templateEngine) {
+        this.ladder = ladder;
         this.clock = clock;
         this.templateEngine = templateEngine;
-        this.ladder = new StageLadder(List.of(
-                new StarterFundEvaluator(),
-                new DebtFreeEvaluator(),
-                new FullEmergencyFundEvaluator(),
-                new RetirementEvaluator(),
-                new CollegeEvaluator(),
-                new MortgageEvaluator(),
-                new WealthBuildingEvaluator()));
     }
 
     @InitBinder
@@ -64,6 +50,21 @@ public class SnapshotController {
         // Keeps a stray debts[99999] (or one row past the cap) from asking the binder to grow the list that far;
         // an index past the limit trips this and reaches handleUnreachableDebtIndex() as a 400.
         binder.setAutoGrowCollectionLimit(SnapshotFormMapper.MAX_DEBT_ROWS);
+    }
+
+    /**
+     * Adds every {@link DebtTypeOption} and {@link SampleHousehold} to the model of every request this controller
+     * handles, so the form template's type and sample selects always have the full, current list to render — even
+     * on the handlers (e.g. {@code /debts/add}) that never touch either directly.
+     */
+    @ModelAttribute("debtTypeOptions")
+    List<DebtTypeOption> debtTypeOptions() {
+        return DebtTypeOption.all();
+    }
+
+    @ModelAttribute("sampleHouseholds")
+    List<SampleHousehold> sampleHouseholds() {
+        return List.of(SampleHousehold.values());
     }
 
     @GetMapping("/")
@@ -93,44 +94,56 @@ public class SnapshotController {
     @PostMapping("/assess")
     String assess(
             @ModelAttribute("form") SnapshotForm form,
-            @RequestParam(name = "breakdown", required = false) String breakdown,
+            @RequestParam(name = "breakdown", required = false, defaultValue = "false") boolean breakdown,
             Model model) {
-        YearMonth asOf = YearMonth.now(clock);
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, asOf);
+        FinancialSnapshot snapshot = toSnapshot(form);
         LadderResult ladderResult = ladder.assess(snapshot);
         PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
         model.addAttribute("form", form);
         model.addAttribute("result", ResultViews.build(ladderResult, snapshot, schedule));
-        if ("true".equals(breakdown)) {
+        if (breakdown) {
             model.addAttribute("breakdownHtml", renderPayoffSchedule(schedule));
         }
         return RESULT_VIEW;
     }
 
-    /** Re-renders the snapshot form filled in with every value from the result page's hidden copy, so
-     * "Change my numbers" loses nothing the household already entered. */
+    /**
+     * Re-renders the snapshot form filled in with every value from the result page's hidden copy, so
+     * "Change my numbers" loses nothing the household already entered.
+     */
     @PostMapping("/edit")
     String edit(@ModelAttribute("form") SnapshotForm form, Model model) {
         model.addAttribute("form", form);
         return FORM_VIEW;
     }
 
-    /** Renders the standalone payoff schedule page for the posted snapshot, independent of the result page's
-     * inline breakdown; useful for checks and tests. */
+    /**
+     * Renders the standalone payoff schedule page for the posted snapshot: its own page, distinct from the result
+     * page's inline breakdown iframe, reachable directly (e.g. to print or link).
+     */
     @PostMapping("/breakdown")
     String breakdown(@ModelAttribute("form") SnapshotForm form, Model model) {
-        YearMonth asOf = YearMonth.now(clock);
-        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, asOf);
+        FinancialSnapshot snapshot = toSnapshot(form);
         model.addAttribute("schedule", ScheduleViews.build(PayoffScheduleCalculator.schedule(snapshot)));
         return PAYOFF_SCHEDULE_VIEW;
     }
 
-    /** Renders {@code templates/payoff-schedule.html} to a standalone HTML string for the result page's iframe
-     * {@code srcdoc}; Thymeleaf escapes it as an attribute value when the result template writes it out. */
+    /**
+     * Renders {@code templates/payoff-schedule.html} to a standalone HTML string for the result page's iframe
+     * {@code srcdoc}; Thymeleaf escapes it as an attribute value when the result template writes it out.
+     */
     private String renderPayoffSchedule(PayoffSchedule schedule) {
         Context context = new Context();
         context.setVariable("schedule", ScheduleViews.build(schedule));
         return templateEngine.process(PAYOFF_SCHEDULE_VIEW, context);
+    }
+
+    /**
+     * Builds the snapshot {@code form} describes as of now, from the controller's injected {@link Clock}; shared
+     * by every handler that needs one, so the "as of" moment is derived exactly once per request.
+     */
+    private FinancialSnapshot toSnapshot(SnapshotForm form) {
+        return SnapshotFormMapper.toSnapshot(form, YearMonth.now(clock));
     }
 
     @PostMapping("/sample")
@@ -138,17 +151,19 @@ public class SnapshotController {
             @ModelAttribute("form") SnapshotForm form,
             @RequestParam(name = "sample", required = false) String sampleId,
             Model model) {
-        SnapshotForm sample = SampleHouseholds.byId(sampleId);
-        if (sample != null) {
-            model.addAttribute("form", sample);
-        }
+        SampleHousehold.byId(sampleId).ifPresent(sample -> model.addAttribute("form", sample.form()));
         return FORM_VIEW;
     }
 
+    /**
+     * Rejects a sparse or out-of-range {@code debts[n]} index (e.g. {@code debts[99999]}, past
+     * {@link SnapshotFormMapper#MAX_DEBT_ROWS} and the binder's matching {@code autoGrowCollectionLimit}) as a 400
+     * instead of failing with a 500. {@link InvalidPropertyException} is Spring's exception for exactly this: a
+     * bind path the target object cannot satisfy, which here is always a debt row index, never a different invalid
+     * property path — the form's other fields are all plain, always-bindable strings and booleans.
+     */
     @ExceptionHandler(InvalidPropertyException.class)
     ResponseEntity<String> handleUnreachableDebtIndex() {
-        // A sparse or out-of-range debts[n] index (e.g. debts[99999]) hits the binder's
-        // autoGrowCollectionLimit or an empty list; reject it instead of failing with a 500.
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid debt index");
     }
 }

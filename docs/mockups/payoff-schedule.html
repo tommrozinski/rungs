@@ -42,9 +42,17 @@
   tbody tr:nth-child(even) td { background: #FBFCFD; }
   tbody tr.closed td { background: var(--green-100); }
   table.schedule tbody tr.closed td:first-child { background: var(--green-100); }
-  tr.totals td { font-weight: 700; border-top: 2px solid var(--slate-200); background: var(--white); }
+  tr.totals td, tr.totals th { font-weight: 700; border-top: 2px solid var(--slate-200); background: var(--white); }
   tr.ellipsis td { text-align: center; color: var(--ink-500); font-style: italic; background: var(--white); }
-  tr.total-row td { font-weight: 700; border-top: 2px solid var(--slate-200); }
+  tr.total-row td, tr.total-row th { font-weight: 700; border-top: 2px solid var(--slate-200); }
+
+  @font-face {
+    font-family: "Inter";
+    src: url("/fonts/InterVariable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
 </style>
 </head>
 <body>
@@ -58,14 +66,14 @@
     <div class="table-wrap">
       <table class="loans">
         <thead>
-          <tr><th>Loan</th><th>Balance</th><th>Rate</th><th>Min payment</th></tr>
+          <tr><th scope="col">Loan</th><th scope="col">Balance</th><th scope="col">Rate</th><th scope="col">Min payment</th></tr>
         </thead>
         <tbody>
           <tr><td>Store card</td><td>$840.00</td><td>26.99%</td><td>$35.00</td></tr>
           <tr><td>Student loan</td><td>$2,500.00</td><td>4.50%</td><td>$110.00</td></tr>
           <tr><td>Car loan</td><td>$9,140.00</td><td>6.40%</td><td>$312.00</td></tr>
           <tr><td>Mortgage</td><td>$185,000.00</td><td>5.25%</td><td>$1,650.00</td></tr>
-          <tr class="total-row"><td>TOTAL</td><td>$197,480.00</td><td></td><td>$2,107.00</td></tr>
+          <tr class="total-row"><th scope="row">TOTAL</th><td>$197,480.00</td><td></td><td>$2,107.00</td></tr>
         </tbody>
       </table>
     </div>
@@ -77,12 +85,12 @@
       <table class="schedule">
         <thead>
           <tr>
-            <th>Month</th><th>Extra cash</th><th>Cascade</th><th>Total avail</th>
-            <th>Store card open</th><th>Store card int</th><th>Store card pmt</th><th>Store card end</th>
-            <th>Student loan open</th><th>Student loan int</th><th>Student loan pmt</th><th>Student loan end</th>
-            <th>Car loan open</th><th>Car loan int</th><th>Car loan pmt</th><th>Car loan end</th>
-            <th>Mortgage open</th><th>Mortgage int</th><th>Mortgage pmt</th><th>Mortgage end</th>
-            <th>Mo int</th><th>Total bal</th><th>Cum int</th>
+            <th scope="col">Month</th><th scope="col">Extra cash</th><th scope="col">Cascade</th><th scope="col">Total avail</th>
+            <th scope="col">Store card open</th><th scope="col">Store card int</th><th scope="col">Store card pmt</th><th scope="col">Store card end</th>
+            <th scope="col">Student loan open</th><th scope="col">Student loan int</th><th scope="col">Student loan pmt</th><th scope="col">Student loan end</th>
+            <th scope="col">Car loan open</th><th scope="col">Car loan int</th><th scope="col">Car loan pmt</th><th scope="col">Car loan end</th>
+            <th scope="col">Mortgage open</th><th scope="col">Mortgage int</th><th scope="col">Mortgage pmt</th><th scope="col">Mortgage end</th>
+            <th scope="col">Mo int</th><th scope="col">Total bal</th><th scope="col">Cum int</th>
           </tr>
         </thead>
         <tbody>
@@ -438,7 +446,7 @@
             <td>$23,205.38</td>
           </tr>
           <tr class="totals">
-            <td>TOTAL</td>
+            <th scope="row">TOTAL</th>
             <td>$114,393.00</td>
             <td></td>
             <td></td>

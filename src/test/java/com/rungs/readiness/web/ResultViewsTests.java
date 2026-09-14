@@ -10,30 +10,17 @@ import com.rungs.readiness.domain.model.HouseholdFlags;
 import com.rungs.readiness.domain.model.Money;
 import com.rungs.readiness.domain.model.Mortgage;
 import com.rungs.readiness.domain.projection.PayoffScheduleCalculator;
-import java.math.BigDecimal;
-import com.rungs.readiness.domain.stage.CollegeEvaluator;
-import com.rungs.readiness.domain.stage.DebtFreeEvaluator;
-import com.rungs.readiness.domain.stage.FullEmergencyFundEvaluator;
 import com.rungs.readiness.domain.stage.LadderResult;
-import com.rungs.readiness.domain.stage.MortgageEvaluator;
-import com.rungs.readiness.domain.stage.RetirementEvaluator;
 import com.rungs.readiness.domain.stage.StageLadder;
-import com.rungs.readiness.domain.stage.StarterFundEvaluator;
-import com.rungs.readiness.domain.stage.WealthBuildingEvaluator;
-import java.util.List;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 /** The result page's copy rules, one test per row of the table plus edge cases. */
 class ResultViewsTests {
 
-    private final StageLadder ladder = new StageLadder(List.of(
-            new StarterFundEvaluator(),
-            new DebtFreeEvaluator(),
-            new FullEmergencyFundEvaluator(),
-            new RetirementEvaluator(),
-            new CollegeEvaluator(),
-            new MortgageEvaluator(),
-            new WealthBuildingEvaluator()));
+    // The real seven-evaluator ladder, from the same factory method the application wires as a bean, so this
+    // test's ladder can never drift from production's.
+    private final StageLadder ladder = new StageLadderConfig().stageLadder();
 
     private StageView stage(ResultView view, int stage) {
         return view.stages().get(stage - 1);
@@ -214,6 +201,33 @@ class ResultViewsTests {
 
         assertThat(view.line()).isEqualTo("You're at 0%. 15 points to go.");
         assertThat(view.chipLabel()).isEqualTo("Not started");
+    }
+
+    @Test
+    void stage4UsesSingularWordingWithExactlyOnePointToGo() {
+        FinancialSnapshot snapshot = aSnapshot().withRetirementContributionPercent("14").build();
+
+        StageView view = stage(build(snapshot), 4);
+
+        assertThat(view.line()).isEqualTo("You're at 14%. One point to go.");
+    }
+
+    @Test
+    void stage4UsesPluralWordingWithAFractionalPointCountAboveOne() {
+        FinancialSnapshot snapshot = aSnapshot().withRetirementContributionPercent("13.5").build();
+
+        StageView view = stage(build(snapshot), 4);
+
+        assertThat(view.line()).isEqualTo("You're at 13.5%. 1.5 points to go.");
+    }
+
+    @Test
+    void stage4UsesPluralWordingForASpelledOutRemainingPointCount() {
+        FinancialSnapshot snapshot = aSnapshot().withRetirementContributionPercent("9").build();
+
+        StageView view = stage(build(snapshot), 4);
+
+        assertThat(view.line()).isEqualTo("You're at 9%. Six points to go.");
     }
 
     @Test
@@ -512,7 +526,7 @@ class ResultViewsTests {
         ResultView result = build(snapshot);
 
         assertThat(result.verdictSub())
-                .isEqualTo("Your $400.00 payment doesn't cover the $510.42 monthly interest.");
+                .isEqualTo("Your $400 payment doesn't cover the $510.42 monthly interest.");
     }
 
     @Test
@@ -564,7 +578,7 @@ class ResultViewsTests {
         ResultView result = build(snapshot);
 
         assertThat(stage(result, 6).line()).isEqualTo(
-                "Your $400.00 payment doesn't cover the $1,500.00 monthly interest. With the debt snowball it's "
+                "Your $400 payment doesn't cover the $1,500 monthly interest. With the debt snowball it's "
                         + "paid off in January 2028.");
         assertThat(stage(result, 6).line()).doesNotContain("sooner");
         assertThat(result.verdictSub()).isEqualTo("With the debt snowball it's paid off in January 2028.");

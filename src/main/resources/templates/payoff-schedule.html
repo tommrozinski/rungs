@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rungs — Payoff schedule</title>
+<link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/schedule.css">
 </head>
 <body>
@@ -20,7 +21,7 @@
       <div class="table-wrap">
         <table class="loans">
           <thead>
-            <tr><th>Loan</th><th>Balance</th><th>Rate</th><th>Min payment</th></tr>
+            <tr><th scope="col">Loan</th><th scope="col">Balance</th><th scope="col">Rate</th><th scope="col">Min payment</th></tr>
           </thead>
           <tbody>
             <tr th:each="loan : ${schedule.loans}">
@@ -30,7 +31,7 @@
               <td th:text="${loan.minimumPayment}"></td>
             </tr>
             <tr class="total-row">
-              <td>TOTAL</td>
+              <th scope="row">TOTAL</th>
               <td th:text="${schedule.totalLoanBalance}"></td>
               <td></td>
               <td th:text="${schedule.totalMinimumPayment}"></td>
@@ -46,14 +47,14 @@
         <table class="schedule">
           <thead>
             <tr>
-              <th>Month</th><th>Extra cash</th><th>Cascade</th><th>Total avail</th>
+              <th scope="col">Month</th><th scope="col">Extra cash</th><th scope="col">Cascade</th><th scope="col">Total avail</th>
               <th:block th:each="name : ${schedule.loanNames}">
-                <th th:text="${name + ' open'}"></th>
-                <th th:text="${name + ' int'}"></th>
-                <th th:text="${name + ' pmt'}"></th>
-                <th th:text="${name + ' end'}"></th>
+                <th scope="col" th:text="${name + ' open'}"></th>
+                <th scope="col" th:text="${name + ' int'}"></th>
+                <th scope="col" th:text="${name + ' pmt'}"></th>
+                <th scope="col" th:text="${name + ' end'}"></th>
               </th:block>
-              <th>Mo int</th><th>Total bal</th><th>Cum int</th>
+              <th scope="col">Mo int</th><th scope="col">Total bal</th><th scope="col">Cum int</th>
             </tr>
           </thead>
           <tbody>
@@ -73,7 +74,7 @@
               <td th:text="${month.cumulativeInterest}"></td>
             </tr>
             <tr class="totals">
-              <td>TOTAL</td>
+              <th scope="row">TOTAL</th>
               <td th:text="${schedule.totalExtraCash}"></td>
               <td></td>
               <td></td>

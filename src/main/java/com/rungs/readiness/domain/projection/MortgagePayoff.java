@@ -10,12 +10,17 @@ import java.util.Objects;
  */
 public sealed interface MortgagePayoff {
 
-    /** The payment doesn't exceed the first month's interest, so the loan never amortizes at all. */
-    record NotCovered(Money principalAndInterest, Money firstMonthInterest) implements MortgagePayoff {
+    /**
+     * The payment doesn't exceed the first month's interest, so the loan never amortizes at all.
+     *
+     * @param payment the loan's full monthly payment, taxes and insurance included (see {@link
+     *     com.rungs.readiness.domain.model.Mortgage#monthlyPayment}); not principal and interest alone
+     */
+    record NotCovered(Money payment, Money firstMonthInterest) implements MortgagePayoff {
 
         /** Validates the components; throws NullPointerException naming the component. */
         public NotCovered {
-            Objects.requireNonNull(principalAndInterest, "principalAndInterest");
+            Objects.requireNonNull(payment, "payment");
             Objects.requireNonNull(firstMonthInterest, "firstMonthInterest");
         }
     }

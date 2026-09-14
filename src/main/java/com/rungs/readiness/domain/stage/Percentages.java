@@ -17,12 +17,14 @@ public final class Percentages {
 
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
-    private static final BigDecimal ZERO_PERCENT = new BigDecimal("0.0");
+    /** Shared with {@link StageEvaluation} and {@link DebtFreeEvaluator}, the only other classes in this package
+     * that need these three percentages at exactly scale 1. */
+    static final BigDecimal ZERO_PERCENT = new BigDecimal("0.0");
 
-    private static final BigDecimal FULL_PERCENT = new BigDecimal("100.0");
+    static final BigDecimal FULL_PERCENT = new BigDecimal("100.0");
 
     /** Highest percentage a part below its whole can report. */
-    private static final BigDecimal UNMET_CAP = new BigDecimal("99.9");
+    static final BigDecimal UNMET_CAP = new BigDecimal("99.9");
 
     private Percentages() {
     }

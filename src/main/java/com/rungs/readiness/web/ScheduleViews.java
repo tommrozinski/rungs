@@ -21,11 +21,10 @@ final class ScheduleViews {
     static ScheduleView build(PayoffSchedule schedule) {
         List<ScheduleLoan> loans = schedule.loans();
         if (loans.isEmpty()) {
-            return new ScheduleView(false, List.of(), List.of(), null, null, List.of(), null, List.of(), null, false);
+            return ScheduleView.empty();
         }
 
         List<LoanSummaryView> loanSummaries = new ArrayList<>(loans.size());
-        List<String> loanNames = new ArrayList<>(loans.size());
         Money totalBalance = Money.ZERO;
         Money totalMinimum = Money.ZERO;
         for (ScheduleLoan loan : loans) {
@@ -34,10 +33,10 @@ final class ScheduleViews {
                     Formats.moneyOrDash(loan.startingBalance()),
                     Formats.fixedPercent(loan.annualRate()),
                     Formats.moneyOrDash(loan.minimumPayment())));
-            loanNames.add(loan.name());
             totalBalance = totalBalance.plus(loan.startingBalance());
             totalMinimum = totalMinimum.plus(loan.minimumPayment());
         }
+        List<String> loanNames = loans.stream().map(ScheduleLoan::name).toList();
 
         List<ScheduleMonthView> months = new ArrayList<>(schedule.months().size());
         for (ScheduleMonth month : schedule.months()) {

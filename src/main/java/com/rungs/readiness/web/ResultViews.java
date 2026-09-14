@@ -17,35 +17,43 @@ import java.util.Optional;
 
 /**
  * Builds the result page's view model from a {@link LadderResult} and the {@link FinancialSnapshot} it was computed
- * from. The copy lives in {@link StageCopy} and the status-to-style mapping in {@link StatusStyle}, so this class
- * stays about assembling the view: only the evaluators' status, percent, and remaining-amount data drive it, plus
- * the snapshot's own figures where the table needs a raw value (the actual fund balance, the emergency-fund target,
- * the household flags).
+ * from. Each stage's copy and display rules live in {@link Stage} and the status-to-style mapping in
+ * {@link StatusStyle}, so this class stays about assembling the view: only the evaluators' status, percent, and
+ * remaining-amount data drive it, plus the snapshot's own figures where the table needs a raw value (the actual
+ * fund balance, the emergency-fund target, the household flags).
  */
 final class ResultViews {
 
-    private static final int LAST_STAGE = 7;
+    private static final int STAGE_COUNT = Stage.values().length;
 
     private ResultViews() {
     }
 
-    /** Builds the view model for {@code ladder}, the result of assessing {@code snapshot}, whose debt-snowball
-     * payoff schedule is {@code schedule}. Computes stage 6's current-payment-versus-snowball comparison once, up
-     * front, since both the stage row and the verdict need it. */
+    /**
+     * Builds the view model for {@code ladder}, the result of assessing {@code snapshot}, whose debt-snowball
+     * payoff schedule is {@code schedule}. Computes stage 6's current-payment payoff and its debt-snowball
+     * comparison once, up front, since both the stage row and the verdict need them.
+     */
     static ResultView build(LadderResult ladder, FinancialSnapshot snapshot, PayoffSchedule schedule) {
-        Optional<SnowballComparison> mortgageComparison = mortgageComparison(snapshot, schedule);
+        Optional<MortgagePayoff> currentPayoff = currentPayoff(snapshot);
+        Optional<SnowballComparison> mortgageComparison = mortgageComparison(currentPayoff, schedule);
 
-        List<StageView> stages = new ArrayList<>(LAST_STAGE);
-        for (int stage = 1; stage <= LAST_STAGE; stage++) {
-            stages.add(stageView(stage, ladder, snapshot, schedule, mortgageComparison));
+        List<StageView> stages = new ArrayList<>(STAGE_COUNT);
+        for (Stage stage : Stage.values()) {
+            StageEvaluation evaluation = ladder.evaluation(stage.number());
+            StageContext context =
+                    new StageContext(evaluation, snapshot, schedule, currentPayoff, mortgageComparison);
+            stages.add(stageView(stage, context, ladder.currentStage()));
         }
 
-        boolean allDone = ladder.evaluation(LAST_STAGE).status() == StageStatus.SATISFIED;
+        boolean allDone = ladder.evaluation(STAGE_COUNT).status() == StageStatus.SATISFIED;
         String eyebrow = allDone
                 ? "Every stage that applies to you is done"
-                : "You're on stage " + ladder.currentStage() + " of 7";
+                : "You're on stage " + ladder.currentStage() + " of " + STAGE_COUNT;
 
+        Stage currentStage = Stage.of(ladder.currentStage());
         StageEvaluation current = ladder.evaluation(ladder.currentStage());
+        StageContext currentContext = new StageContext(current, snapshot, schedule, currentPayoff, mortgageComparison);
         long stagesComplete = ladder.stages().stream()
                 .filter(evaluation -> evaluation.status() == StageStatus.SATISFIED)
                 .count();
@@ -53,45 +61,34 @@ final class ResultViews {
 
         return new ResultView(
                 eyebrow,
-                StageCopy.verdictLine(current),
-                StageCopy.verdictSub(current, snapshot, schedule, mortgageComparison),
+                currentStage.verdictLine(currentContext),
+                currentStage.verdictSub(currentContext),
                 Formats.money(surplus),
                 surplus.isPositive(),
                 Formats.money(snapshot.totalDebtBalance()),
-                stagesComplete + " of 7",
+                stagesComplete + " of " + STAGE_COUNT,
                 stages);
     }
 
-    private static StageView stageView(
-            int stage,
-            LadderResult ladder,
-            FinancialSnapshot snapshot,
-            PayoffSchedule schedule,
-            Optional<SnowballComparison> mortgageComparison) {
-        StageEvaluation evaluation = ladder.evaluation(stage);
-        boolean open = stage == ladder.currentStage();
+    private static StageView stageView(Stage stage, StageContext context, int currentStageNumber) {
+        StageEvaluation evaluation = context.evaluation();
+        boolean open = stage.number() == currentStageNumber;
+        StatusStyle style = StatusStyle.of(stage.displayStatus(evaluation.status()));
 
-        // Stage 7 has no "in progress" presentation of its own: anything short of SATISFIED reads as Not started,
-        // even though WealthBuildingEvaluator reports IN_PROGRESS once some earlier stages are done.
-        StageStatus displayStatus = stage == LAST_STAGE && evaluation.status() != StageStatus.SATISFIED
-                ? StageStatus.NOT_STARTED
-                : evaluation.status();
-        StatusStyle style = StatusStyle.of(displayStatus);
-
-        boolean showBar = (stage == 1 || stage == 3 || stage == 4) && evaluation.status() == StageStatus.IN_PROGRESS;
+        boolean showBar = stage.hasBar() && evaluation.status() == StageStatus.IN_PROGRESS;
         int barWidthPercent = showBar
                 ? evaluation.percentComplete().setScale(0, RoundingMode.DOWN).intValueExact()
                 : 0;
 
-        StageLine line = StageCopy.line(stage, evaluation, snapshot, mortgageComparison);
+        StageLine line = stage.line(context);
 
         return new StageView(
-                stage,
-                StageCopy.TITLES[stage - 1],
+                stage.number(),
+                stage.title(),
                 style.chipLabel(),
                 style.chipClass(),
                 style.discClass(open),
-                style.discContent(stage),
+                style.discContent(stage.number()),
                 open,
                 line.text(),
                 line.emphasis(),
@@ -101,16 +98,23 @@ final class ResultViews {
     }
 
     /**
-     * Returns the stage 6 comparison for {@code snapshot}, empty for a renter: whether, and how, the debt
-     * snowball's mortgage payoff month beats the current-payment payoff. Computed once per request by
-     * {@link #build} and threaded through the stage row and the verdict, rather than recomputed by each.
+     * Returns the household's mortgage payoff at its current payment alone, empty for a renter.
      */
-    private static Optional<SnowballComparison> mortgageComparison(FinancialSnapshot snapshot, PayoffSchedule schedule) {
+    private static Optional<MortgagePayoff> currentPayoff(FinancialSnapshot snapshot) {
         if (!(snapshot.housing() instanceof Mortgage mortgage)) {
             return Optional.empty();
         }
-        MortgagePayoff currentPayoff = MortgagePayoffCalculator.payoff(mortgage, snapshot.asOf());
-        return snowballComparison(currentPayoff, schedule.mortgagePayoffMonth());
+        return Optional.of(MortgagePayoffCalculator.payoff(mortgage, snapshot.asOf()));
+    }
+
+    /**
+     * Returns the stage 6 comparison for {@code currentPayoff}, empty for a renter: whether, and how, the debt
+     * snowball's mortgage payoff month beats the current-payment payoff. Computed once per request by
+     * {@link #build} and threaded through the stage row and the verdict, rather than recomputed by each.
+     */
+    private static Optional<SnowballComparison> mortgageComparison(
+            Optional<MortgagePayoff> currentPayoff, PayoffSchedule schedule) {
+        return currentPayoff.flatMap(payoff -> snowballComparison(payoff, schedule.mortgagePayoffMonth()));
     }
 
     /**

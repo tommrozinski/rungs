@@ -279,6 +279,46 @@ class PayoffScheduleCalculatorTests {
     }
 
     @Test
+    void aLoanClosingExactlyInMonthSixHundredIsNotTruncated() {
+        // 0% rate, so the balance divides exactly: $600 at $1 a month pays off in exactly 600 months, with no
+        // surplus (income exactly covers the $1 minimum) so nothing accelerates it.
+        FinancialSnapshot snapshot = aSnapshot()
+                .withMonthlyTakeHomeIncome(Money.ofDollars(1))
+                .withHousing(new Rent(Money.ZERO))
+                .withDebt("Card", DebtType.CREDIT_CARD, Money.ofDollars(600), "0", Money.ofDollars(1))
+                .withAsOf(AS_OF)
+                .build();
+
+        PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
+
+        assertThat(schedule.truncated()).isFalse();
+        assertThat(schedule.months()).hasSize(600);
+        assertThat(schedule.months().getLast().totalBalance()).isEqualTo(Money.ZERO);
+        assertInvariants(schedule);
+    }
+
+    // An overflow partway through a month's loan loop (a later loan's interest overflows Money after an earlier
+    // loan in the same month already closed and had its payment counted) must not leave that partial month's
+    // payments counted in totalPaidPerLoan while the month itself is missing from months: the whole month is
+    // either recorded, or none of it is.
+
+    @Test
+    void anOverflowPartwayThroughAMonthExcludesThatMonthsPartialPaymentsFromTheTotals() {
+        FinancialSnapshot snapshot = aSnapshot()
+                .withMonthlyTakeHomeIncome(Money.ofDollars(1_000))
+                .withHousing(new Rent(Money.ZERO))
+                .withDebt("Small", DebtType.CREDIT_CARD, Money.ofDollars(10), "0", Money.ofDollars(10))
+                .withDebt("Huge", DebtType.CREDIT_CARD, Money.ofCents(Long.MAX_VALUE - 100), "24", Money.ofDollars(10))
+                .withAsOf(AS_OF)
+                .build();
+
+        PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
+
+        assertThat(schedule.truncated()).isTrue();
+        assertInvariants(schedule);
+    }
+
+    @Test
     void aLoanThatPaysOffWellBeforeTheCapIsNotTruncated() {
         FinancialSnapshot snapshot = aSnapshot()
                 .withMonthlyTakeHomeIncome(Money.ofDollars(1_000))

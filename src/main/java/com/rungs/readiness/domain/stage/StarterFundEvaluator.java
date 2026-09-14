@@ -14,7 +14,7 @@ public final class StarterFundEvaluator implements StageEvaluator {
     private static final int STAGE = 1;
 
     /** The fixed starter fund target; not configurable. */
-    private static final Money TARGET = Money.ofDollars(1_000);
+    public static final Money TARGET = Money.ofDollars(1_000);
 
     private static final String BLOCKER = "Your starter emergency fund is %s short of %s.";
 

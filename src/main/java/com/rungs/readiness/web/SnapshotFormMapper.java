@@ -45,12 +45,6 @@ final class SnapshotFormMapper {
      */
     static final int MAX_DEBT_ROWS = 20;
 
-    /** Decimal places {@link FinancialSnapshot#retirementContributionPercent()} is normalized to. */
-    private static final int RETIREMENT_PERCENT_SCALE = 2;
-
-    /** Decimal places {@link Debt#annualInterestRate()} and {@link Mortgage#annualInterestRate()} normalize to. */
-    private static final int INTEREST_RATE_SCALE = 3;
-
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
     /**
@@ -63,13 +57,6 @@ final class SnapshotFormMapper {
     private static final BigDecimal MAX_MONEY_DOLLARS = BigDecimal.valueOf(1_000_000_000);
 
     private static final String RENT_MODE = "RENT";
-
-    /**
-     * Longest text {@link #parseDecimal} accepts, mirroring {@link Money#parse}'s own cap; this keeps the
-     * hostile-but-short case (scientific notation such as {@code "1e-999999999"}) out of {@link BigDecimal}
-     * entirely and rejects the pathological case (thousands of digits) before it is even inspected.
-     */
-    private static final int MAX_TEXT_LENGTH = 32;
 
     /**
      * A plain decimal number: an optional leading {@code -}, one or more digits, and an optional {@code .} followed
@@ -99,7 +86,7 @@ final class SnapshotFormMapper {
                     label,
                     debtType(row.getType()),
                     balance,
-                    percent(row.getAnnualInterestRate(), INTEREST_RATE_SCALE),
+                    percent(row.getAnnualInterestRate(), Debt.RATE_SCALE),
                     money(row.getMinimumPayment())));
         }
 
@@ -109,7 +96,7 @@ final class SnapshotFormMapper {
                 money(form.getStarterEmergencyFund()),
                 money(form.getFullEmergencyFund()),
                 Money.ZERO,
-                percent(form.getRetirementContributionPercent(), RETIREMENT_PERCENT_SCALE),
+                percent(form.getRetirementContributionPercent(), FinancialSnapshot.RETIREMENT_PERCENT_SCALE),
                 EMERGENCY_FUND_MONTHS,
                 debts,
                 housing(form),
@@ -128,14 +115,15 @@ final class SnapshotFormMapper {
         }
         return new Mortgage(
                 money(form.getMortgageBalance()),
-                percent(form.getMortgageRate(), INTEREST_RATE_SCALE),
+                percent(form.getMortgageRate(), Debt.RATE_SCALE),
                 money(form.getMortgagePayment()));
     }
 
     /**
      * Parses {@code text} as a dollar amount, accepting everything {@link Money#parse} does — including a leading
-     * {@code $} and comma-grouped thousands — plus amounts with more than two decimal places, which round half-up
-     * to the cent rather than being rejected (the more forgiving of {@link Money#parse}'s two options for those).
+     * {@code $} and comma-grouped thousands — or, when that rejects it for having more than two decimal places,
+     * falling back to a plain decimal that rounds half-up to the cent instead. The two leniencies don't compose: an
+     * amount that is both comma-grouped and over-precise (e.g. {@code "1,000.555"}) fails both and becomes zero.
      * Blank, unparseable, or negative input becomes zero; an amount above {@link #MAX_MONEY} is capped to it rather
      * than rejected, so nothing here ever throws or reaches the domain able to overflow its arithmetic.
      */
@@ -148,12 +136,15 @@ final class SnapshotFormMapper {
             Money parsed = Money.parse(trimmed);
             return parsed.isNegative() ? Money.ZERO : parsed.min(MAX_MONEY);
         } catch (MoneyFormatException notMoneyFormat) {
-            return moneyFromLenientDecimal(trimmed);
+            return moneyFromLenientDecimal(text);
         }
     }
 
-    /** Falls back for amounts {@link Money#parse} rejects only for having more than two decimal places (or being
-     * too large for it to accumulate at all); also caps at {@link #MAX_MONEY} rather than reporting overflow. */
+    /**
+     * Falls back for amounts {@link Money#parse} rejects only for having more than two decimal places (or being
+     * too large for it to accumulate at all); also caps at {@link #MAX_MONEY} rather than reporting overflow.
+     * {@code text} need not be pre-stripped; {@link #parseDecimal} strips it once.
+     */
     private static Money moneyFromLenientDecimal(String text) {
         BigDecimal amount = parseDecimal(text);
         if (amount.signum() < 0) {
@@ -162,11 +153,8 @@ final class SnapshotFormMapper {
         if (amount.compareTo(MAX_MONEY_DOLLARS) > 0) {
             return MAX_MONEY;
         }
-        try {
-            return Money.ofCents(amount.setScale(2, RoundingMode.HALF_UP).movePointRight(2).longValueExact());
-        } catch (ArithmeticException overflow) {
-            return Money.ZERO;
-        }
+        // amount is 0 to MAX_MONEY_DOLLARS here, so rounding it to whole cents can never overflow a long.
+        return Money.ofCents(amount.setScale(2, RoundingMode.HALF_UP).movePointRight(2).longValueExact());
     }
 
     /**
@@ -181,33 +169,25 @@ final class SnapshotFormMapper {
         } else if (value.compareTo(ONE_HUNDRED) > 0) {
             value = ONE_HUNDRED;
         }
-        try {
-            return value.setScale(scale, RoundingMode.HALF_UP);
-        } catch (ArithmeticException overflow) {
-            return BigDecimal.ZERO.setScale(scale);
-        }
+        // A rounding mode is always supplied, so setScale can only round, never throw.
+        return value.setScale(scale, RoundingMode.HALF_UP);
     }
 
     /**
      * Returns {@code text} parsed as a plain decimal, or zero when it is null, blank, longer than
-     * {@link #MAX_TEXT_LENGTH}, or anything other than an optionally-negative plain decimal number — which rules
+     * {@link Money#MAX_TEXT_LENGTH}, or anything other than an optionally-negative plain decimal number — which rules
      * out scientific notation (e.g. {@code "1e-999999999"}), {@code NaN}/{@code Infinity}, and oversized digit
-     * strings before they ever reach {@link BigDecimal}. Any {@link ArithmeticException} or
-     * {@link NumberFormatException} the construction still manages to throw resolves to zero as a last resort.
+     * strings before they ever reach {@link BigDecimal}, whose constructor {@link #PLAIN_DECIMAL}'s syntax and the
+     * length cap always leave able to parse without throwing.
      */
     private static BigDecimal parseDecimal(String text) {
         if (text == null) {
             return BigDecimal.ZERO;
         }
         String trimmed = text.strip();
-        if (trimmed.isEmpty() || trimmed.length() > MAX_TEXT_LENGTH || !PLAIN_DECIMAL.matcher(trimmed).matches()) {
-            return BigDecimal.ZERO;
-        }
-        try {
-            return new BigDecimal(trimmed);
-        } catch (ArithmeticException | NumberFormatException invalid) {
-            return BigDecimal.ZERO;
-        }
+        boolean valid = !trimmed.isEmpty() && trimmed.length() <= Money.MAX_TEXT_LENGTH
+                && PLAIN_DECIMAL.matcher(trimmed).matches();
+        return valid ? new BigDecimal(trimmed) : BigDecimal.ZERO;
     }
 
     /** Returns the matching {@link DebtType}, or {@link DebtType#OTHER} when {@code text} names none. */

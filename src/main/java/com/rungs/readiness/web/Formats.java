@@ -40,7 +40,10 @@ final class Formats {
         return month.getMonth().getDisplayName(TextStyle.SHORT, Locale.US) + " " + month.getYear();
     }
 
-    /** Returns {@code percent} with no trailing zeros and never in scientific notation, e.g. {@code "6"} or {@code "6.5"}. */
+    /**
+     * Returns {@code percent} with no trailing zeros and never in scientific notation, e.g. {@code "6"} or
+     * {@code "6.5"}.
+     */
     static String plainPercent(BigDecimal percent) {
         return percent.stripTrailingZeros().toPlainString();
     }
@@ -55,7 +58,10 @@ final class Formats {
         return spellOrDigits(BigDecimal.valueOf(count));
     }
 
-    /** Returns the word for a whole {@code value} from one to ten, else its digits (e.g. {@code "8.5"} or {@code "15"}). */
+    /**
+     * Returns the word for a whole {@code value} from one to ten, else its digits (e.g. {@code "8.5"} or
+     * {@code "15"}).
+     */
     static String spellOrDigits(BigDecimal value) {
         BigDecimal stripped = value.stripTrailingZeros();
         if (stripped.scale() <= 0) {
@@ -73,8 +79,10 @@ final class Formats {
         return word.isEmpty() ? word : Character.toUpperCase(word.charAt(0)) + word.substring(1);
     }
 
-    /** Returns the time from {@code from} to {@code to} as "Y years M months": singular forms and zero parts
-     * omitted. Assumes {@code to} is after {@code from}. */
+    /**
+     * Returns the time from {@code from} to {@code to} as "Y years M months": singular forms and zero parts
+     * omitted. Assumes {@code to} is after {@code from}.
+     */
     static String duration(YearMonth from, YearMonth to) {
         long totalMonths = ChronoUnit.MONTHS.between(from, to);
         long years = totalMonths / 12;

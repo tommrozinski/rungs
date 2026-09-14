@@ -24,11 +24,22 @@ public final class FullEmergencyFundEvaluator implements StageEvaluator {
         return STAGE;
     }
 
+    /**
+     * Returns the full emergency fund target for {@code snapshot}: its monthly essential costs, including housing,
+     * times its {@code emergencyFundMonths}, capped at {@link #MAX_MONTHS}. Public so callers that need the same
+     * target this evaluator is measured against, such as the web layer's copy, compute it identically rather than
+     * a diverging, uncapped, version of their own.
+     */
+    public static Money target(FinancialSnapshot snapshot) {
+        int months = Math.min(snapshot.emergencyFundMonths(), MAX_MONTHS);
+        // Exact: the factor is a whole number, so no rounding happens.
+        return snapshot.monthlyEssentialCosts().times(BigDecimal.valueOf(months));
+    }
+
     @Override
     public StageEvaluation evaluate(FinancialSnapshot snapshot, List<StageEvaluation> lowerStages) {
         int months = Math.min(snapshot.emergencyFundMonths(), MAX_MONTHS);
-        // Exact: the factor is a whole number, so no rounding happens.
-        Money target = snapshot.monthlyEssentialCosts().times(BigDecimal.valueOf(months));
+        Money target = target(snapshot);
         Money fund = snapshot.fullEmergencyFund();
         // Also covers a $0 target, so Percentages is never asked for a share of zero.
         if (fund.compareTo(target) >= 0) {

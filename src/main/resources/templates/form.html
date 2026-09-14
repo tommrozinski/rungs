@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rungs — Snapshot</title>
+<link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/rungs.css">
 </head>
 <body>
@@ -20,7 +21,7 @@
     <form id="snapshot-form" method="post" action="/assess">
 
       <div class="card">
-        <h2 class="h2" style="margin-bottom:14px;">Money in and out</h2>
+        <h2 class="h2 mb-14">Money in and out</h2>
         <div class="field-row">
           <div class="field">
             <label for="monthlyTakeHomeIncome">Monthly take-home pay</label>
@@ -46,47 +47,42 @@
                    name="fullEmergencyFund" th:value="${form.fullEmergencyFund}" required>
           </div>
         </div>
-        <div class="field" style="margin-bottom:0;">
+        <div class="field mb-0">
           <label for="retirementContributionPercent">Retirement contribution</label>
-          <input class="input" type="number" step="0.1" min="0" max="100" id="retirementContributionPercent"
-                 name="retirementContributionPercent" th:value="${form.retirementContributionPercent}" style="max-width:140px" required>
+          <input class="input max-w-140" type="number" step="0.01" min="0" max="100" id="retirementContributionPercent"
+                 name="retirementContributionPercent" th:value="${form.retirementContributionPercent}" required>
           <div class="hint">Percent of household income going into retirement accounts.</div>
         </div>
       </div>
 
       <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="row-between mb-12">
           <h2 class="h2">Debts you owe</h2>
           <button type="submit" formaction="/debts/add" formnovalidate class="btn btn-secondary btn-sm">Add a debt</button>
         </div>
         <table class="debts" id="debt-table">
           <thead>
-            <tr><th>Name</th><th>Type</th><th>Balance</th><th>Rate %</th><th>Minimum</th><th></th></tr>
+            <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Balance</th><th scope="col">Rate %</th><th scope="col">Minimum</th><th scope="col"></th></tr>
           </thead>
           <tbody id="debt-rows">
             <tr th:each="row, iter : ${form.debts}">
-              <td><input class="input" type="text" th:name="|debts[${iter.index}].label|" th:value="${row.label}" required></td>
+              <td><input class="input" type="text" th:name="|debts[${iter.index}].label|" th:value="${row.label}" th:aria-label="|Debt ${iter.count} name|" required></td>
               <td>
-                <select class="input" th:name="|debts[${iter.index}].type|">
-                  <option value="CREDIT_CARD" th:selected="${row.type == 'CREDIT_CARD'}">CREDIT CARD</option>
-                  <option value="AUTO" th:selected="${row.type == 'AUTO'}">AUTO</option>
-                  <option value="STUDENT_LOAN" th:selected="${row.type == 'STUDENT_LOAN'}">STUDENT LOAN</option>
-                  <option value="MEDICAL" th:selected="${row.type == 'MEDICAL'}">MEDICAL</option>
-                  <option value="PERSONAL" th:selected="${row.type == 'PERSONAL'}">PERSONAL</option>
-                  <option value="OTHER" th:selected="${row.type == 'OTHER'}">OTHER</option>
+                <select class="input" th:name="|debts[${iter.index}].type|" th:aria-label="|Debt ${iter.count} type|">
+                  <option th:each="option : ${debtTypeOptions}" th:value="${option.value}" th:selected="${row.type == option.value}" th:text="${option.label}"></option>
                 </select>
               </td>
-              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].balance|" th:value="${row.balance}" required></td>
-              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].annualInterestRate|" th:value="${row.annualInterestRate}" required></td>
-              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].minimumPayment|" th:value="${row.minimumPayment}" required></td>
-              <td class="rm"><button type="submit" th:formaction="|/debts/remove/${iter.index}|" formnovalidate class="rm-btn" title="Remove">✕</button></td>
+              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].balance|" th:value="${row.balance}" th:aria-label="|Debt ${iter.count} balance|" required></td>
+              <td><input class="input" type="number" step="0.001" min="0" th:name="|debts[${iter.index}].annualInterestRate|" th:value="${row.annualInterestRate}" th:aria-label="|Debt ${iter.count} rate|" required></td>
+              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].minimumPayment|" th:value="${row.minimumPayment}" th:aria-label="|Debt ${iter.count} minimum payment|" required></td>
+              <td class="rm"><button type="submit" th:formaction="|/debts/remove/${iter.index}|" formnovalidate class="rm-btn" title="Remove" th:aria-label="|Remove debt ${iter.count}|">✕</button></td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="card housing-card">
-        <h2 class="h2" style="margin-bottom:12px;">About your household</h2>
+        <h2 class="h2 mb-12">About your household</h2>
 
         <div class="housing-toggle">
           <input type="radio" class="visually-hidden" id="housing-mortgage" name="housing" value="MORTGAGE" th:checked="${form.housing != 'RENT'}">
@@ -110,11 +106,11 @@
           </div>
           <div class="field">
             <label for="mortgagePayment">Monthly payment</label>
-            <input class="input" type="number" step="0.01" min="0" id="mortgagePayment"
-                   name="mortgagePayment" th:value="${form.mortgagePayment}" style="max-width:220px">
+            <input class="input max-w-220" type="number" step="0.01" min="0" id="mortgagePayment"
+                   name="mortgagePayment" th:value="${form.mortgagePayment}">
             <div class="hint">Your full monthly payment, including taxes and insurance.</div>
           </div>
-          <p class="small" style="margin-top:10px; margin-bottom:16px;">Paid off? Enter 0 for the remaining balance, and enter your property taxes and insurance as the monthly payment, since those still come out of your take-home pay each month.</p>
+          <p class="small mt-10 mb-16">Paid off? Enter 0 for the remaining balance, and enter your property taxes and insurance as the monthly payment, since those still come out of your take-home pay each month.</p>
         </div>
 
         <div class="housing-rent">
@@ -127,23 +123,19 @@
 
         <div class="check">
           <input type="checkbox" id="intendsToFundCollege" name="intendsToFundCollege" th:checked="${form.intendsToFundCollege}">
-          <label for="intendsToFundCollege" style="font-weight:400;">We plan to fund college for our kids</label>
+          <label for="intendsToFundCollege">We plan to fund college for our kids</label>
         </div>
         <div class="check">
           <input type="checkbox" id="retired" name="retired" th:checked="${form.retired}">
-          <label for="retired" style="font-weight:400;">We're retired</label>
+          <label for="retired">We're retired</label>
         </div>
       </div>
 
       <div class="actions">
         <button type="submit" class="btn btn-primary">Check my stage</button>
-        <select name="sample" class="input">
+        <select name="sample" class="input" aria-label="Choose a sample household">
           <option value="">Choose a sample household</option>
-          <option value="buried" th:selected="${form.sample == 'buried'}">Buried in debt</option>
-          <option value="board" th:selected="${form.sample == 'board'}">Paying down debt</option>
-          <option value="debt-free" th:selected="${form.sample == 'debt-free'}">Debt-free, building savings</option>
-          <option value="homestretch" th:selected="${form.sample == 'homestretch'}">Paying off the house</option>
-          <option value="paid-off" th:selected="${form.sample == 'paid-off'}">Paid-off home, no debt</option>
+          <option th:each="sample : ${sampleHouseholds}" th:value="${sample.id()}" th:selected="${form.sample == sample.id()}" th:text="${sample.label()}"></option>
         </select>
         <button type="submit" formaction="/sample" formnovalidate class="btn btn-secondary">Load sample data</button>
       </div>

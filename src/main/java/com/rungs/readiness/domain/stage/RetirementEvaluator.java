@@ -13,7 +13,7 @@ public final class RetirementEvaluator implements StageEvaluator {
     private static final int STAGE = 4;
 
     /** The contribution percentage that satisfies the stage. */
-    private static final BigDecimal TARGET_PERCENT = BigDecimal.valueOf(15);
+    public static final BigDecimal TARGET_PERCENT = BigDecimal.valueOf(15);
 
     private static final String RETIRED_REASON =
             "You're retired, so you're no longer saving for retirement from income.";

@@ -26,15 +26,20 @@ public record Debt(
     /** {@code debt-} followed by a whole number from 1, in ASCII digits without leading zeros. */
     private static final Pattern ID_PATTERN = Pattern.compile("debt-[1-9][0-9]*");
 
+    /** Decimal places every annual interest rate, including a mortgage's, is normalized to. */
+    public static final int RATE_SCALE = Invariants.INTEREST_RATE_SCALE;
+
     /** Validates every component and normalizes the rate; throws NullPointerException or IllegalArgumentException. */
     public Debt {
         if (!ID_PATTERN.matcher(Invariants.nonNull(id, "id")).matches()) {
-            throw new IllegalArgumentException("id must be debt- followed by a whole number from 1 without leading zeros");
+            throw new IllegalArgumentException(
+                    "id must be debt- followed by a whole number from 1 without leading zeros");
         }
         Invariants.notBlank(label, "label");
         Invariants.nonNull(type, "type");
         Invariants.positive(balance, "balance");
-        annualInterestRate = Invariants.percent(annualInterestRate, Invariants.INTEREST_RATE_SCALE, "annualInterestRate");
+        annualInterestRate =
+                Invariants.percent(annualInterestRate, Invariants.INTEREST_RATE_SCALE, "annualInterestRate");
         Invariants.nonNegative(minimumPayment, "minimumPayment");
     }
 }

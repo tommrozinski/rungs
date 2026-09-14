@@ -103,6 +103,11 @@ class AssessPageTests {
         assertThat(body).contains("Skipped");
         assertThat(body).contains("width:40%");
 
+        // Every stage's status disc glyph (checkmark, en dash, or number) is decorative; its status is already
+        // spelled out for assistive tech both by the visible chip text and by a matching visually-hidden span.
+        assertThat(body).contains("class=\"disc done\" aria-hidden=\"true\"");
+        assertThat(body).contains("<span class=\"visually-hidden\">Done</span>");
+
         // Stage 7 is IN_PROGRESS in the domain (2 of 6 earlier stages done: stage 1 and stage 6, a renter with no
         // mortgage), but the board shows it as Not started until every earlier stage is done or skipped.
         String stage7 = stageBlock(body, "Build wealth and give");
@@ -335,7 +340,7 @@ class AssessPageTests {
                 .getContentAsString();
 
         assertThat(body).contains(escaped("You're on stage 6 of 7"));
-        assertThat(body).contains(escaped("Your $400.00 payment doesn't cover the $1,500.00 monthly interest."));
+        assertThat(body).contains(escaped("Your $400 payment doesn't cover the $1,500 monthly interest."));
         assertThat(body).contains(escaped("With the debt snowball it's paid off in September 2030."));
         assertThat(body).doesNotContain("sooner");
     }

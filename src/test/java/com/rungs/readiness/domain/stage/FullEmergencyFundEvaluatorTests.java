@@ -101,6 +101,35 @@ class FullEmergencyFundEvaluatorTests {
         assertThat(result).isEqualTo(StageEvaluation.satisfied(3));
     }
 
+    // FullEmergencyFundEvaluator.target: exposed publicly so callers other than this evaluator (the web layer's
+    // copy, for one) compute the same capped target rather than their own, uncapped, version of it.
+
+    @Test
+    void targetCapsAtSixMonthsEvenWhenEmergencyFundMonthsIsHigher() {
+        FinancialSnapshot snapshot = FinancialSnapshotBuilder.aSnapshot()
+                .withMonthlyEssentialExpenses(Money.ofDollars(1_000))
+                .withHousing(new Rent(Money.ofDollars(500)))
+                .withEmergencyFundMonths(12)
+                .build();
+
+        Money target = FullEmergencyFundEvaluator.target(snapshot);
+
+        // Capped at 6 months of 1,500, not 12: 6 * 1,500 = 9,000.
+        assertThat(target).isEqualTo(Money.ofDollars(9_000));
+    }
+
+    @Test
+    void targetIsUncappedMonthsOfExpensesWhenBelowTheCap() {
+        FinancialSnapshot snapshot = FinancialSnapshotBuilder.aSnapshot()
+                .withMonthlyEssentialExpenses(Money.ofDollars(1_000))
+                .withEmergencyFundMonths(3)
+                .build();
+
+        Money target = FullEmergencyFundEvaluator.target(snapshot);
+
+        assertThat(target).isEqualTo(Money.ofDollars(3_000));
+    }
+
     private StageEvaluation evaluate(long expensesCents, int months, long fundCents) {
         FinancialSnapshot snapshot = FinancialSnapshotBuilder.aSnapshot()
                 .withMonthlyEssentialExpenses(Money.ofCents(expensesCents))

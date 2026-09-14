@@ -84,6 +84,19 @@ class PayoffScheduleControllerTests {
     }
 
     @Test
+    void breakdownTableHeadersHaveScopeAttributes() throws Exception {
+        String body = mockMvc.perform(boardWithMortgage("/breakdown"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("<th scope=\"col\">Loan</th>");
+        assertThat(body).contains("<th scope=\"col\">Month</th>");
+        assertThat(body).contains("<th scope=\"row\">TOTAL</th>");
+    }
+
+    @Test
     void breakdownShowsTheSnowballTitleAndSubtitle() throws Exception {
         String body = mockMvc.perform(boardWithMortgage("/breakdown"))
                 .andExpect(status().isOk())
@@ -164,7 +177,7 @@ class PayoffScheduleControllerTests {
     // straight 50-to-20 scaling of the old figure would predict); the remaining size is the template's own
     // per-cell markup/whitespace, unrelated to the row-count bug this task fixes.
     @Test
-    void twentyDebtsAtTheSixHundredMonthCapStayWellUnderTheOldFiftyDebtSize() throws Exception {
+    void theTwentyDebtRowCapKeepsTheSixHundredMonthResponseSizeBounded() throws Exception {
         org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request = post("/breakdown")
                 .param("monthlyTakeHomeIncome", "0")
                 .param("housing", "RENT")

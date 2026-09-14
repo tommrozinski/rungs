@@ -14,7 +14,8 @@ import java.util.Objects;
  * @param minimumPayment the minimum monthly payment; the mortgage's is its full payment
  * @param mortgage whether this loan is the household's mortgage rather than a debt
  */
-public record ScheduleLoan(String name, Money startingBalance, BigDecimal annualRate, Money minimumPayment, boolean mortgage) {
+public record ScheduleLoan(
+        String name, Money startingBalance, BigDecimal annualRate, Money minimumPayment, boolean mortgage) {
 
     /** Validates every component; throws NullPointerException naming the component. */
     public ScheduleLoan {

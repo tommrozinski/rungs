@@ -2,7 +2,6 @@ package com.rungs.readiness.domain.stage;
 
 import com.rungs.readiness.domain.model.FinancialSnapshot;
 import com.rungs.readiness.domain.model.Money;
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -13,8 +12,6 @@ import java.util.List;
 public final class DebtFreeEvaluator implements StageEvaluator {
 
     private static final int STAGE = 2;
-
-    private static final BigDecimal ZERO_PERCENT = new BigDecimal("0.0");
 
     /** Every placeholder is %s, so the count's digits do not depend on the default locale. */
     private static final String BLOCKER = "You have %s of debt across %s %s.";
@@ -36,6 +33,6 @@ public final class DebtFreeEvaluator implements StageEvaluator {
         }
         Money total = snapshot.totalDebtBalance();
         String blocker = BLOCKER.formatted(total.toDisplayString(), count, count == 1 ? DEBT_SINGULAR : DEBT_PLURAL);
-        return StageEvaluation.inProgress(STAGE, ZERO_PERCENT, total, blocker);
+        return StageEvaluation.inProgress(STAGE, Percentages.ZERO_PERCENT, total, blocker);
     }
 }

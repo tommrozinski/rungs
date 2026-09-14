@@ -15,12 +15,12 @@ import java.util.Set;
  * @param starterEmergencyFund cash set aside as the starter emergency fund; at least zero
  * @param fullEmergencyFund cash set aside as the full emergency fund; at least zero
  * @param monthlyCollegeContribution amount saved for college per month; at least zero. The stage rules use this,
- *     but the web form has no field for it, so every snapshot built from a form submission has it at $0
+ *     but callers that have no way to collect it from a household may default it to $0
  * @param retirementContributionPercent share of income contributed to retirement as a percentage, from 0 to 100
  *     inclusive, normalized to two decimal places; more decimal places are rejected
  * @param emergencyFundMonths months of essential expenses the full emergency fund should cover; at least 3, stored
- *     as supplied with no upper clamp. The stage rules support any value at or above the minimum, but the web form
- *     has no field for it, so every snapshot built from a form submission targets exactly 3 months
+ *     as supplied with no upper clamp. The stage rules support any value at or above the minimum, but callers that
+ *     have no way to collect it from a household may default it to exactly 3 months
  * @param debts the consumer debts in the order supplied, with unique ids; an unmodifiable copy
  * @param housing how the household pays for its home; never null
  * @param householdFlags yes-or-no facts about the household
@@ -40,7 +40,7 @@ public record FinancialSnapshot(
         YearMonth asOf) {
 
     /** Decimal places the retirement contribution percentage is normalized to. */
-    private static final int RETIREMENT_PERCENT_SCALE = 2;
+    public static final int RETIREMENT_PERCENT_SCALE = 2;
 
     /** Fewest months of essential expenses a full emergency fund may be sized for. */
     private static final int MIN_EMERGENCY_FUND_MONTHS = 3;
