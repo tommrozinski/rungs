@@ -83,6 +83,14 @@ public final class ProjectionService {
                 warnings);
     }
 
+    /**
+     * Returns the projection page for {@code input} (story 030): {@link #project(ProjectionInput)}'s response,
+     * plus the month of the first debt retirement. Throws the same exceptions as {@link #project(ProjectionInput)}.
+     */
+    public ProjectionPage projectPage(ProjectionInput input) {
+        return ProjectionPage.from(project(input));
+    }
+
     private static Money money(String text) {
         return InputText.isBlank(text) ? Money.ZERO : Money.parse(text);
     }

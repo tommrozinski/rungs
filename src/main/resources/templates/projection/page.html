@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{layout :: head(title=${page.documentTitle()})}"></head>
+<body>
+<div th:replace="~{layout :: noscript}"></div>
+<main class="projection-page">
+    <h1>Your payoff plan</h1>
+
+    <form id="projection-controls" method="post" action="/projection" hx-post="/projection/results"
+          hx-trigger="input delay:250ms" hx-target="#results" hx-sync="this:replace">
+        <div th:replace="~{fragments/hidden-snapshot :: hiddenSnapshot(fields=${page.hiddenFields()})}"></div>
+
+        <div class="field">
+            <label for="extraMonthlyPayment">Extra payment each month</label>
+            <input type="range" id="extraMonthlyPayment" name="extraMonthlyPayment" min="0" max="2000" step="25"
+                   th:value="${page.extraMonthlyPaymentValue()}" aria-describedby="extra-payment-value">
+            <span id="extra-payment-value" th:text="${page.results().valueLabel()}">Value label</span>
+        </div>
+
+        <div th:replace="~{fragments/toggle-group :: toggleGroup(name='strategy', legend='Payoff strategy',
+                firstValue='SNOWBALL', firstLabel='Snowball', secondValue='AVALANCHE', secondLabel='Avalanche',
+                selected=${page.strategy()})}">Strategy</div>
+
+        <button th:replace="~{fragments/button :: button(label='Update plan', type='submit', variant='primary',
+                state='', disabled=false)}">Update plan</button>
+    </form>
+
+    <div id="results" aria-live="polite">
+        <div th:replace="~{fragments/projection-results :: resultsBody(view=${page.results()})}">Results</div>
+    </div>
+</main>
+</body>
+</html>

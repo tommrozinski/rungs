@@ -118,4 +118,15 @@ class ProjectionServiceTests {
 
         assertThat(service.project(input).warnings()).isEmpty();
     }
+
+    @Test
+    void projectPageCarriesTheSameResponseAsProjectPlusTheFirstRetirementMonth() {
+        DebtInput debt = new DebtInput("Card", "CREDIT_CARD", "500", "0", "500");
+        ProjectionInput input = new ProjectionInput(stageTwoSnapshot(List.of(debt)), null, null, null);
+
+        ProjectionPage page = service.projectPage(input);
+
+        assertThat(page.projection()).isEqualTo(service.project(input));
+        assertThat(page.firstRetirementMonth()).isEqualTo(1);
+    }
 }

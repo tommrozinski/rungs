@@ -8,8 +8,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 /**
  * Two code review findings, both turned into a plain 400 instead of an HTTP 500, with no figures from the
- * request and no stack trace in the body. Scoped to just {@link SnapshotFormController} and
- * {@link AssessmentPageController}, so neither handler masks a bug in another adapter.
+ * request and no stack trace in the body. Scoped to just {@link SnapshotFormController},
+ * {@link AssessmentPageController}, and {@link ProjectionPageController} (030), so neither handler masks a bug in
+ * another adapter.
  *
  * <ul>
  *     <li>A posted {@code debts[N]} whose index is at or beyond Spring's {@code autoGrowCollectionLimit} (256),
@@ -21,7 +22,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
  *     uncaught {@link IllegalArgumentException}.</li>
  * </ul>
  */
-@ControllerAdvice(assignableTypes = {SnapshotFormController.class, AssessmentPageController.class})
+@ControllerAdvice(assignableTypes = {
+        SnapshotFormController.class, AssessmentPageController.class, ProjectionPageController.class})
 class SnapshotBindingAdvice {
 
     private static final String MESSAGE = "The request could not be processed.";

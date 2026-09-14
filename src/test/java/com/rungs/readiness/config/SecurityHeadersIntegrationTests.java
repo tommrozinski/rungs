@@ -65,6 +65,15 @@ class SecurityHeadersIntegrationTests {
         assertThat(mvc.get().uri(path)).hasStatus(405);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/css/rungs.css", "/js/vendor/htmx.min.js"})
+    void staticResourcesCarryTheSecurityHeaders(String path) {
+        MvcTestResult result = mvc.get().uri(path).exchange();
+
+        assertThat(result).hasStatusOk();
+        assertSecurityHeaders(result);
+    }
+
     private static void assertSecurityHeaders(MvcTestResult result) {
         assertThat(result.getResponse().getHeader("Content-Security-Policy")).isEqualTo(
                 "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; "
