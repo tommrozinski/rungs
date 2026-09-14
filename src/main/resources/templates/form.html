@@ -18,7 +18,7 @@
     <h1 class="h1">Where do you stand today?</h1>
     <p class="body">Nothing here is saved. Fill it in, get your answer, close the tab.</p>
 
-    <form id="snapshot-form" method="post" action="/assess">
+    <form id="snapshot-form" method="post" action="/assess" autocomplete="off">
 
       <div class="card">
         <h2 class="h2 mb-14">Money in and out</h2>
@@ -49,7 +49,8 @@
         </div>
         <div class="field mb-0">
           <label for="retirementContributionPercent">Retirement contribution</label>
-          <input class="input max-w-140" type="number" step="0.01" min="0" max="100" id="retirementContributionPercent"
+          <input class="input max-w-140" type="number" step="0.01" min="0" max="100"
+                 id="retirementContributionPercent"
                  name="retirementContributionPercent" th:value="${form.retirementContributionPercent}" required>
           <div class="hint">Percent of household income going into retirement accounts.</div>
         </div>
@@ -66,7 +67,7 @@
           </thead>
           <tbody id="debt-rows">
             <tr th:each="row, iter : ${form.debts}">
-              <td><input class="input" type="text" th:name="|debts[${iter.index}].label|" th:value="${row.label}" th:aria-label="|Debt ${iter.count} name|" required></td>
+              <td><input class="input" type="text" maxlength="60" th:name="|debts[${iter.index}].label|" th:value="${row.label}" th:aria-label="|Debt ${iter.count} name|" required></td>
               <td>
                 <select class="input" th:name="|debts[${iter.index}].type|" th:aria-label="|Debt ${iter.count} type|">
                   <option th:each="option : ${debtTypeOptions}" th:value="${option.value}" th:selected="${row.type == option.value}" th:text="${option.label}"></option>
@@ -133,11 +134,14 @@
 
       <div class="actions">
         <button type="submit" class="btn btn-primary">Check my stage</button>
-        <select name="sample" class="input" aria-label="Choose a sample household">
-          <option value="">Choose a sample household</option>
-          <option th:each="sample : ${sampleHouseholds}" th:value="${sample.id()}" th:selected="${form.sample == sample.id()}" th:text="${sample.label()}"></option>
-        </select>
-        <button type="submit" formaction="/sample" formnovalidate class="btn btn-secondary">Load sample data</button>
+        <div class="sample-box">
+          <p class="sample-box-label">Try a sample household: pick one, then load it.</p>
+          <select name="sample" class="input" aria-label="Choose a sample household">
+            <option value="">Choose a sample household</option>
+            <option th:each="sample : ${sampleHouseholds}" th:value="${sample.id()}" th:selected="${form.sample == sample.id()}" th:text="${sample.label()}"></option>
+          </select>
+          <button type="submit" formaction="/sample" formnovalidate class="btn btn-secondary">Load sample data</button>
+        </div>
       </div>
     </form>
   </div>

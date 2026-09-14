@@ -80,9 +80,15 @@
       </div>
     </form>
 
-    <section id="breakdown" th:if="${breakdownHtml != null}">
-      <h2 class="h2 mb-14">Payoff schedule</h2>
-      <iframe title="Payoff schedule" class="breakdown-frame" th:attr="srcdoc=${breakdownHtml}"></iframe>
+    <section id="breakdown" class="breakdown-wide" th:if="${scheduleHtml != null}">
+      <h2 class="h2 mb-14">Your loans</h2>
+      <iframe title="Your loans" class="breakdown-frame" sandbox="allow-same-origin"
+              th:style="'height:' + ${loansIframeHeightPx} + 'px'"
+              th:attr="srcdoc=${loansHtml}"></iframe>
+
+      <h2 class="h2 mb-14 mt-20">Payoff schedule</h2>
+      <iframe title="Payoff schedule" class="breakdown-frame breakdown-frame-schedule" sandbox="allow-same-origin"
+              th:attr="srcdoc=${scheduleHtml}"></iframe>
     </section>
 
   </div>

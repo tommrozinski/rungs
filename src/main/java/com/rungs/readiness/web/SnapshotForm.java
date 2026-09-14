@@ -1,5 +1,6 @@
 package com.rungs.readiness.web;
 
+import com.rungs.readiness.domain.model.Money;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,8 +8,30 @@ import java.util.List;
  * Backing bean for the snapshot form. Holds raw strings exactly as submitted; no
  * parsing or validation happens here. Unchecked boxes bind to {@code false} because the
  * fields are primitive {@code boolean}.
+ *
+ * <p>Every setter caps the length of what it stores, so a hostile submission's oversized field can never be echoed
+ * back at full size into the form or the result page's hidden fields, however many times the value is copied. A
+ * money/percent field is capped one character past {@link Money#MAX_TEXT_LENGTH} rather than at it, so a value long
+ * enough to already be invalid stays exactly as invalid after capping instead of being trimmed down to a shorter,
+ * accidentally-valid number.
  */
 class SnapshotForm {
+
+    /** Caps every money, percent, and other numeric text field one past {@link Money#MAX_TEXT_LENGTH}. */
+    private static final int NUMERIC_TEXT_MAX_LENGTH = Money.MAX_TEXT_LENGTH + 1;
+
+    /** Caps a debt row's label; long enough for a real name, short enough to never balloon a response. */
+    private static final int LABEL_MAX_LENGTH = 60;
+
+    /** Caps a debt row's {@code type}, whose only real values ({@link com.rungs.readiness.domain.model.DebtType}
+     * names) are a few characters long. */
+    private static final int DEBT_TYPE_MAX_LENGTH = 16;
+
+    /** Caps {@code housing}, whose only real values ({@code MORTGAGE}, {@code RENT}) are a few characters long. */
+    private static final int HOUSING_MAX_LENGTH = 16;
+
+    /** Caps {@code sample}, whose only real values are {@link SampleHousehold} ids, a few characters long. */
+    private static final int SAMPLE_MAX_LENGTH = 32;
 
     private String monthlyTakeHomeIncome = "";
     private String monthlyEssentialExpenses = "";
@@ -30,7 +53,7 @@ class SnapshotForm {
     }
 
     public void setMonthlyTakeHomeIncome(String monthlyTakeHomeIncome) {
-        this.monthlyTakeHomeIncome = monthlyTakeHomeIncome;
+        this.monthlyTakeHomeIncome = cap(monthlyTakeHomeIncome, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getMonthlyEssentialExpenses() {
@@ -38,7 +61,7 @@ class SnapshotForm {
     }
 
     public void setMonthlyEssentialExpenses(String monthlyEssentialExpenses) {
-        this.monthlyEssentialExpenses = monthlyEssentialExpenses;
+        this.monthlyEssentialExpenses = cap(monthlyEssentialExpenses, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getStarterEmergencyFund() {
@@ -46,7 +69,7 @@ class SnapshotForm {
     }
 
     public void setStarterEmergencyFund(String starterEmergencyFund) {
-        this.starterEmergencyFund = starterEmergencyFund;
+        this.starterEmergencyFund = cap(starterEmergencyFund, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getFullEmergencyFund() {
@@ -54,7 +77,7 @@ class SnapshotForm {
     }
 
     public void setFullEmergencyFund(String fullEmergencyFund) {
-        this.fullEmergencyFund = fullEmergencyFund;
+        this.fullEmergencyFund = cap(fullEmergencyFund, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getRetirementContributionPercent() {
@@ -62,7 +85,7 @@ class SnapshotForm {
     }
 
     public void setRetirementContributionPercent(String retirementContributionPercent) {
-        this.retirementContributionPercent = retirementContributionPercent;
+        this.retirementContributionPercent = cap(retirementContributionPercent, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getSample() {
@@ -70,7 +93,7 @@ class SnapshotForm {
     }
 
     public void setSample(String sample) {
-        this.sample = sample;
+        this.sample = cap(sample, SAMPLE_MAX_LENGTH);
     }
 
     public String getHousing() {
@@ -78,7 +101,7 @@ class SnapshotForm {
     }
 
     public void setHousing(String housing) {
-        this.housing = housing;
+        this.housing = cap(housing, HOUSING_MAX_LENGTH);
     }
 
     public String getMortgageBalance() {
@@ -86,7 +109,7 @@ class SnapshotForm {
     }
 
     public void setMortgageBalance(String mortgageBalance) {
-        this.mortgageBalance = mortgageBalance;
+        this.mortgageBalance = cap(mortgageBalance, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getMortgageRate() {
@@ -94,7 +117,7 @@ class SnapshotForm {
     }
 
     public void setMortgageRate(String mortgageRate) {
-        this.mortgageRate = mortgageRate;
+        this.mortgageRate = cap(mortgageRate, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getMortgagePayment() {
@@ -102,7 +125,7 @@ class SnapshotForm {
     }
 
     public void setMortgagePayment(String mortgagePayment) {
-        this.mortgagePayment = mortgagePayment;
+        this.mortgagePayment = cap(mortgagePayment, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getMonthlyRent() {
@@ -110,7 +133,7 @@ class SnapshotForm {
     }
 
     public void setMonthlyRent(String monthlyRent) {
-        this.monthlyRent = monthlyRent;
+        this.monthlyRent = cap(monthlyRent, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public boolean isIntendsToFundCollege() {
@@ -137,6 +160,14 @@ class SnapshotForm {
         this.debts = debts;
     }
 
+    /**
+     * Returns {@code value} truncated to at most {@code maxLength} characters, or {@code value} itself when it is
+     * null or already no longer than that.
+     */
+    private static String cap(String value, int maxLength) {
+        return value == null || value.length() <= maxLength ? value : value.substring(0, maxLength);
+    }
+
     /** One row of the debts table. */
     static class DebtRow {
 
@@ -151,7 +182,7 @@ class SnapshotForm {
         }
 
         public void setLabel(String label) {
-            this.label = label;
+            this.label = cap(label, LABEL_MAX_LENGTH);
         }
 
         public String getType() {
@@ -159,7 +190,7 @@ class SnapshotForm {
         }
 
         public void setType(String type) {
-            this.type = type;
+            this.type = cap(type, DEBT_TYPE_MAX_LENGTH);
         }
 
         public String getBalance() {
@@ -167,7 +198,7 @@ class SnapshotForm {
         }
 
         public void setBalance(String balance) {
-            this.balance = balance;
+            this.balance = cap(balance, NUMERIC_TEXT_MAX_LENGTH);
         }
 
         public String getAnnualInterestRate() {
@@ -175,7 +206,7 @@ class SnapshotForm {
         }
 
         public void setAnnualInterestRate(String annualInterestRate) {
-            this.annualInterestRate = annualInterestRate;
+            this.annualInterestRate = cap(annualInterestRate, NUMERIC_TEXT_MAX_LENGTH);
         }
 
         public String getMinimumPayment() {
@@ -183,7 +214,7 @@ class SnapshotForm {
         }
 
         public void setMinimumPayment(String minimumPayment) {
-            this.minimumPayment = minimumPayment;
+            this.minimumPayment = cap(minimumPayment, NUMERIC_TEXT_MAX_LENGTH);
         }
     }
 }

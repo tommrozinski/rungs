@@ -33,7 +33,17 @@ class SnapshotController {
 
     private static final String FORM_VIEW = "form";
     private static final String RESULT_VIEW = "result";
+    private static final String BREAKDOWN_VIEW = "breakdown";
+    private static final String PAYOFF_LOANS_VIEW = "payoff-loans";
     private static final String PAYOFF_SCHEDULE_VIEW = "payoff-schedule";
+
+    /** Per-row pixel height for the result page's "Your loans" iframe, slightly above a rendered row so the
+     *  computed height never clips one. */
+    private static final int LOANS_IFRAME_ROW_HEIGHT_PX = 32;
+
+    /** Extra pixels the "Your loans" iframe's computed height allows for the page padding and the table
+     *  wrapper's border, on top of its header, loan, and total rows. */
+    private static final int LOANS_IFRAME_CHROME_PX = 24;
 
     private final StageLadder ladder;
     private final Clock clock;
@@ -45,11 +55,36 @@ class SnapshotController {
         this.templateEngine = templateEngine;
     }
 
+    /**
+     * Every bind path {@link SnapshotForm} actually has; the {@code *} in a debt row's paths matches any row index.
+     * Anything outside this list is silently dropped, not rejected. This is a wildcard allow-list, not a path-aware
+     * one — {@code debts[*].label} matches any field starting with {@code debts[} and ending with {@code ].label},
+     * however much (or however unrelated) sits between the two, so {@link #DISALLOWED_FIELDS} still blocks a
+     * class-pollution segment (e.g. {@code class.module.classLoader...}) nested anywhere in a bound path, as a
+     * second, independent layer under this allow-list rather than relying on it alone.
+     */
+    private static final String[] ALLOWED_FIELDS = {
+        "monthlyTakeHomeIncome", "monthlyEssentialExpenses", "starterEmergencyFund", "fullEmergencyFund",
+        "retirementContributionPercent", "sample", "housing", "mortgageBalance", "mortgageRate", "mortgagePayment",
+        "monthlyRent", "intendsToFundCollege", "retired",
+        "debts[*].label", "debts[*].type", "debts[*].balance", "debts[*].annualInterestRate",
+        "debts[*].minimumPayment"
+    };
+
+    /**
+     * Blocks a class-pollution bind path (e.g. Spring's well-known {@code class.module.classLoader...} and
+     * {@code class.classLoader...} gadgets) no matter where in the bound path the {@code class}/{@code classLoader}
+     * segment falls, as defense in depth alongside {@link #ALLOWED_FIELDS}.
+     */
+    private static final String[] DISALLOWED_FIELDS = {"*.class.*", "class.*", "*.classLoader.*"};
+
     @InitBinder
     void initBinder(WebDataBinder binder) {
         // Keeps a stray debts[99999] (or one row past the cap) from asking the binder to grow the list that far;
         // an index past the limit trips this and reaches handleUnreachableDebtIndex() as a 400.
         binder.setAutoGrowCollectionLimit(SnapshotFormMapper.MAX_DEBT_ROWS);
+        binder.setAllowedFields(ALLOWED_FIELDS);
+        binder.setDisallowedFields(DISALLOWED_FIELDS);
     }
 
     /**
@@ -102,7 +137,10 @@ class SnapshotController {
         model.addAttribute("form", form);
         model.addAttribute("result", ResultViews.build(ladderResult, snapshot, schedule));
         if (breakdown) {
-            model.addAttribute("breakdownHtml", renderPayoffSchedule(schedule));
+            ScheduleView scheduleView = ScheduleViews.build(schedule);
+            model.addAttribute("loansHtml", renderFragment(PAYOFF_LOANS_VIEW, scheduleView));
+            model.addAttribute("scheduleHtml", renderFragment(PAYOFF_SCHEDULE_VIEW, scheduleView));
+            model.addAttribute("loansIframeHeightPx", loansIframeHeightPx(scheduleView));
         }
         return RESULT_VIEW;
     }
@@ -125,17 +163,28 @@ class SnapshotController {
     String breakdown(@ModelAttribute("form") SnapshotForm form, Model model) {
         FinancialSnapshot snapshot = toSnapshot(form);
         model.addAttribute("schedule", ScheduleViews.build(PayoffScheduleCalculator.schedule(snapshot)));
-        return PAYOFF_SCHEDULE_VIEW;
+        return BREAKDOWN_VIEW;
     }
 
     /**
-     * Renders {@code templates/payoff-schedule.html} to a standalone HTML string for the result page's iframe
-     * {@code srcdoc}; Thymeleaf escapes it as an attribute value when the result template writes it out.
+     * Renders {@code templates/<viewName>.html} to a standalone HTML string for one of the result page's two
+     * breakdown iframes' {@code srcdoc}; Thymeleaf escapes it as an attribute value when the result template
+     * writes it out.
      */
-    private String renderPayoffSchedule(PayoffSchedule schedule) {
+    private String renderFragment(String viewName, ScheduleView scheduleView) {
         Context context = new Context();
-        context.setVariable("schedule", ScheduleViews.build(schedule));
-        return templateEngine.process(PAYOFF_SCHEDULE_VIEW, context);
+        context.setVariable("schedule", scheduleView);
+        return templateEngine.process(viewName, context);
+    }
+
+    /**
+     * Returns the pixel height the result page's "Your loans" iframe needs to fit every row without inner
+     * scrolling: a header row, one row per loan, and a total row, each at a generous fixed height, plus a little
+     * extra for the section label above the table and the table wrapper's border.
+     */
+    private static int loansIframeHeightPx(ScheduleView scheduleView) {
+        int rows = scheduleView.loans().size() + 2;
+        return rows * LOANS_IFRAME_ROW_HEIGHT_PX + LOANS_IFRAME_CHROME_PX;
     }
 
     /**

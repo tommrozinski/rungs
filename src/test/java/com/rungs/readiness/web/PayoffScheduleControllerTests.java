@@ -64,6 +64,84 @@ class PayoffScheduleControllerTests {
     }
 
     @Test
+    void assessWithBreakdownTrueRendersTwoSeparateIframesForLoansAndSchedule() throws Exception {
+        String body = mockMvc.perform(boardWithMortgage("/assess").param("breakdown", "true"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("title=\"Your loans\"");
+        assertThat(body).contains("title=\"Payoff schedule\"");
+
+        int loansTitleIndex = body.indexOf("title=\"Your loans\"");
+        int scheduleTitleIndex = body.indexOf("title=\"Payoff schedule\"");
+        assertThat(loansTitleIndex).isGreaterThan(-1);
+        assertThat(scheduleTitleIndex).isGreaterThan(loansTitleIndex);
+
+        String loansIframeAndAfter = body.substring(loansTitleIndex);
+        int loansSrcdocStart = loansIframeAndAfter.indexOf("srcdoc=\"") + "srcdoc=\"".length();
+        int loansSrcdocEnd = loansIframeAndAfter.indexOf("\"></iframe>", loansSrcdocStart);
+        String loansSrcdoc = loansIframeAndAfter.substring(loansSrcdocStart, loansSrcdocEnd);
+
+        assertThat(loansSrcdoc).contains("Min payment");
+        assertThat(loansSrcdoc).contains("Store card");
+        assertThat(loansSrcdoc).contains("Mortgage");
+        assertThat(loansSrcdoc).doesNotContain("Cum int");
+        assertThat(loansSrcdoc).doesNotContain("Cascade");
+
+        String scheduleIframeAndAfter = body.substring(scheduleTitleIndex);
+        int scheduleSrcdocStart = scheduleIframeAndAfter.indexOf("srcdoc=\"") + "srcdoc=\"".length();
+        int scheduleSrcdocEnd = scheduleIframeAndAfter.indexOf("\"></iframe>", scheduleSrcdocStart);
+        String scheduleSrcdoc = scheduleIframeAndAfter.substring(scheduleSrcdocStart, scheduleSrcdocEnd);
+
+        assertThat(scheduleSrcdoc).contains("Cum int");
+        assertThat(scheduleSrcdoc).contains("Cascade");
+        assertThat(scheduleSrcdoc).doesNotContain("Min payment");
+    }
+
+    @Test
+    void loansIframeHeightGrowsWithMoreLoanRows() throws Exception {
+        String fewerLoansBody = mockMvc.perform(post("/assess")
+                        .param("monthlyTakeHomeIncome", "6200")
+                        .param("housing", "RENT")
+                        .param("monthlyRent", "1400")
+                        .param("debts[0].label", "Store card")
+                        .param("debts[0].balance", "840")
+                        .param("debts[0].minimumPayment", "35")
+                        .param("breakdown", "true"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String moreLoansBody = mockMvc.perform(boardWithMortgage("/assess").param("breakdown", "true"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        int fewerHeight = extractLoansIframeHeightPx(fewerLoansBody);
+        int moreHeight = extractLoansIframeHeightPx(moreLoansBody);
+
+        assertThat(moreHeight).isGreaterThan(fewerHeight);
+    }
+
+    private static int extractLoansIframeHeightPx(String body) {
+        int titleIndex = body.indexOf("title=\"Your loans\"");
+        assertThat(titleIndex).isGreaterThan(-1);
+        // The rendered attribute is a plain style="height:NNpx" — find it within this <iframe ...> tag.
+        int iframeStart = body.lastIndexOf("<iframe", titleIndex);
+        int iframeEnd = body.indexOf(">", titleIndex);
+        String iframeTag = body.substring(iframeStart, iframeEnd);
+        int heightIndex = iframeTag.indexOf("height:");
+        assertThat(heightIndex).describedAs("expected a height:NNpx style on the loans iframe: %s", iframeTag)
+                .isGreaterThan(-1);
+        int pxIndex = iframeTag.indexOf("px", heightIndex);
+        return Integer.parseInt(iframeTag.substring(heightIndex + "height:".length(), pxIndex));
+    }
+
+    @Test
     void assessWithBreakdownTrueRendersTheIframeSrcdocWithTheSchedule() throws Exception {
         String body = mockMvc.perform(boardWithMortgage("/assess").param("breakdown", "true"))
                 .andExpect(status().isOk())
@@ -74,7 +152,7 @@ class PayoffScheduleControllerTests {
         assertThat(body).contains("id=\"breakdown\"");
         assertThat(body).contains("class=\"breakdown-frame\"");
         assertThat(body).contains("srcdoc=\"");
-        assertThat(body).contains("PAYOFF SCHEDULE");
+        assertThat(body).contains("Cum int");
         assertThat(body).contains("Store card");
         assertThat(body).contains("Car loan");
         assertThat(body).contains("Student loan");

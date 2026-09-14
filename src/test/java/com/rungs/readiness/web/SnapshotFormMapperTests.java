@@ -110,6 +110,20 @@ class SnapshotFormMapperTests {
     }
 
     @Test
+    void moneyFieldLongerThanTheFormsOwnCapStaysInvalidRatherThanBecomingATruncatedNumber() {
+        // SnapshotForm's setter caps a money field's text one character past Money.MAX_TEXT_LENGTH, not at it: had
+        // it capped to exactly MAX_TEXT_LENGTH, this 50-digit string would be truncated to a 32-digit number — one
+        // Money#parse actually accepts, then capped to the billion-dollar max — instead of staying too long to
+        // parse at all and becoming zero.
+        SnapshotForm form = new SnapshotForm();
+        form.setMonthlyTakeHomeIncome("1".repeat(50));
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ZERO);
+    }
+
+    @Test
     void twentyDigitMoneyFieldIsCappedRatherThanBecomingZero() {
         SnapshotForm form = new SnapshotForm();
         form.setMonthlyTakeHomeIncome("99999999999999999999");

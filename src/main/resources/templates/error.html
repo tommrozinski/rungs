@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rungs — Something went wrong</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/rungs.css">
+</head>
+<body>
+
+  <div class="appbar">
+    <div class="wordmark"><span class="glyph">R</span> Rungs</div>
+  </div>
+
+  <div class="screen">
+    <h1 class="h1" th:text="|${status} — ${error}|">Error</h1>
+    <p class="body">Something went wrong handling your request.</p>
+    <p class="body"><a href="/">Back to the snapshot form</a></p>
+  </div>
+
+</body>
+</html>

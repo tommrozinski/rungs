@@ -1,4 +1,8 @@
 /* Tokens, the font, and the base reset live in tokens.css, linked before this stylesheet. */
+/* .breakdown-wide below deliberately sizes to (near) the full viewport width; this is the safety net against the
+   sliver of horizontal overflow some browsers' own vertical scrollbar can introduce, since it's counted as part of
+   the page's own width rather than subtracted from 100vw. */
+body { overflow-x: hidden; }
 .appbar { background: var(--white); border-bottom: 1px solid var(--slate-200); padding: 14px 22px;
   display: flex; align-items: center; justify-content: space-between; }
 .wordmark { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
@@ -45,6 +49,9 @@ table.debts td.rm { text-align: center; width: 30px; }
 .btn-sm { padding: 7px 14px; font-size: 13px; }
 .actions { display: flex; gap: 12px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
 .actions select.input { width: auto; flex: 1 1 220px; }
+.sample-box { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--slate-100);
+  border: 1px solid var(--slate-200); border-radius: var(--r-md); padding: 10px 14px; }
+.sample-box-label { width: 100%; font-size: 12px; color: var(--ink-500); margin: 0; }
 
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -97,8 +104,15 @@ table.debts td.rm { text-align: center; width: 30px; }
 .blocker b { color: var(--navy-900); }
 
 #breakdown { margin-top: 4px; }
-.breakdown-frame { display: block; width: 100%; height: 600px; border: 1px solid var(--slate-200);
+.breakdown-frame { display: block; width: 100%; border: 1px solid var(--slate-200);
   border-radius: var(--r-md); background: var(--white); }
+.breakdown-frame-schedule { height: 70vh; }
+
+/* Breaks the breakdown section out of .screen's 620px column to nearly the full browser width, minus half an
+   inch on each side; the negative side margins pull it back to the viewport's edges regardless of .screen's own
+   centered max-width. body's overflow-x: hidden below is the safety net against the 1px-or-so of horizontal
+   overflow some browsers introduce from their own scrollbar's width being included in 100vw. */
+.breakdown-wide { width: calc(100vw - 1in); margin-left: calc(50% - 50vw + 0.5in); box-sizing: border-box; }
 
 /* Small layout utilities, standing in for the handful of one-off inline style="" attributes the form and result
    pages used to carry; each name is exactly what it sets, not what it's used for, since several unrelated
@@ -109,6 +123,7 @@ table.debts td.rm { text-align: center; width: 30px; }
 .mb-14 { margin-bottom: 14px; }
 .mt-6 { margin-top: 6px; }
 .mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
 .mb-16 { margin-bottom: 16px; }
 .pt-0 { padding-top: 0; }
 .max-w-140 { max-width: 140px; }

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gazelle — Your loans (v0 static)</title>
+<style>
+  :root {
+    --blue-700: #08467F; --blue-600: #0B5CAB; --blue-100: #D6E7F5; --blue-50: #EFF6FC;
+    --navy-900: #10263B; --ink-700: #3C4A57; --ink-500: #6B7A88;
+    --gold-600: #C98600; --gold-500: #F2A900; --gold-100: #FDF0D2;
+    --green-700: #146842; --green-600: #1E8E5A; --green-100: #DCF2E7;
+    --red-600: #C4312B; --slate-200: #DDE3E9; --slate-100: #EDF1F4;
+    --surface: #F6F8FA; --white: #FFFFFF;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-pill: 999px;
+    --shadow-card: 0 1px 2px rgba(16,38,59,.06), 0 4px 12px rgba(16,38,59,.06);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font); color: var(--navy-900); background: var(--surface);
+    padding: 14px 16px 24px; }
+  .section-label { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--ink-500);
+    text-transform: uppercase; margin: 0 0 8px; }
+  .table-wrap { overflow-x: auto; background: var(--white); border: 1px solid var(--slate-200);
+    border-radius: var(--r-md); }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  table.loans { min-width: 480px; }
+  th, td { padding: 6px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--slate-100); }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { background: #F2F2F2; font-weight: 700; font-size: 11px; color: var(--ink-700);
+    border-bottom: 1px solid var(--slate-200); }
+  td, th { font-variant-numeric: tabular-nums; }
+  tr.total-row td, tr.total-row th { font-weight: 700; border-top: 2px solid var(--slate-200); }
+  .no-loans { font-size: 13.5px; color: var(--ink-700); }
+
+  @font-face {
+    font-family: "Inter";
+    src: url("/fonts/InterVariable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+</style>
+</head>
+<body>
+
+  <div class="table-wrap">
+    <table class="loans">
+      <thead>
+        <tr><th scope="col">Loan</th><th scope="col">Balance</th><th scope="col">Rate</th><th scope="col">Min payment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Store card</td><td>$840.00</td><td>26.99%</td><td>$35.00</td></tr>
+        <tr><td>Student loan</td><td>$2,500.00</td><td>4.50%</td><td>$110.00</td></tr>
+        <tr><td>Car loan</td><td>$9,140.00</td><td>6.40%</td><td>$312.00</td></tr>
+        <tr><td>Mortgage</td><td>$185,000.00</td><td>5.25%</td><td>$1,650.00</td></tr>
+        <tr class="total-row"><th scope="row">TOTAL</th><td>$197,480.00</td><td></td><td>$2,107.00</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</body>
+</html>

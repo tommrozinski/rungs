@@ -98,8 +98,12 @@
   }
 
   #breakdown { margin-top: 4px; }
-  .breakdown-frame { display: block; width: 100%; height: 600px; border: 1px solid var(--slate-200);
+  .breakdown-frame { display: block; width: 100%; border: 1px solid var(--slate-200);
     border-radius: var(--r-md); background: var(--white); }
+  .breakdown-frame-schedule { height: 70vh; }
+  .breakdown-wide { width: calc(100vw - 1in); margin-left: calc(50% - 50vw + 0.5in); box-sizing: border-box; }
+  body { overflow-x: hidden; }
+  .mt-20 { margin-top: 20px; }
 
   .echo { background: var(--white); border: 1px dashed var(--slate-200); border-radius: var(--r-md);
     padding: 14px 16px; margin-top: 24px; font-size: 12px; }
@@ -217,9 +221,12 @@
       </div>
     </form>
 
-    <section id="breakdown">
-      <h2 class="h2 mb-14">Payoff schedule</h2>
-      <iframe title="Payoff schedule" class="breakdown-frame" src="payoff-schedule.html"></iframe>
+    <section id="breakdown" class="breakdown-wide">
+      <h2 class="h2 mb-14">Your loans</h2>
+      <iframe title="Your loans" class="breakdown-frame" sandbox="allow-same-origin" style="height:260px" src="payoff-loans.html"></iframe>
+
+      <h2 class="h2 mb-14 mt-20">Payoff schedule</h2>
+      <iframe title="Payoff schedule" class="breakdown-frame breakdown-frame-schedule" sandbox="allow-same-origin" src="payoff-schedule.html"></iframe>
     </section>
 
     <div class="echo" id="echo" style="display:none;">
@@ -239,9 +246,10 @@
     The <b>Change my numbers</b> / <b>Show payoff schedule</b> buttons below the ladder are static
     here — the form they sit in has no <code>action</code>, so submitting does nothing. The real
     template posts them to <code>/edit</code> and <code>/assess#breakdown</code> per the design.
-    The <code>#breakdown</code> section always renders in this mock, pointing its iframe at
-    <code>payoff-schedule.html</code>; the real page only renders that section after the schedule
-    button is pressed, with the schedule inlined via <code>srcdoc</code> instead of a separate file.
+    The <code>#breakdown</code> section always renders in this mock, with its "Your loans" iframe pointing at
+    <code>payoff-loans.html</code> and its "Payoff schedule" iframe at <code>payoff-schedule.html</code>; the real
+    page only renders that section after the schedule button is pressed, with each table inlined via its own
+    <code>srcdoc</code> instead of a separate file.
     A homeowner's stage 6 line, once the mortgage evaluator exists, reads like this — for the
     payoff-schedule mock's household ($185,000 at 5.25%, $1,650/mo, extra cash $2,243, starting
     September 2026): "At your current payment it's paid off in July 2039. With the debt snowball

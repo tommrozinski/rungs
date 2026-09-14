@@ -6,6 +6,10 @@ body { padding: 14px 16px 24px; }
   text-transform: uppercase; margin: 0 0 8px; }
 .table-wrap { overflow-x: auto; background: var(--white); border: 1px solid var(--slate-200);
   border-radius: var(--r-md); }
+/* The schedule table can run to hundreds of rows; its wrapper — not the page/iframe body — is the one scroll
+   container both the frozen header row and frozen first column relate to, so "position: sticky" has a single,
+   unambiguous scrolling ancestor on both axes at once. */
+.table-wrap:has(table.schedule) { overflow: auto; max-height: 100vh; }
 .section + .section { margin-top: 18px; }
 .section { margin-bottom: 18px; }
 table { border-collapse: collapse; width: 100%; font-size: 12px; }
@@ -14,11 +18,17 @@ table.schedule { min-width: 1900px; }
 th, td { padding: 6px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--slate-100); }
 th:first-child, td:first-child { text-align: left; }
 thead th { background: #F2F2F2; font-weight: 700; font-size: 11px; color: var(--ink-700);
-  border-bottom: 1px solid var(--slate-200); position: sticky; top: 0; }
+  border-bottom: 2px solid var(--slate-200); position: sticky; top: 0; z-index: 2;
+  box-shadow: 0 2px 4px -2px rgba(16, 38, 59, .2); }
 table.schedule th:first-child, table.schedule tbody td:first-child {
-  position: sticky; left: 0; background: var(--white); z-index: 1; text-align: right;
+  position: sticky; left: 0; z-index: 1; text-align: right; border-right: 1px solid var(--slate-200);
 }
-table.schedule thead th:first-child { background: #F2F2F2; z-index: 2; }
+/* Every sticky cell (frozen header row, frozen first column, and their one frozen corner cell) gets its own
+   opaque background, so a scrolled-past row's zebra or green paid-off tint never shows through it. The corner
+   cell — the frozen header row's first cell — sits above both the rest of the frozen header (z-index 2) and the
+   rest of the frozen first column (z-index 1). */
+table.schedule tbody td:first-child, table.schedule tbody th:first-child { background: var(--white); }
+table.schedule thead th:first-child { background: #F2F2F2; z-index: 3; }
 td, th { font-variant-numeric: tabular-nums; }
 tbody tr:nth-child(even) td { background: #FBFCFD; }
 tbody tr.closed td { background: var(--green-100); }

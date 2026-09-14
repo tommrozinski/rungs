@@ -87,6 +87,46 @@ class FormPageTests {
     }
 
     @Test
+    void sampleHouseholdControlsSitInsideALabeledBoxSeparateFromCheckMyStage() throws Exception {
+        String body = mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(body).contains("Try a sample household: pick one, then load it.");
+
+        int boxStart = body.indexOf("class=\"sample-box\"");
+        assertThat(boxStart).describedAs("expected a sample-box container").isGreaterThan(-1);
+        int checkStageIndex = body.indexOf("Check my stage");
+        int selectIndex = body.indexOf("name=\"sample\"", boxStart);
+        int loadButtonIndex = body.indexOf("formaction=\"/sample\"", boxStart);
+
+        assertThat(checkStageIndex).isLessThan(boxStart);
+        assertThat(selectIndex).isGreaterThan(boxStart);
+        assertThat(loadButtonIndex).isGreaterThan(selectIndex);
+    }
+
+    @Test
+    void numberInputsHaveNoMaxlengthButTheTextLabelInputStillDoes() throws Exception {
+        String body = mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        int incomeIndex = body.indexOf("id=\"monthlyTakeHomeIncome\"");
+        int incomeStart = body.lastIndexOf("<input", incomeIndex);
+        int incomeEnd = body.indexOf(">", incomeIndex);
+        assertThat(body.substring(incomeStart, incomeEnd)).contains("type=\"number\"").doesNotContain("maxlength");
+
+        int labelIndex = body.indexOf("debts[0].label");
+        int labelStart = body.lastIndexOf("<input", labelIndex);
+        int labelEnd = body.indexOf(">", labelIndex);
+        assertThat(body.substring(labelStart, labelEnd)).contains("type=\"text\"").contains("maxlength=\"60\"");
+    }
+
+    @Test
     void debtRowAndTableAccessibilityAttributesAreOnFirstRow() throws Exception {
         String body = mockMvc.perform(get("/"))
                 .andExpect(status().isOk())

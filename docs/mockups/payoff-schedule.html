@@ -25,19 +25,21 @@
     text-transform: uppercase; margin: 0 0 8px; }
   .table-wrap { overflow-x: auto; background: var(--white); border: 1px solid var(--slate-200);
     border-radius: var(--r-md); }
+  .table-wrap:has(table.schedule) { overflow: auto; max-height: 100vh; }
   .table-wrap + .table-wrap, .section + .section { margin-top: 18px; }
   .section { margin-bottom: 18px; }
   table { border-collapse: collapse; width: 100%; font-size: 12px; }
-  table.loans { min-width: 480px; }
   table.schedule { min-width: 1900px; }
   th, td { padding: 6px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--slate-100); }
   th:first-child, td:first-child { text-align: left; }
   thead th { background: #F2F2F2; font-weight: 700; font-size: 11px; color: var(--ink-700);
-    border-bottom: 1px solid var(--slate-200); position: sticky; top: 0; }
+    border-bottom: 2px solid var(--slate-200); position: sticky; top: 0; z-index: 2;
+    box-shadow: 0 2px 4px -2px rgba(16, 38, 59, .2); }
   table.schedule th:first-child, table.schedule tbody tr:not(.ellipsis) td:first-child {
-    position: sticky; left: 0; background: var(--white); z-index: 1; text-align: right;
+    position: sticky; left: 0; z-index: 1; text-align: right; border-right: 1px solid var(--slate-200);
   }
-  table.schedule thead th:first-child { background: #F2F2F2; z-index: 2; }
+  table.schedule tbody td:first-child, table.schedule tbody th:first-child { background: var(--white); }
+  table.schedule thead th:first-child { background: #F2F2F2; z-index: 3; }
   td, th { font-variant-numeric: tabular-nums; }
   tbody tr:nth-child(even) td { background: #FBFCFD; }
   tbody tr.closed td { background: var(--green-100); }
@@ -62,25 +64,6 @@
     next. The mortgage comes last.</p>
 
   <div class="section">
-    <p class="section-label">Your loans</p>
-    <div class="table-wrap">
-      <table class="loans">
-        <thead>
-          <tr><th scope="col">Loan</th><th scope="col">Balance</th><th scope="col">Rate</th><th scope="col">Min payment</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Store card</td><td>$840.00</td><td>26.99%</td><td>$35.00</td></tr>
-          <tr><td>Student loan</td><td>$2,500.00</td><td>4.50%</td><td>$110.00</td></tr>
-          <tr><td>Car loan</td><td>$9,140.00</td><td>6.40%</td><td>$312.00</td></tr>
-          <tr><td>Mortgage</td><td>$185,000.00</td><td>5.25%</td><td>$1,650.00</td></tr>
-          <tr class="total-row"><th scope="row">TOTAL</th><td>$197,480.00</td><td></td><td>$2,107.00</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="section">
-    <p class="section-label">Payoff schedule</p>
     <div class="table-wrap">
       <table class="schedule">
         <thead>
