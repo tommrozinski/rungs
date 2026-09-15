@@ -12,7 +12,7 @@ target/
 # Logs
 *.log
 
-# Claude Code agent worktrees and local settings (.claude/worktrees/ is now redundant under this)
+# Claude Code agent worktrees and local settings
 .claude/
 
 # Local reference files

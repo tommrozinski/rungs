@@ -5,12 +5,13 @@ import com.rungs.readiness.domain.projection.PayoffSchedule;
 import com.rungs.readiness.domain.projection.PayoffScheduleCalculator;
 import com.rungs.readiness.domain.stage.LadderResult;
 import com.rungs.readiness.domain.stage.StageLadder;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.time.Clock;
 import java.time.YearMonth;
 import java.util.List;
 import org.springframework.beans.InvalidPropertyException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.WebDataBinder;
@@ -26,34 +27,35 @@ import org.thymeleaf.context.Context;
 
 /**
  * Renders the snapshot form and, from the posted values, a real seven-stage assessment on the result page,
- * including its inline payoff schedule breakdown and the standalone {@code /breakdown} page.
+ * including its inline "Your loans" and "Payoff schedule" breakdown iframes.
  */
 @Controller
 class SnapshotController {
 
     private static final String FORM_VIEW = "form";
     private static final String RESULT_VIEW = "result";
-    private static final String BREAKDOWN_VIEW = "breakdown";
     private static final String PAYOFF_LOANS_VIEW = "payoff-loans";
     private static final String PAYOFF_SCHEDULE_VIEW = "payoff-schedule";
 
-    /** Per-row pixel height for the result page's "Your loans" iframe, slightly above a rendered row so the
-     *  computed height never clips one. */
-    private static final int LOANS_IFRAME_ROW_HEIGHT_PX = 32;
+    /** Per-row pixel height for the result page's "Your loans" iframe: a small margin above each row's own
+     *  rendered height (header, loan, and total rows all render at roughly the same height), so the computed
+     *  total never clips or scrolls a household's 1 to {@link SnapshotFormMapper#MAX_DEBT_ROWS} loans, even
+     *  across the small rendering differences a fallback font can introduce. */
+    private static final int LOANS_IFRAME_ROW_HEIGHT_PX = 29;
 
-    /** Extra pixels the "Your loans" iframe's computed height allows for the page padding and the table
-     *  wrapper's border, on top of its header, loan, and total rows. */
-    private static final int LOANS_IFRAME_CHROME_PX = 24;
+    /** Extra pixel height the "Your loans" iframe's computed height allows on top of its rows: the loans
+     *  document's own tight body padding, its table wrapper's border, and the iframe's own border, plus a small
+     *  safety margin. */
+    private static final int LOANS_IFRAME_CHROME_PX = 28;
 
-    private final StageLadder ladder;
-    private final Clock clock;
-    private final ITemplateEngine templateEngine;
+    /** Per-row pixel height for the "Payoff schedule" iframe's fit-to-content height; its rows render at the
+     *  same size as the loans table's. */
+    private static final int SCHEDULE_IFRAME_ROW_HEIGHT_PX = 29;
 
-    SnapshotController(StageLadder ladder, Clock clock, ITemplateEngine templateEngine) {
-        this.ladder = ladder;
-        this.clock = clock;
-        this.templateEngine = templateEngine;
-    }
+    /** Extra pixel height the "Payoff schedule" iframe allows on top of its rows: the schedule document's body
+     *  padding, its table wrapper's border, the iframe's own border, and the wrapper's horizontal scrollbar. The
+     *  template caps the result at 70vh, so a long schedule scrolls inside the frame instead. */
+    private static final int SCHEDULE_IFRAME_CHROME_PX = 48;
 
     /**
      * Every bind path {@link SnapshotForm} actually has; the {@code *} in a debt row's paths matches any row index.
@@ -78,6 +80,16 @@ class SnapshotController {
      */
     private static final String[] DISALLOWED_FIELDS = {"*.class.*", "class.*", "*.classLoader.*"};
 
+    private final StageLadder ladder;
+    private final Clock clock;
+    private final ITemplateEngine templateEngine;
+
+    SnapshotController(StageLadder ladder, Clock clock, ITemplateEngine templateEngine) {
+        this.ladder = ladder;
+        this.clock = clock;
+        this.templateEngine = templateEngine;
+    }
+
     @InitBinder
     void initBinder(WebDataBinder binder) {
         // Keeps a stray debts[99999] (or one row past the cap) from asking the binder to grow the list that far;
@@ -88,18 +100,32 @@ class SnapshotController {
     }
 
     /**
-     * Adds every {@link DebtTypeOption} and {@link SampleHousehold} to the model of every request this controller
-     * handles, so the form template's type and sample selects always have the full, current list to render — even
-     * on the handlers (e.g. {@code /debts/add}) that never touch either directly.
+     * Adds every {@link DebtTypeOption} to the model of every request this controller handles, so the form
+     * template's type select always has the full, current list to render — even on the handlers (e.g.
+     * {@code /debts/add}) that never touch it directly.
      */
     @ModelAttribute("debtTypeOptions")
     List<DebtTypeOption> debtTypeOptions() {
         return DebtTypeOption.all();
     }
 
+    /**
+     * Adds every {@link SampleHousehold} to the model of every request this controller handles, so the form
+     * template's sample select always has the full, current list to render.
+     */
     @ModelAttribute("sampleHouseholds")
     List<SampleHousehold> sampleHouseholds() {
         return List.of(SampleHousehold.values());
+    }
+
+    /**
+     * Adds the debt row label's length cap to the model of every request, so the form template's label input can
+     * drive its {@code maxlength} from the same constant {@link SnapshotForm.DebtRow#setLabel} caps at, rather than
+     * a second, hard-coded copy of it.
+     */
+    @ModelAttribute("debtLabelMaxLength")
+    int debtLabelMaxLength() {
+        return SnapshotForm.LABEL_MAX_LENGTH;
     }
 
     @GetMapping("/")
@@ -107,6 +133,15 @@ class SnapshotController {
         SnapshotForm form = new SnapshotForm();
         form.getDebts().add(new SnapshotForm.DebtRow());
         model.addAttribute("form", form);
+        return FORM_VIEW;
+    }
+
+    @PostMapping("/sample")
+    String loadSample(
+            @ModelAttribute("form") SnapshotForm form,
+            @RequestParam(name = "sample", required = false) String sampleId,
+            Model model) {
+        SampleHousehold.byId(sampleId).ifPresent(sample -> model.addAttribute("form", sample.form()));
         return FORM_VIEW;
     }
 
@@ -134,13 +169,9 @@ class SnapshotController {
         FinancialSnapshot snapshot = toSnapshot(form);
         LadderResult ladderResult = ladder.assess(snapshot);
         PayoffSchedule schedule = PayoffScheduleCalculator.schedule(snapshot);
-        model.addAttribute("form", form);
         model.addAttribute("result", ResultViews.build(ladderResult, snapshot, schedule));
         if (breakdown) {
-            ScheduleView scheduleView = ScheduleViews.build(schedule);
-            model.addAttribute("loansHtml", renderFragment(PAYOFF_LOANS_VIEW, scheduleView));
-            model.addAttribute("scheduleHtml", renderFragment(PAYOFF_SCHEDULE_VIEW, scheduleView));
-            model.addAttribute("loansIframeHeightPx", loansIframeHeightPx(scheduleView));
+            addBreakdownAttributes(model, schedule);
         }
         return RESULT_VIEW;
     }
@@ -150,20 +181,40 @@ class SnapshotController {
      * "Change my numbers" loses nothing the household already entered.
      */
     @PostMapping("/edit")
-    String edit(@ModelAttribute("form") SnapshotForm form, Model model) {
-        model.addAttribute("form", form);
+    String edit(@ModelAttribute("form") SnapshotForm form) {
         return FORM_VIEW;
     }
 
     /**
-     * Renders the standalone payoff schedule page for the posted snapshot: its own page, distinct from the result
-     * page's inline breakdown iframe, reachable directly (e.g. to print or link).
+     * Rejects a sparse or out-of-range {@code debts[n]} index (e.g. {@code debts[99999]}, past
+     * {@link SnapshotFormMapper#MAX_DEBT_ROWS} and the binder's matching {@code autoGrowCollectionLimit}) as a 400
+     * rendered through the same {@code error.html} page as any other 4xx, instead of failing with a 500 or a plain
+     * text body. {@link InvalidPropertyException} is Spring's exception for exactly this: a bind path the target
+     * object cannot satisfy, which here is always a debt row index, never a different invalid property path — the
+     * form's other fields are all plain, always-bindable strings and booleans. {@link HttpServletResponse#sendError}
+     * triggers the same container error dispatch (to Boot's {@code /error}, which renders {@code error.html}) that
+     * a plain 404 or 405 already goes through, rather than this handler building its own response body.
      */
-    @PostMapping("/breakdown")
-    String breakdown(@ModelAttribute("form") SnapshotForm form, Model model) {
-        FinancialSnapshot snapshot = toSnapshot(form);
-        model.addAttribute("schedule", ScheduleViews.build(PayoffScheduleCalculator.schedule(snapshot)));
-        return BREAKDOWN_VIEW;
+    @ExceptionHandler(InvalidPropertyException.class)
+    void handleUnreachableDebtIndex(HttpServletResponse response) throws IOException {
+        response.sendError(HttpStatus.BAD_REQUEST.value(), "Invalid debt index");
+    }
+
+    /**
+     * Adds the result page's breakdown model attributes for {@code schedule}: whether the household has any loan
+     * to show, and — only when it does — the two breakdown iframes' rendered {@code srcdoc} documents and the
+     * "Your loans" iframe's computed height. A household with no debt or mortgage balance gets none of the three:
+     * the result template renders its single "no debts" message instead of either iframe.
+     */
+    private void addBreakdownAttributes(Model model, PayoffSchedule schedule) {
+        ScheduleView scheduleView = ScheduleViews.build(schedule);
+        model.addAttribute("hasLoans", scheduleView.hasLoans());
+        if (scheduleView.hasLoans()) {
+            model.addAttribute("loansHtml", renderIframeDocument(PAYOFF_LOANS_VIEW, scheduleView));
+            model.addAttribute("scheduleHtml", renderIframeDocument(PAYOFF_SCHEDULE_VIEW, scheduleView));
+            model.addAttribute("loansIframeHeightPx", loansIframeHeightPx(scheduleView));
+            model.addAttribute("scheduleIframeHeightPx", scheduleIframeHeightPx(scheduleView));
+        }
     }
 
     /**
@@ -171,7 +222,7 @@ class SnapshotController {
      * breakdown iframes' {@code srcdoc}; Thymeleaf escapes it as an attribute value when the result template
      * writes it out.
      */
-    private String renderFragment(String viewName, ScheduleView scheduleView) {
+    private String renderIframeDocument(String viewName, ScheduleView scheduleView) {
         Context context = new Context();
         context.setVariable("schedule", scheduleView);
         return templateEngine.process(viewName, context);
@@ -179,12 +230,22 @@ class SnapshotController {
 
     /**
      * Returns the pixel height the result page's "Your loans" iframe needs to fit every row without inner
-     * scrolling: a header row, one row per loan, and a total row, each at a generous fixed height, plus a little
-     * extra for the section label above the table and the table wrapper's border.
+     * scrolling: a header row, one row per loan, and a total row, each at a generous fixed height, plus a fixed
+     * chrome allowance for the loans document's own body padding and borders.
      */
     private static int loansIframeHeightPx(ScheduleView scheduleView) {
         int rows = scheduleView.loans().size() + 2;
         return rows * LOANS_IFRAME_ROW_HEIGHT_PX + LOANS_IFRAME_CHROME_PX;
+    }
+
+    /**
+     * Returns the pixel height that fits the whole "Payoff schedule" table: a header row, one row per month, and a
+     * totals row. The template takes the smaller of this and 70vh, so a short schedule leaves no empty frame below
+     * its last row.
+     */
+    private static int scheduleIframeHeightPx(ScheduleView scheduleView) {
+        int rows = scheduleView.months().size() + 2;
+        return rows * SCHEDULE_IFRAME_ROW_HEIGHT_PX + SCHEDULE_IFRAME_CHROME_PX;
     }
 
     /**
@@ -193,26 +254,5 @@ class SnapshotController {
      */
     private FinancialSnapshot toSnapshot(SnapshotForm form) {
         return SnapshotFormMapper.toSnapshot(form, YearMonth.now(clock));
-    }
-
-    @PostMapping("/sample")
-    String loadSample(
-            @ModelAttribute("form") SnapshotForm form,
-            @RequestParam(name = "sample", required = false) String sampleId,
-            Model model) {
-        SampleHousehold.byId(sampleId).ifPresent(sample -> model.addAttribute("form", sample.form()));
-        return FORM_VIEW;
-    }
-
-    /**
-     * Rejects a sparse or out-of-range {@code debts[n]} index (e.g. {@code debts[99999]}, past
-     * {@link SnapshotFormMapper#MAX_DEBT_ROWS} and the binder's matching {@code autoGrowCollectionLimit}) as a 400
-     * instead of failing with a 500. {@link InvalidPropertyException} is Spring's exception for exactly this: a
-     * bind path the target object cannot satisfy, which here is always a debt row index, never a different invalid
-     * property path — the form's other fields are all plain, always-bindable strings and booleans.
-     */
-    @ExceptionHandler(InvalidPropertyException.class)
-    ResponseEntity<String> handleUnreachableDebtIndex() {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid debt index");
     }
 }

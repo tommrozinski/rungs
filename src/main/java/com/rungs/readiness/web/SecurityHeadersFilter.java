@@ -9,9 +9,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Adds browser security headers to every response this app renders, including a 404 or other error dispatch: a
- * strict {@code Content-Security-Policy} (the srcdoc payoff-schedule iframe is same-origin, so its stylesheet and
- * font still load under {@code 'self'}; {@code style-src-attr 'unsafe-inline'} is the one loosening, for the
- * progress bar's {@code th:style} width), {@code X-Content-Type-Options}, {@code Referrer-Policy}, and
+ * strict {@code Content-Security-Policy} (both srcdoc breakdown iframes — "Your loans" and "Payoff schedule" —
+ * are same-origin, so their stylesheet and font still load under {@code 'self'}; {@code style-src-attr
+ * 'unsafe-inline'} is the one loosening, for the progress bar's {@code th:style} width), {@code
+ * X-Content-Type-Options}, {@code Referrer-Policy}, and
  * {@code Cache-Control: no-store} on every response except a static asset under {@code /css/} or {@code /fonts/},
  * which should still be cacheable.
  */

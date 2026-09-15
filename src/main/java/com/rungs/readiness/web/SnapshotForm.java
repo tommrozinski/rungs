@@ -13,15 +13,19 @@ import java.util.List;
  * back at full size into the form or the result page's hidden fields, however many times the value is copied. A
  * money/percent field is capped one character past {@link Money#MAX_TEXT_LENGTH} rather than at it, so a value long
  * enough to already be invalid stays exactly as invalid after capping instead of being trimmed down to a shorter,
- * accidentally-valid number.
+ * accidentally-valid number. Leading/trailing whitespace is stripped before that cap is applied (not after), so
+ * padding a value with whitespace can never buy it extra digits under the cap that would otherwise put it back in
+ * range.
  */
 class SnapshotForm {
 
     /** Caps every money, percent, and other numeric text field one past {@link Money#MAX_TEXT_LENGTH}. */
     private static final int NUMERIC_TEXT_MAX_LENGTH = Money.MAX_TEXT_LENGTH + 1;
 
-    /** Caps a debt row's label; long enough for a real name, short enough to never balloon a response. */
-    private static final int LABEL_MAX_LENGTH = 60;
+    /** Caps a debt row's label, in Unicode code points so a surrogate pair (e.g. an emoji) is never split; long
+     * enough for a real name, short enough to never balloon a response. Package-private so the form template can
+     * drive its {@code maxlength} from this same constant. */
+    static final int LABEL_MAX_LENGTH = 60;
 
     /** Caps a debt row's {@code type}, whose only real values ({@link com.rungs.readiness.domain.model.DebtType}
      * names) are a few characters long. */
@@ -53,7 +57,7 @@ class SnapshotForm {
     }
 
     public void setMonthlyTakeHomeIncome(String monthlyTakeHomeIncome) {
-        this.monthlyTakeHomeIncome = cap(monthlyTakeHomeIncome, NUMERIC_TEXT_MAX_LENGTH);
+        this.monthlyTakeHomeIncome = capNumeric(monthlyTakeHomeIncome, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getMonthlyEssentialExpenses() {
@@ -61,7 +65,7 @@ class SnapshotForm {
     }
 
     public void setMonthlyEssentialExpenses(String monthlyEssentialExpenses) {
-        this.monthlyEssentialExpenses = cap(monthlyEssentialExpenses, NUMERIC_TEXT_MAX_LENGTH);
+        this.monthlyEssentialExpenses = capNumeric(monthlyEssentialExpenses, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getStarterEmergencyFund() {
@@ -69,7 +73,7 @@ class SnapshotForm {
     }
 
     public void setStarterEmergencyFund(String starterEmergencyFund) {
-        this.starterEmergencyFund = cap(starterEmergencyFund, NUMERIC_TEXT_MAX_LENGTH);
+        this.starterEmergencyFund = capNumeric(starterEmergencyFund, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getFullEmergencyFund() {
@@ -77,7 +81,7 @@ class SnapshotForm {
     }
 
     public void setFullEmergencyFund(String fullEmergencyFund) {
-        this.fullEmergencyFund = cap(fullEmergencyFund, NUMERIC_TEXT_MAX_LENGTH);
+        this.fullEmergencyFund = capNumeric(fullEmergencyFund, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getRetirementContributionPercent() {
@@ -85,7 +89,7 @@ class SnapshotForm {
     }
 
     public void setRetirementContributionPercent(String retirementContributionPercent) {
-        this.retirementContributionPercent = cap(retirementContributionPercent, NUMERIC_TEXT_MAX_LENGTH);
+        this.retirementContributionPercent = capNumeric(retirementContributionPercent, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getSample() {
@@ -109,7 +113,7 @@ class SnapshotForm {
     }
 
     public void setMortgageBalance(String mortgageBalance) {
-        this.mortgageBalance = cap(mortgageBalance, NUMERIC_TEXT_MAX_LENGTH);
+        this.mortgageBalance = capNumeric(mortgageBalance, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getMortgageRate() {
@@ -117,7 +121,7 @@ class SnapshotForm {
     }
 
     public void setMortgageRate(String mortgageRate) {
-        this.mortgageRate = cap(mortgageRate, NUMERIC_TEXT_MAX_LENGTH);
+        this.mortgageRate = capNumeric(mortgageRate, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getMortgagePayment() {
@@ -125,7 +129,7 @@ class SnapshotForm {
     }
 
     public void setMortgagePayment(String mortgagePayment) {
-        this.mortgagePayment = cap(mortgagePayment, NUMERIC_TEXT_MAX_LENGTH);
+        this.mortgagePayment = capNumeric(mortgagePayment, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public String getMonthlyRent() {
@@ -133,7 +137,7 @@ class SnapshotForm {
     }
 
     public void setMonthlyRent(String monthlyRent) {
-        this.monthlyRent = cap(monthlyRent, NUMERIC_TEXT_MAX_LENGTH);
+        this.monthlyRent = capNumeric(monthlyRent, NUMERIC_TEXT_MAX_LENGTH);
     }
 
     public boolean isIntendsToFundCollege() {
@@ -168,6 +172,30 @@ class SnapshotForm {
         return value == null || value.length() <= maxLength ? value : value.substring(0, maxLength);
     }
 
+    /**
+     * Returns {@code value} stripped of leading/trailing whitespace, then capped as {@link #cap} would. Stripping
+     * before capping (rather than after, as the mapper that later parses this field does on its own) keeps
+     * whitespace from ever occupying a character of the cap that a digit otherwise would: without this, an
+     * over-long numeric value padded with whitespace could be capped down to exactly {@link Money#MAX_TEXT_LENGTH}
+     * digits once the mapper strips it, becoming a valid — if capped — number instead of staying invalid.
+     */
+    private static String capNumeric(String value, int maxLength) {
+        return cap(value == null ? null : value.strip(), maxLength);
+    }
+
+    /**
+     * Returns {@code value} truncated to at most {@code maxCodePoints} Unicode code points, or {@code value} itself
+     * when it is null or already no longer than that. Counting and cutting by code point, rather than by {@code
+     * char} as {@link #cap} does, keeps a surrogate pair (e.g. an emoji outside the Basic Multilingual Plane) from
+     * ever being split at the boundary into a lone, invalid surrogate.
+     */
+    private static String capLabel(String value, int maxCodePoints) {
+        if (value == null || value.codePointCount(0, value.length()) <= maxCodePoints) {
+            return value;
+        }
+        return value.substring(0, value.offsetByCodePoints(0, maxCodePoints));
+    }
+
     /** One row of the debts table. */
     static class DebtRow {
 
@@ -182,7 +210,7 @@ class SnapshotForm {
         }
 
         public void setLabel(String label) {
-            this.label = cap(label, LABEL_MAX_LENGTH);
+            this.label = capLabel(label, LABEL_MAX_LENGTH);
         }
 
         public String getType() {
@@ -198,7 +226,7 @@ class SnapshotForm {
         }
 
         public void setBalance(String balance) {
-            this.balance = cap(balance, NUMERIC_TEXT_MAX_LENGTH);
+            this.balance = capNumeric(balance, NUMERIC_TEXT_MAX_LENGTH);
         }
 
         public String getAnnualInterestRate() {
@@ -206,7 +234,7 @@ class SnapshotForm {
         }
 
         public void setAnnualInterestRate(String annualInterestRate) {
-            this.annualInterestRate = cap(annualInterestRate, NUMERIC_TEXT_MAX_LENGTH);
+            this.annualInterestRate = capNumeric(annualInterestRate, NUMERIC_TEXT_MAX_LENGTH);
         }
 
         public String getMinimumPayment() {
@@ -214,7 +242,7 @@ class SnapshotForm {
         }
 
         public void setMinimumPayment(String minimumPayment) {
-            this.minimumPayment = cap(minimumPayment, NUMERIC_TEXT_MAX_LENGTH);
+            this.minimumPayment = capNumeric(minimumPayment, NUMERIC_TEXT_MAX_LENGTH);
         }
     }
 }

@@ -67,8 +67,8 @@
           </thead>
           <tbody id="debt-rows">
             <tr th:each="row, iter : ${form.debts}">
-              <td><input class="input" type="text" maxlength="60" th:name="|debts[${iter.index}].label|" th:value="${row.label}" th:aria-label="|Debt ${iter.count} name|" required></td>
-              <td>
+              <td><input class="input" type="text" th:maxlength="${debtLabelMaxLength}" th:name="|debts[${iter.index}].label|" th:value="${row.label}" th:aria-label="|Debt ${iter.count} name|" required></td>
+              <td class="debt-type">
                 <select class="input" th:name="|debts[${iter.index}].type|" th:aria-label="|Debt ${iter.count} type|">
                   <option th:each="option : ${debtTypeOptions}" th:value="${option.value}" th:selected="${row.type == option.value}" th:text="${option.label}"></option>
                 </select>

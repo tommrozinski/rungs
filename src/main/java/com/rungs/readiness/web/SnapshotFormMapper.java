@@ -24,9 +24,8 @@ import java.util.regex.Pattern;
  * unrecognized debt type becomes {@link DebtType#OTHER}. Only the first {@value #MAX_DEBT_ROWS} non-zero-balance
  * rows, in submitted order, become debts; any further rows are dropped, keeping the payoff schedule's rendered size
  * bounded. A blank or unrecognized {@code housing} becomes {@code MORTGAGE}; whichever mode is not selected has its
- * fields ignored. The form has no maturity fields, matching {@link Mortgage}, which has no maturity to set.
- * Nothing here rejects input or throws; every bad case resolves to a plain default instead, so a submission can
- * never 500.
+ * fields ignored. Nothing here rejects input or throws; every bad case resolves to a plain default instead, so a
+ * submission can never 500.
  *
  * <p>The form collects no college contribution amount, so the snapshot always has a $0 monthly college
  * contribution; it also has no field for the emergency-fund target's month count, so the snapshot always targets

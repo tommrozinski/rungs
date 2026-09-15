@@ -5,6 +5,11 @@
 <!-- Ticket: none (backlog story 040) -->
 <!-- Date: 2026-09-14 -->
 
+**Superseded:** the payoff order below (highest rate first) and the single `/breakdown` iframe are both
+superseded by `docs/design/041-snowball-payoff-dates.md` (smallest-balance-first debt snowball) and a later
+split into two result-page iframes, "Your loans" and "Payoff schedule"; `POST /breakdown` itself was removed.
+Left as-is below as a record of the design at the time.
+
 ## 1. Changes
 
 1. **Change my numbers.** The result page gets a button that returns to the form with every value kept.

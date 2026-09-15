@@ -1,5 +1,10 @@
 # PRD Addendum: v0 Scope (the few-days build)
 
+**Superseded:** the payoff schedule this document lists as "explicitly out" (FR-2) is in scope and built —
+a true debt snowball, smallest-balance-first (see `docs/design/041-snowball-payoff-dates.md`), shown on the
+result page as two separate iframes ("Your loans" and "Payoff schedule"). This document is left as-is below
+as a record of the scope decision at the time.
+
 **Supersedes:** the delivery increments in the original full PRD, since retired, for the
 current build window only. That document was not wrong, it was sized for a month. This one
 is sized for a few days.

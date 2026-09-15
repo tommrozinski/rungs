@@ -80,15 +80,27 @@
       </div>
     </form>
 
-    <section id="breakdown" class="breakdown-wide" th:if="${scheduleHtml != null}">
-      <h2 class="h2 mb-14">Your loans</h2>
-      <iframe title="Your loans" class="breakdown-frame" sandbox="allow-same-origin"
-              th:style="'height:' + ${loansIframeHeightPx} + 'px'"
-              th:attr="srcdoc=${loansHtml}"></iframe>
+    <section id="breakdown" class="breakdown-wide" th:if="${hasLoans != null}">
 
-      <h2 class="h2 mb-14 mt-20">Payoff schedule</h2>
-      <iframe title="Payoff schedule" class="breakdown-frame breakdown-frame-schedule" sandbox="allow-same-origin"
-              th:attr="srcdoc=${scheduleHtml}"></iframe>
+      <div th:if="${hasLoans}">
+        <h2 class="h2 mb-14">Your loans</h2>
+        <iframe title="Your loans" class="breakdown-frame" sandbox="allow-same-origin"
+                th:style="'height:' + ${loansIframeHeightPx} + 'px'"
+                th:attr="srcdoc=${loansHtml}"></iframe>
+
+        <h2 class="h2 mb-14 mt-20">Payoff schedule</h2>
+        <p class="small mb-14">Your surplus goes to the smallest debt; each paid-off debt's payment rolls into the
+          next. The mortgage comes last.</p>
+        <iframe title="Payoff schedule" class="breakdown-frame breakdown-frame-schedule" sandbox="allow-same-origin"
+                th:style="'height: min(70vh, ' + ${scheduleIframeHeightPx} + 'px)'"
+                th:attr="srcdoc=${scheduleHtml}"></iframe>
+      </div>
+
+      <div th:unless="${hasLoans}">
+        <h2 class="h2 mb-14">Payoff schedule</h2>
+        <p class="small">No debts or mortgage to pay down.</p>
+      </div>
+
     </section>
 
   </div>

@@ -7,34 +7,30 @@
 <link rel="stylesheet" href="/css/tokens.css">
 <link rel="stylesheet" href="/css/schedule.css">
 </head>
-<body>
+<body class="loans-doc">
 
   <p class="no-loans" th:unless="${schedule.hasLoans}">No debts or mortgage to pay down.</p>
 
-  <div th:if="${schedule.hasLoans}">
-    <div class="section">
-      <div class="table-wrap">
-        <table class="loans">
-          <thead>
-            <tr><th scope="col">Loan</th><th scope="col">Balance</th><th scope="col">Rate</th><th scope="col">Min payment</th></tr>
-          </thead>
-          <tbody>
-            <tr th:each="loan : ${schedule.loans}">
-              <td th:text="${loan.name}"></td>
-              <td th:text="${loan.balance}"></td>
-              <td th:text="${loan.rate}"></td>
-              <td th:text="${loan.minimumPayment}"></td>
-            </tr>
-            <tr class="total-row">
-              <th scope="row">TOTAL</th>
-              <td th:text="${schedule.totalLoanBalance}"></td>
-              <td></td>
-              <td th:text="${schedule.totalMinimumPayment}"></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+  <div class="table-wrap" th:if="${schedule.hasLoans}">
+    <table class="loans">
+      <thead>
+        <tr><th scope="col">Loan</th><th scope="col">Balance</th><th scope="col">Rate</th><th scope="col">Min payment</th></tr>
+      </thead>
+      <tbody>
+        <tr th:each="loan : ${schedule.loans}">
+          <td th:text="${loan.name}"></td>
+          <td th:text="${loan.balance}"></td>
+          <td th:text="${loan.rate}"></td>
+          <td th:text="${loan.minimumPayment}"></td>
+        </tr>
+        <tr class="total-row">
+          <th scope="row">TOTAL</th>
+          <td th:text="${schedule.totalLoanBalance}"></td>
+          <td></td>
+          <td th:text="${schedule.totalMinimumPayment}"></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
 </body>

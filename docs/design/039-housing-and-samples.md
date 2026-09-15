@@ -4,6 +4,10 @@
 <!-- Ticket: none (backlog story 039) -->
 <!-- Date: 2026-09-14 -->
 
+**Superseded:** the maturity month/year fields, `Mortgage.maturity`, and the maturity comparison copy below
+are all removed by `docs/design/041-snowball-payoff-dates.md`. Left as-is below as a record of the design at
+the time.
+
 The "We rent our home" checkbox becomes a two-option toggle: **Mortgage** (the default) or **Rent**. Each
 option collects its own housing costs. Housing then feeds the stage logic. A "Load sample data" control
 fills the form with one of five households.

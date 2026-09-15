@@ -72,4 +72,25 @@ class ErrorPageTests {
         assertThat(body).doesNotContain("Whitelabel Error Page");
         assertThat(body).doesNotContain("Exception");
     }
+
+    @Test
+    void anUnreachableDebtIndexIsBadRequestAndRendersTheCustomErrorPageWithSecurityHeaders() throws Exception {
+        HttpRequest httpRequest = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/assess"))
+                .header("Accept", "text/html")
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString("debts%5B99999%5D.label=Anything"))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(response.headers().firstValue("Content-Security-Policy")).isPresent();
+        assertThat(response.headers().firstValue("Cache-Control")).contains("no-store");
+        String body = response.body();
+        assertThat(body).contains("400");
+        assertThat(body).doesNotContain("Whitelabel Error Page");
+        assertThat(body).doesNotContain("Exception");
+        assertThat(body).doesNotContain("java.lang");
+        assertThat(body).doesNotContain("org.springframework");
+    }
 }

@@ -204,13 +204,6 @@ class FormPageTests {
     }
 
     @Test
-    void breakdownWithLargeDebtIndexDoesNotFail() throws Exception {
-        mockMvc.perform(post("/breakdown")
-                        .param("debts[99999].label", "Anything"))
-                .andExpect(status().is4xxClientError());
-    }
-
-    @Test
     void addDebtAtTwentyRowsDoesNotAddAFurtherRow() throws Exception {
         MockHttpServletRequestBuilder request = post("/debts/add");
         for (int i = 0; i < 20; i++) {

@@ -1,7 +1,4 @@
 /* Tokens, the font, and the base reset live in tokens.css, linked before this stylesheet. */
-/* .breakdown-wide below deliberately sizes to (near) the full viewport width; this is the safety net against the
-   sliver of horizontal overflow some browsers' own vertical scrollbar can introduce, since it's counted as part of
-   the page's own width rather than subtracted from 100vw. */
 body { overflow-x: hidden; }
 .appbar { background: var(--white); border-bottom: 1px solid var(--slate-200); padding: 14px 22px;
   display: flex; align-items: center; justify-content: space-between; }
@@ -38,6 +35,7 @@ table.debts th { text-align: left; font-size: 11.5px; color: var(--ink-500); fon
 table.debts td { padding: 6px 6px; border-bottom: 1px solid var(--slate-100); }
 table.debts td input { padding: 7px 8px; font-size: 13px; }
 table.debts td.rm { text-align: center; width: 30px; }
+table.debts td.debt-type { min-width: 132px; }
 .rm-btn { background: none; border: none; color: var(--red-600); font-size: 16px; cursor: pointer; line-height: 1; padding: 4px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; font-family: var(--font);
   font-size: 14px; font-weight: 600; padding: 11px 20px; border-radius: var(--r-pill);
@@ -110,7 +108,7 @@ table.debts td.rm { text-align: center; width: 30px; }
 
 /* Breaks the breakdown section out of .screen's 620px column to nearly the full browser width, minus half an
    inch on each side; the negative side margins pull it back to the viewport's edges regardless of .screen's own
-   centered max-width. body's overflow-x: hidden below is the safety net against the 1px-or-so of horizontal
+   centered max-width. body's overflow-x: hidden above is the safety net against the 1px-or-so of horizontal
    overflow some browsers introduce from their own scrollbar's width being included in 100vw. */
 .breakdown-wide { width: calc(100vw - 1in); margin-left: calc(50% - 50vw + 0.5in); box-sizing: border-box; }
 
@@ -121,10 +119,10 @@ table.debts td.rm { text-align: center; width: 30px; }
 .mb-0 { margin-bottom: 0; }
 .mb-12 { margin-bottom: 12px; }
 .mb-14 { margin-bottom: 14px; }
+.mb-16 { margin-bottom: 16px; }
 .mt-6 { margin-top: 6px; }
 .mt-10 { margin-top: 10px; }
 .mt-20 { margin-top: 20px; }
-.mb-16 { margin-bottom: 16px; }
 .pt-0 { padding-top: 0; }
 .max-w-140 { max-width: 140px; }
 .max-w-220 { max-width: 220px; }

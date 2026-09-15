@@ -71,13 +71,30 @@ class SecurityHeadersWebTests {
     }
 
     @Test
-    void resultPageIframeIsSandboxed() throws Exception {
+    void bothBreakdownIframesAreSandboxed() throws Exception {
         String body = mockMvc.perform(post("/assess")
-                        .params(form().monthlyTakeHomeIncome("6200").param("breakdown", "true").values()))
+                        .params(form()
+                                .monthlyTakeHomeIncome("6200")
+                                .debtLabel(0, "Store card")
+                                .debtBalance(0, "840")
+                                .param("breakdown", "true")
+                                .values()))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        assertThat(body).contains("sandbox=\"allow-same-origin\"");
+        assertThat(body).contains("title=\"Your loans\"");
+        assertThat(body).contains("title=\"Payoff schedule\"");
+        assertThat(countOccurrences(body, "sandbox=\"allow-same-origin\"")).isEqualTo(2);
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        int index = 0;
+        while ((index = haystack.indexOf(needle, index)) != -1) {
+            count++;
+            index += needle.length();
+        }
+        return count;
     }
 }

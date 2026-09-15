@@ -79,7 +79,7 @@ class RealServerLimitsTests {
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        assertThat(response.statusCode()).isBetween(400, 499);
+        assertThat(response.statusCode()).isEqualTo(413);
     }
 
     @Test

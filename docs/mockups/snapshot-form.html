@@ -51,6 +51,7 @@
   table.debts td { padding: 6px 6px; border-bottom: 1px solid var(--slate-100); }
   table.debts td input { padding: 7px 8px; font-size: 13px; }
   table.debts td.rm { text-align: center; width: 30px; }
+  table.debts td.debt-type { min-width: 132px; }
   .rm-btn { background: none; border: none; color: var(--red-600); font-size: 16px; cursor: pointer; line-height: 1; padding: 4px; }
   .btn { display: inline-flex; align-items: center; justify-content: center; font-family: var(--font);
     font-size: 14px; font-weight: 600; padding: 11px 20px; border-radius: var(--r-pill);
@@ -266,7 +267,7 @@
     const row = idx + 1;
     tr.innerHTML = `
       <td><input class="input" type="text" maxlength="60" name="debts[${idx}].label" value="${name ?? ""}" aria-label="Debt ${row} name" required></td>
-      <td>
+      <td class="debt-type">
         <select class="input" name="debts[${idx}].type" aria-label="Debt ${row} type">
           ${debtTypes.map(t => `<option value="${t}" ${t === type ? "selected" : ""}>${t.replace("_"," ")}</option>`).join("")}
         </select>

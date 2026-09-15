@@ -108,4 +108,32 @@ class SnapshotFormTests {
 
         assertThat(form.getMonthlyTakeHomeIncome()).isEqualTo("6200");
     }
+
+    @Test
+    void leadingWhitespaceOnAnOverlongNumericValueDoesNotShrinkItUnderTheCap() {
+        SnapshotForm form = new SnapshotForm();
+        String huge = "9".repeat(1000);
+
+        form.setMonthlyTakeHomeIncome(" " + huge);
+
+        // Stripped before capping: the leading space never occupies one of the capped digit positions, so the
+        // stored value is exactly as long (and exactly as invalid, once the mapper parses it) as the unpadded case.
+        assertThat(form.getMonthlyTakeHomeIncome()).hasSize(Money.MAX_TEXT_LENGTH + 1);
+        assertThat(form.getMonthlyTakeHomeIncome()).doesNotContain(" ");
+    }
+
+    @Test
+    void debtRowLabelCapDoesNotSplitASurrogatePair() {
+        SnapshotForm.DebtRow row = new SnapshotForm.DebtRow();
+        String label = "A".repeat(59) + "😀" + "B".repeat(10); // an emoji straddles code point 60
+
+        row.setLabel(label);
+
+        String stored = row.getLabel();
+        assertThat(stored.codePointCount(0, stored.length())).isEqualTo(60);
+        assertThat(stored).isEqualTo("A".repeat(59) + "😀");
+        // Neither surrogate half is left dangling on its own.
+        assertThat(Character.isSurrogate(stored.charAt(stored.length() - 1))
+                && !Character.isLowSurrogate(stored.charAt(stored.length() - 1))).isFalse();
+    }
 }

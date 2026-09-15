@@ -38,6 +38,19 @@ class SnapshotFormMapperTests {
     }
 
     @Test
+    void anOverlongMoneyFieldPaddedWithLeadingWhitespaceStaysZeroRatherThanBecomingACappedNumber() {
+        SnapshotForm form = new SnapshotForm();
+        // Without stripping before the form's own length cap, capping this down could leave exactly
+        // Money.MAX_TEXT_LENGTH digits once the mapper strips the leading space — a valid, if capped, amount
+        // instead of the invalid one this over-long value should stay.
+        form.setMonthlyTakeHomeIncome(" " + "9".repeat(40));
+
+        FinancialSnapshot snapshot = SnapshotFormMapper.toSnapshot(form, ASOF);
+
+        assertThat(snapshot.monthlyTakeHomeIncome()).isEqualTo(Money.ZERO);
+    }
+
+    @Test
     void unparseableMoneyFieldBecomesZero() {
         SnapshotForm form = new SnapshotForm();
         form.setMonthlyTakeHomeIncome("not a number");

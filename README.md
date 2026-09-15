@@ -49,10 +49,18 @@ first run needs an internet connection.
 - `web` — the controller, lenient form-to-domain mapping, view models, and the
   Thymeleaf templates.
 
-**Request flow:** `GET /` renders the form. `POST /assess` builds a snapshot from the
-submitted values and renders the result. The result page carries every submitted value
-in hidden fields and posts them back to the server, so "Change my numbers" and "Show
-payoff schedule" both work with no session, no cookies, and no JavaScript.
+**Request flow:** `GET /` renders the form. `POST /sample` fills it with a chosen sample
+household; `POST /debts/add` and `POST /debts/remove/{index}` add and remove a debt row.
+`POST /assess` builds a snapshot from the submitted values and renders the result;
+`breakdown=true` also renders the "Your loans" and "Payoff schedule" iframes below the
+seven stages. `POST /edit` ("Change my numbers") re-renders the form from the result
+page's hidden copy. The result page carries every submitted value in hidden fields and
+posts them back to the server, so nothing here needs a session, cookies, or JavaScript.
+
+**Security hardening:** a strict Content-Security-Policy and other browser security
+headers on every response, `Cache-Control: no-store` outside static assets, request-size
+and parameter-count limits with multipart disabled, a bind allow-list plus length caps on
+every form field, and a custom error page instead of stack traces.
 
 ## Key design decisions
 
@@ -72,13 +80,19 @@ payoff schedule" both work with no session, no cookies, and no JavaScript.
 
 JUnit 5 and MockMvc cover the web layer; domain rules are tested at their boundaries
 (the exact dollar and percentage thresholds each stage evaluates). CI runs the full
-suite on every push.
+suite on every push to `main` and on every pull request.
 
 ## Project history
 
 An earlier, larger version of this project scoped out JSON APIs, CSV import/export, a
 JavaScript-driven UI, and an architecture test suite; that scope was deliberately cut
 back to the focused version described above, then grown again one visually checked
-feature at a time. Design notes for the current version live in
-[`docs/design/`](docs/design/) and [`docs/scope.md`](docs/scope.md); the rest of the
-history is in git.
+feature at a time. [`docs/design/`](docs/design/) and [`docs/scope.md`](docs/scope.md)
+are design history — decisions as they were made at the time, not a description of the
+current app; where a later change supersedes one, the affected document says so at the
+top. The rest of the history is in git.
+
+`docs/mockups/` holds the static, pre-build HTML/CSS design artifacts each template was
+carried forward from (see "Key design decisions" above); they use a placeholder product
+name ("Gazelle") and throwaway `sessionStorage`/JavaScript for their own demo
+interactivity, and are not served by the app.

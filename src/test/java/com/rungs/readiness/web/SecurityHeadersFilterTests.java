@@ -2,6 +2,7 @@ package com.rungs.readiness.web;
 
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import jakarta.servlet.FilterChain;
@@ -35,7 +36,7 @@ class SecurityHeadersFilterTests {
 
         filter.doFilterInternal(request, response, chain);
 
-        verify(response, org.mockito.Mockito.never()).setHeader("Cache-Control", "no-store");
+        verify(response, never()).setHeader("Cache-Control", "no-store");
         verify(chain).doFilter(request, response);
     }
 

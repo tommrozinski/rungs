@@ -7,10 +7,9 @@ import java.util.Optional;
  * The five sample households the "Load sample data" control offers: each constant's {@code id} (the select
  * option's value), its {@code label} (the option's display text), and the fully populated {@link SnapshotForm} it
  * fills the form with. The single source for both the select's options and the id-to-form lookup, so the two never
- * drift apart. The mortgage payments, balances, and rates are fixed; {@link com.rungs.readiness.domain.model.Mortgage}
- * has no maturity, so none is set here.
+ * drift apart. The mortgage payments, balances, and rates are fixed.
  */
-public enum SampleHousehold {
+enum SampleHousehold {
 
     BURIED("buried", "Buried in debt") {
         @Override

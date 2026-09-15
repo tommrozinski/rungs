@@ -17,8 +17,10 @@ class DebtTypeOptionTests {
     }
 
     @Test
-    void labelsReplaceUnderscoresWithSpaces() {
+    void labelsAreSentenceCaseWithUnderscoresAsSpaces() {
         assertThat(DebtTypeOption.all())
-                .contains(new DebtTypeOption("STUDENT_LOAN", "STUDENT LOAN"));
+                .contains(new DebtTypeOption("STUDENT_LOAN", "Student loan"),
+                        new DebtTypeOption("CREDIT_CARD", "Credit card"),
+                        new DebtTypeOption("AUTO", "Auto"));
     }
 }
