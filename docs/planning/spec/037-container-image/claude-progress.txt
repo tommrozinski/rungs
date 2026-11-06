@@ -1,0 +1,49 @@
+# Implementation progress: 037-container-image
+
+Started: 2026-09-13
+
+## Story 037 — Container image
+- 2026-09-13. TDD on the readiness/liveness change: added
+  `readinessProbeReturnsOnlyUpStatus` and `livenessProbeReturnsOnlyUpStatus` to
+  `ActuatorExposureTests` (red on 404), flipped
+  `management.endpoint.health.probes.enabled` to `true` (green). Enabling probes also
+  makes plain `/actuator/health` list the group names, so
+  `healthEndpointReturnsUpStatusAndTheProbeGroupNames` replaced the old exact-body
+  assertion with separate `$.status`/`$.groups` checks; `envEndpointIsNotExposed` and the
+  discovery-links test needed no change.
+- Files: `Dockerfile` (new, 3-stage), `.dockerignore` (new), `README.md` ("Run with
+  Podman" section), `src/main/resources/application.properties` (probes enabled),
+  `src/test/java/com/rungs/readiness/ActuatorExposureTests.java`.
+- Base images: `eclipse-temurin:25.0.4_7-jdk-noble` (build), `eclipse-temurin:25.0.4_7-jre-noble`
+  (runtime) — current Temurin 25 tags as of today, Ubuntu Noble, no `latest`.
+- Blocker found and fixed: neither base image ships `curl`/`wget`/`unzip`. Installed
+  `unzip` in the build stage (mvnw needs it — without it, it silently downloads the
+  `.tar.gz` Maven distribution and the pinned `.zip` checksum then fails) and `curl` in
+  the runtime stage (for `HEALTHCHECK`), both via `apt-get`, layers removed after.
+- Layered jar: `java -Djarmode=tools -jar app.jar extract --layers --launcher
+  --destination extracted` (Boot 4.1.1; note the flag is `--launcher`, not `--launch`).
+  Produces `dependencies/`, `spring-boot-loader/`, `snapshot-dependencies/`,
+  `application/`.
+- Non-root: system group/user `rungs` (uid/gid 999), no home dir, no login shell; runtime
+  `chown`s each copied layer.
+- `podman build` defaults to OCI format, which silently drops `HEALTHCHECK`; README uses
+  `podman build --format docker -t rungs .` (Docker CLI already defaults to that format).
+- Verification, in order:
+  - `JAVA_HOME=/opt/homebrew/opt/openjdk/... ./mvnw -B -ntp clean verify`: 1386 tests,
+    green, coverage gates met, no container engine touched.
+  - `podman build --format docker -t rungs .`: green; image `370 MB`.
+  - `podman run -d --read-only --tmpfs /tmp -p 18080:8080 --name rungs-smoke rungs`:
+    starts.
+  - `podman exec rungs-smoke id` → `uid=999(rungs) gid=999(rungs)`.
+  - `podman healthcheck run rungs-smoke` → exit 0; `podman inspect` health → `healthy`
+    within ~15s (start-period 30s, interval 10s).
+  - `curl localhost:18080/actuator/health/readiness` → `{"status":"UP"}`.
+  - `POST /v1/assessments` (minimal snapshot) → HTTP 200, full stage assessment body.
+  - Rebuild after a one-line comment change to `RungsApplication.java`: build log showed
+    `Using cache` for the `dependencies`, `spring-boot-loader`, and
+    `snapshot-dependencies` `COPY` steps; only `application` and later steps rebuilt.
+    Change reverted before committing; image rebuilt once more to match committed source
+    (identical layer IDs to the first build).
+  - Smoke container removed after checks (`podman rm -f rungs-smoke`); image kept.
+- Podman: machine `podman-machine-default` (applehv, 5 min old) was already running by
+  the time of the first `podman machine list` poll; no `init`/`start` needed.

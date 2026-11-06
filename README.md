@@ -96,3 +96,6 @@ top. The rest of the history is in git.
 carried forward from (see "Key design decisions" above); they use a placeholder product
 name ("Gazelle") and throwaway `sessionStorage`/JavaScript for their own demo
 interactivity, and are not served by the app.
+
+The original plan, including the user stories and the per-story requirements, design, and
+task specs from the spec-driven workflow, is in [`docs/planning/`](docs/planning/).

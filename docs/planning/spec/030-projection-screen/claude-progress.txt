@@ -1,0 +1,122 @@
+Implementation progress: 012 + 034 + 030 (combined spec)
+Mode: TDD lean, Sonnet agents, started 2026-09-13
+
+Task 1.1 (012 non-fatal warnings) — done, 2026-09-13
+- domain/model: WarningCode (EXPENSES_EXCEED_INCOME, NEGATIVE_AMORTIZATION,
+  EMERGENCY_FUND_TARGET_CAPPED), Severity (CAUTION), Warning(code, severity, message, debtIds),
+  MonthlyInterest.on(Money balance, BigDecimal annualRate) — the exact formula pulled out of
+  PayoffSimulator (balance * rate / 1200, DECIMAL128, one half-even round to the cent via
+  Money.times). PayoffSimulator refactored to call it; all its existing tests and the golden
+  CSV/JSON stayed green unchanged.
+- domain/stage: WarningDetector.detect(FinancialSnapshot), pure, sorted in WarningCode order.
+  100% line and branch coverage (confirmed in the JaCoCo HTML report).
+- Verified FullEmergencyFundEvaluator really caps the target at 6 months (MAX_MONTHS = 6) before
+  writing the EMERGENCY_FUND_TARGET_CAPPED message — no contradiction found.
+- application: deleted application.Warning; ReadinessAssessment now carries domain.model.Warning;
+  AssessmentService and ProjectionService both call WarningDetector.detect on the normalized
+  snapshot; application/response/WarningResponse is now (code, severity, message, debtIds), with
+  code and severity written as the enum names. AssessmentPageViews (view layer) keeps mapping
+  through WarningResponse, not the domain type, per ArchUnit AC-C / the view-depends-on-
+  application-only rule.
+- Existing goldens (src/test/resources/golden/*.json) were confirmed to trigger no warnings and
+  needed no changes. One existing contract test
+  (AssessmentContractTests.ac11FiveHundredSavedAndCreditCardDebtIsStageOne) asserted a hard-coded
+  response body with "warnings":[] for a scenario whose income/expenses default to $0 against a
+  $300 minimum payment — a real negative monthly surplus. That inline expectation (not a golden
+  resource file) was updated to include the correct EXPENSES_EXCEED_INCOME warning; this is the
+  detector now doing its job, not a golden edit.
+- Tests added: MonthlyInterestTests, WarningTests, WarningDetectorTests (each condition verbatim,
+  1/2/3-debt negative-amortization label joins, all three together in code order, boundary cases:
+  minimum == interest, surplus == 0, months == 6 are not warnings), plus contract tests on
+  /v1/assessments and /v1/projections asserting the full warning JSON shape (code, severity,
+  message, debtIds) and that all three conditions fire together in order.
+- Full build: `./mvnw -B -ntp clean verify` — BUILD SUCCESS, 1542 tests, 0 failures, ArchUnit and
+  scan tests green, JaCoCo bundle and per-domain-package checks met.
+
+## Task 1.2 — 034 htmx and JavaScript policy (Sonnet, worktree)
+- 2026-09-13. config.SecurityHeadersFilter (CSP per REQ-002, nosniff, Referrer-Policy; error dispatches too),
+  htmx-config meta (allowEval false, includeIndicatorStyles false, swap 400/422), noscript "Rungs needs
+  JavaScript turned on.", dev gallery now uses the layout head, static/js/vendor/VERSIONS.md (htmx 2.0.10,
+  0BSD, SHA-256 checked by a test). Tests: headers incl. 404, no Set-Cookie, 405 on GET results routes.
+- Cherry-picked onto main after 012; combined clean verify 1556 tests green.
+
+## Task 2.1 — 030 projection screen (Sonnet, main checkout)
+- 2026-09-13. Sonnet implementation-engineer, TDD.
+- application: `ProjectionPage` (`ProjectionResponse` + `firstRetirementMonth`, scanned from the schedule's first
+  non-empty `retiredDebtIds`) and `ProjectionService.projectPage(ProjectionInput)`.
+- adapter.in.web.view: `ProjectionPageController` (`POST /projection`, `/projection/results`,
+  `/projection/schedule`), all binding `@ModelAttribute SnapshotInput` at the root (029 hidden field names) plus
+  `extraMonthlyPayment`/`strategy` request params and a fixed horizon of 360, validated through
+  `SnapshotValidator.validate(ProjectionInput)` (the one entry point, cascaded). `/projection` re-renders the
+  snapshot form on failure like a failed `POST /assessment` (stripping the `/snapshot` pointer prefix
+  `SnapshotValidator` reports for a cascaded `ProjectionInput` violation, so the same `FieldRejection`s feed
+  `SnapshotFormController.render`); `/projection/results` and `/projection/schedule` return a 400 with a small
+  caution fragment on failure (`response.setStatus` before returning the fragment view name — no exception
+  needed, Spring renders the Thymeleaf fragment at that status as-is). Added `ProjectionPageController` to
+  `SnapshotBindingAdvice`'s `assignableTypes` per the design.
+- View records: `ScheduleView` (columns, capped or full rows, show-all button/label, total months, truncated),
+  `ProjectionResultsView` (value label, warnings, three stat cards, schedule), `ProjectionPageView` (document
+  title, control values, hidden fields, results). `ProjectionPageViews` builds all of it in Java (AC-G): "Debt-free
+  in" ("34 months"/"1 month"/"0 months"/"Not within 30 years"), "First debt paid off" ("Month N"/"Not within 30
+  years"), the value label ("$300 extra a month", cents kept only when non-zero), schedule columns ("Month" then
+  "{label} payment"/"{label} balance" per debt in supplied order — supplied order is stable across strategies since
+  `ProjectionResponse.debts()` is never re-sorted), "—" for a debt with no line that month, row tint from a
+  non-empty `retiredDebtIds`, the 24-row cap with a `showAllButton`/`showAllLabel` beyond that, and the truncated
+  foot copy. Reused C-03 `toggle-group`, C-08 `stat-card`, C-09 `warning-banner`, and C-10 `schedule-table`
+  unchanged.
+- Templates: `templates/projection/page.html` (control form with the range `extraMonthlyPayment` 0–2000 step 25,
+  `aria-describedby` to the value label, the C-03 strategy toggle, hidden snapshot fields, `hx-post="/projection/results"
+  hx-trigger="input changed delay:250ms" hx-target="#results" hx-sync="this:replace"`; `#results
+  aria-live="polite"`) and a new `fragments/projection-results.html` holding three fragments: `resultsBody(view)`
+  (the `#results` div's own inner content — warnings, three stat cards, schedule — used both inline in the full
+  page and as the first part of the `/projection/results` response), `resultsResponse(view)` (a `th:block` wrapping
+  `resultsBody` plus the value-label `<span>` with `hx-swap-oob="true"`, the whole `/projection/results` response,
+  so the control card's label updates on every change without duplicating the id on first load), and
+  `scheduleContainer(schedule)` (the table, the "Show all N months" button when applicable, and the truncated
+  foot; also the whole `/projection/schedule` response, swapped in via `hx-swap="outerHTML"` so the button is
+  removed along with everything else). A fourth fragment, `invalid`, is the small caution banner for the two
+  fragment routes' 400s.
+- Deviation (recorded per design): REQ-007's "Compare snowball and avalanche" link is omitted; story 031 is
+  deferred and owns that route.
+- Decisions: document title "Your payoff plan · Rungs"; H1 "Your payoff plan"; both non-fatal-warning stat cards
+  and the two outcome stat cards use the neutral tone (no tone rule was specified); the range input's `value`
+  attribute is the extra amount's bare decimal (e.g. "300.00"), independent of the value label's trimmed display
+  text.
+- Tests added: `ProjectionPageTests` (firstRetirementMonth, incl. empty/none-retire), `ProjectionServiceTests`
+  (`projectPage`), `ProjectionPageViewsTests` (value label incl. cents/blank/zero, stat text incl. singular/null,
+  schedule columns/dash/tint, 24-row cap and full schedule, warnings, strategy default, hidden fields, document
+  title), `ProjectionPageTemplateTests` and `ProjectionResultsFragmentTests` (Thymeleaf-only, via
+  `FragmentRenderer`: full page markup, the `hx-*` stale-response attributes, the OOB value label, show-all button
+  and truncated foot presence rules), and `ProjectionPageControllerTests` (MockMvc): full page, results fragment
+  with the OOB label, invalid input on all three routes (form re-render vs 400 with the caution fragment), GET is
+  405 on all three routes, security headers present, a warnings-banner household (reusing 012's negative-
+  amortization contract fixture), the 24-row cap plus `/projection/schedule` returning every month, a truncated
+  household, the 029 stage-2 CTA round trip landing on this page with $0/SNOWBALL, and a figures-match test
+  comparing every rendered schedule cell, retired-row tint, and the three stats against `POST /v1/projections` for
+  the AC-2.1 three-debt household under both SNOWBALL and AVALANCHE.
+- `export JAVA_HOME=... && ./mvnw -B -ntp clean verify`: BUILD SUCCESS, 1613 tests, 0 failures, ArchUnit, the AC-G
+  scan, and JaCoCo gates all green.
+
+Review fixes
+- HIGH: `projection/page.html`'s `#projection-controls` trigger was `input changed delay:250ms`.
+  htmx's `changed` modifier caches the last dispatched value per element; a radio's `value` never
+  changes, so re-clicking an already-checked strategy radio (Snowball -> Avalanche -> Snowball)
+  was silently suppressed and the results went stale. Changed to `hx-trigger="input delay:250ms"`
+  (no `changed`); `hx-sync="this:replace"` still discards any now-stale in-flight request.
+  Deviation recorded in design.md Sec.2 under "030 projection screen". Updated the two markup
+  tests that pinned the old attribute value (`ProjectionPageTemplateTests`,
+  `ProjectionPageControllerTests`) and added
+  `controlFormTriggerOmitsChangedSoReclickingTheSameStrategyRadioStillFiresARequest`, asserting
+  the trigger does not contain "changed", with a comment explaining why.
+- MEDIUM: added hostile-index and tampered-parameter tests to `ProjectionPageControllerTests`,
+  mirroring `AssessmentPageControllerTests` / `SnapshotFormControllerTests`: out-of-range
+  `debts[256]`/`debts[99999]` -> 400 on all three routes (`/projection`, `/projection/results`,
+  `/projection/schedule`); a sparse `debts[200]` -> status < 500 on all three; tampered
+  `strategy=X`/blank and `extraMonthlyPayment=-5`/`abc` -> never 5xx (form re-render on
+  `/projection`, 400 on the two fragment routes). All passed against the existing
+  `SnapshotBindingAdvice`/`SnapshotValidator` wiring with no production code changes needed.
+- LOW: added `staticResourcesCarryTheSecurityHeaders` to `SecurityHeadersIntegrationTests`,
+  asserting GET `/css/rungs.css` and `/js/vendor/htmx.min.js` both carry the CSP, nosniff, and
+  Referrer-Policy headers alongside a 200.
+- `export JAVA_HOME=... && ./mvnw -B -ntp clean verify`: BUILD SUCCESS, 1635 tests, 0 failures, 0
+  errors, JaCoCo gates all green.

@@ -1,0 +1,20 @@
+# Implementation progress: 019-ci-pipeline-with-quality-gates
+
+Mode: config/infra story (TDD exception); lean process — one correctness review per story
+Started: 2026-09-13
+
+## Story 019 — CI pipeline with coverage gates
+- 2026-09-13. Done directly by the orchestrator (config only).
+- Files: pom.xml (jacoco-maven-plugin 0.8.15: prepare-agent, report and check at verify;
+  BUNDLE line >= 0.80, PACKAGE line >= 0.85 for domain and domain.*),
+  .github/workflows/ci.yml (new), README.md (badge, gate note).
+- Verification: `./mvnw -B clean verify` 339 tests, "All coverage checks have been met", no
+  WARNING (bundle 98.5%, domain.model 100%). Negative: BUNDLE min 0.99 -> BUILD FAILURE;
+  domain min 1.01 -> rule evaluated for domain.model, BUILD FAILURE; pom restored. Offline
+  `jacoco:report` from target/jacoco.exec renders the report.
+- Review: code-reviewer Medium fixed (a failing test stops before verify, so no report was
+  uploaded; added a report-only step on failure). Low fixed (don't cancel in-progress runs
+  on main). Low accepted: duplicate push+PR runs for same-repo branches; `-DskipTests`
+  skips the check locally. Security: contents: read, no secrets, no untrusted input in run
+  steps; actions pinned by major tag per REQ-001.
+- CI: first run on fba3974 green (run 34774664569).

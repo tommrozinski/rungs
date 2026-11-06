@@ -1,0 +1,41 @@
+# Implementation progress: 024–026 (combined spec)
+
+Mode: TDD for Java/tests; lean process. One implementation-engineer (Opus, started before the
+2026-09-13 model-routing change) ran all three phases in a worktree off 73a69aa; resumed once
+after an API spend limit.
+
+## Stories 024 + 025 — Tokens, font, core components (tasks 1.1, 2.1)
+- 2026-09-13. Not merged yet (waits for story 011 in main; both touch pom.xml).
+- Files: static/css/rungs.css (246 lines total incl. 026); fonts/InterVariable.woff2 (Inter v4.1,
+  SHA-256 693b77d4…a8e3; release zip SHA-256 9883fdd4…b11e) + LICENSE.txt (OFL); fragments for
+  button, text-field, toggle-group, checkbox, stat-card, warning-banner, schedule-table;
+  dev/components.html; view ComponentGalleryController (@Profile dev), GallerySamples,
+  ScheduleRowView; pom.xml adds org.jsoup:jsoup 1.23.2 (test).
+- Tests: ColorLiteralScanTests 34, DesignTokensTests 3 (20 board tokens verbatim), TemplateMarkupScanTests
+  11 (th:utext, style=, th:style, <style>), fragment tests per component, ComponentGalleryTests
+  (200 dev / 404 otherwise). Worktree suite 903, all gates green.
+- Color-scan rule: comments ignored; first :root block per CSS file blanked; rgb/rgba/hsl/hsla
+  fail anywhere else; hex = # + 3/4/6/8 hex digits, not after a word char or &, only in CSS
+  property values (selectors pass); in templates any hex fails except at the start of href/src/
+  action values. Known false positive: url(#abc) in CSS.
+- Accepted decisions: all 20 board color tokens; --elevation-flat/--elevation-card (board frame
+  shadow dropped); merged font fallback stack; labels and quiet text use --ink-700 (ink-500 is
+  ~4.4:1, below AA for small text); gold never text; retired schedule row adds hidden "debt
+  retired" text; schedule table takes list parameters.
+- Review: none for 024/025 by the model-routing rule (low risk; color-literal, markup, AC-G, and
+  design-token scans plus CI stand in).
+
+## Story 026 — Stage ladder and verdict (task 3.1)
+- 2026-09-13. Same agent and worktree; not merged yet.
+- Files: view StageRowView (adds discGlyph, stageLabel, progressWidth, progressComplete so templates
+  never build strings), VerdictView, StageRowViews (all fixed copy: titles, chip labels, CTA labels and
+  placeholder actions /projection and /snapshot, satisfied reason, stage 7 verdict); fragments
+  status-chip, stage-row, progress-bar (role=progressbar + SVG rect th:width from Java "40.0%";
+  width transition off under prefers-reduced-motion), stage-ladder (<ol>, aria-current="step",
+  optional hiddenFields fragment argument for the CTA form), verdict; gallery samples.
+- Tests: StageRowViewsTests 30, StageLadderFragmentTests 13.
+- Accepted decisions: satisfied-row reason "This stage is complete."; verdict uses fixed copy when
+  current stage 7 is SATISFIED or SKIPPED; placeholder CTA actions to be matched by 027/030.
+- Review (Sonnet, view logic only): Medium fixed by the orchestrator — verdict() now rejects an
+  unknown or mis-cased status like row() does (tests added); Low fixed — completeness pinned for
+  "100" and "100.00". Worktree build: 905 tests, all gates green.

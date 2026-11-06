@@ -1,0 +1,68 @@
+{
+  "specName": "008-debt-payoff-simulation-engine",
+  "covers": [
+    "008",
+    "009",
+    "010"
+  ],
+  "generatedAt": "2026-09-13T00:00:00Z",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Orderings and value records",
+      "tasks": [
+        {
+          "id": "1.1",
+          "description": "Add domain.projection PayoffOrdering, Strategy (SNOWBALL, AVALANCHE with stable supplied-order tie-break), SimulationInput, PayoffSimulation, MonthlyPeriod, DebtLine records with validation, plus ordering and record tests (009 REQ-001 to REQ-008)",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/projection/",
+            "src/test/java/com/rungs/readiness/domain/projection/"
+          ],
+          "dependencies": [],
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Payoff simulator (008)",
+      "tasks": [
+        {
+          "id": "2.1",
+          "description": "Add PayoffSimulator implementing 008 REQ-002 to REQ-010, the independent Python golden script and AC-2.1 CSV fixture, FixedOrder test ordering, per-step, AC-2.2 to AC-2.5, invariant, and determinism tests",
+          "files": [
+            "src/main/java/com/rungs/readiness/domain/projection/PayoffSimulator.java",
+            "src/test/java/com/rungs/readiness/domain/projection/",
+            "src/test/resources/golden/payoff-three-debts-snowball.csv",
+            "spec/008-debt-payoff-simulation-engine/golden-payoff.py"
+          ],
+          "dependencies": [
+            "1.1"
+          ],
+          "status": "completed"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Projection endpoint (010)",
+      "tasks": [
+        {
+          "id": "3.1",
+          "description": "Add ProjectionInput with HorizonMonths and StrategyName validation, SnapshotValidator.validate(ProjectionInput), StageLadder bean, ProjectionService, projection response records, ProjectionController POST /v1/projections, both golden JSON files, contract and performance tests",
+          "files": [
+            "src/main/java/com/rungs/readiness/application/",
+            "src/main/java/com/rungs/readiness/adapter/in/web/api/ProjectionController.java",
+            "src/main/java/com/rungs/readiness/config/ApplicationConfiguration.java",
+            "src/test/java/com/rungs/readiness/",
+            "src/test/resources/golden/"
+          ],
+          "dependencies": [
+            "2.1"
+          ],
+          "status": "completed"
+        }
+      ]
+    }
+  ]
+}
