@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rungs — Payoff schedule</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/schedule.css">
+</head>
+<body class="schedule-doc">
+
+  <p class="no-loans" th:unless="${schedule.hasLoans}">No debts or mortgage to pay down.</p>
+
+  <div class="table-wrap" th:if="${schedule.hasLoans}">
+    <table class="schedule">
+      <thead>
+        <tr>
+          <th scope="col">Month</th><th scope="col">Extra cash</th><th scope="col">Cascade</th><th scope="col">Total avail</th>
+          <th:block th:each="name : ${schedule.loanNames}">
+            <th scope="col" th:text="${name + ' open'}"></th>
+            <th scope="col" th:text="${name + ' int'}"></th>
+            <th scope="col" th:text="${name + ' pmt'}"></th>
+            <th scope="col" th:text="${name + ' end'}"></th>
+          </th:block>
+          <th scope="col">Mo int</th><th scope="col">Total bal</th><th scope="col">Cum int</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="month : ${schedule.months}" th:classappend="${month.closed} ? 'closed' : null">
+          <td th:text="${month.monthLabel}"></td>
+          <td th:text="${month.extraCash}"></td>
+          <td th:text="${month.cascade}"></td>
+          <td th:text="${month.totalAvailable}"></td>
+          <th:block th:each="lm : ${month.loanMonths}">
+            <td th:text="${lm.open}"></td>
+            <td th:text="${lm.interest}"></td>
+            <td th:text="${lm.payment}"></td>
+            <td th:text="${lm.end}"></td>
+          </th:block>
+          <td th:text="${month.monthInterest}"></td>
+          <td th:text="${month.totalBalance}"></td>
+          <td th:text="${month.cumulativeInterest}"></td>
+        </tr>
+        <tr class="totals">
+          <th scope="row">TOTAL</th>
+          <td th:text="${schedule.totalExtraCash}"></td>
+          <td></td>
+          <td></td>
+          <th:block th:each="paid : ${schedule.totalPaidPerLoan}">
+            <td></td>
+            <td></td>
+            <td th:text="${paid}"></td>
+            <td></td>
+          </th:block>
+          <td></td>
+          <td></td>
+          <td th:text="${schedule.totalInterest}"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="foot-note" th:if="${schedule.hasLoans and schedule.truncated}">This schedule stops at 600 months.</p>
+
+</body>
+</html>

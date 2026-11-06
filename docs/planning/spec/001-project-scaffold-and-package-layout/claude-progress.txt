@@ -1,0 +1,203 @@
+# Implementation progress: 001-project-scaffold-and-package-layout
+
+Mode: code-only (no test infrastructure existed at start; tests are delivered as tasks 4.1–4.3)
+Started: 2026-09-13
+
+## Task 1.1 — Install Maven (brew install maven, which brings OpenJDK 26) with user approval, and confirm mvn -v reports Maven 3.9.16 on Java 26
+- Completed: 2026-09-13
+- Files changed: none (machine setup)
+- Tests: n/a (infra task)
+- Notes: `brew install --cask temurin@25` failed: its installer needs sudo with a password,
+  which a non-interactive session cannot supply. User chose to build locally with the
+  Homebrew OpenJDK 26 that Maven installed, rather than add another JDK. Java 25 stays the
+  product target (java.version=25 gives --release 25; Enforcer [25,); CI in story 019 and
+  container in story 037 use Temurin 25). Updated requirements assumptions, design §2, §5,
+  §12, §13, and tasks 1.1 and 2.2 to match. `mvn -v`: Maven 3.9.16, Java 26.0.2.1 (Homebrew).
+  OpenJDK is keg-only: set JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home.
+
+## Task 2.1 — Write pom.xml: parent spring-boot-starter-parent 4.1.1, com.rungs:rungs:0.1.0-SNAPSHOT, java.version 25, the five starters, spring-boot-maven-plugin, maven-enforcer-plugin (...), and a pluginManagement pin for maven-site-plugin 3.22.0
+- Completed: 2026-09-13
+- Files changed: pom.xml (new)
+- Tests: n/a (build config). `mvn -B -ntp validate` (Homebrew Maven 3.9.16, OpenJDK 26):
+  all four Enforcer rules passed, BUILD SUCCESS. Enforcer 3.6.3 from parent.
+- Notes: removing the maven-site-plugin pin makes requirePluginVersions fail
+  ("3.12.1 via default lifecycle bindings"), so the pin is required. Correctness review: no
+  findings; it confirmed the Java and SNAPSHOT failure messages on scratch pom copies and that
+  the project's own -SNAPSHOT version passes. review-changes: no blockers or warnings; one
+  cosmetic note (long comment line) left as is. Added <relativePath/> on the parent (standard).
+
+## Task 2.2 — Generate the Maven wrapper (mvn -N wrapper:wrapper -Dmaven=3.9.16 -Dtype=only-script) and confirm ./mvnw -v reports Maven 3.9.16 on Java 26 with JAVA_HOME set to Homebrew OpenJDK
+- Completed: 2026-09-13
+- Files changed: mvnw (755, LF), mvnw.cmd (CRLF), .mvn/wrapper/maven-wrapper.properties (all new)
+- Tests: n/a (build infra). `./mvnw -v`: Maven 3.9.16, Java 26.0.2.1. `./mvnw -B -ntp validate`:
+  all four Enforcer rules passed, BUILD SUCCESS.
+- Notes: wrapper plugin pinned on the command line to 3.3.4 (latest), not added to pom.
+  only-script type, so no jar. Added beyond the task: distributionSha256Sum
+  5af3b743…d89ce, computed from a zip verified against the official .sha512/.sha1 (Central
+  has no .sha256); fresh download passed, zeroed checksum was rejected. Must be updated when
+  Maven is upgraded. Correctness review (independently re-verified the checksum): no
+  Critical/High. Medium: no .gitattributes, so a Windows clone with core.autocrlf=true can
+  check mvnw out as CRLF (bad interpreter under WSL/Git Bash), and mvnw.cmd CRLF is
+  unprotected. Low: planned .editorconfig (task 5.2) forces LF, which could flip mvnw.cmd on
+  save. Reported to user; not fixed in this task.
+
+## Scope change — task 5.2 extended (2026-09-13)
+- User approved folding the line-ending fix into task 5.2: add .gitattributes (text=auto
+  eol=lf; /mvnw eol=lf; *.cmd, *.bat eol=crlf) and a *.{cmd,bat} CRLF section in
+  .editorconfig; renormalize and confirm with git ls-files --eol (mvnw i/lf 100755,
+  mvnw.cmd i/crlf). Task 5.2 now depends on 2.2. Design §1, §8, §13 updated.
+
+## Task 3.1 — Add RungsApplication main class, application.properties (application name, health-only exposure, show-details never, probes disabled), and templates/.gitkeep and static/.gitkeep
+- Completed: 2026-09-13
+- Files changed: src/main/java/com/rungs/readiness/RungsApplication.java,
+  src/main/resources/application.properties, src/main/resources/templates/.gitkeep,
+  src/main/resources/static/.gitkeep (all new)
+- Tests: none in this task (tests are 4.1–4.3). `./mvnw -B -ntp compile`: Enforcer passed,
+  9 sources compiled with release 25, BUILD SUCCESS. spring-boot-health 4.1.1 is on the
+  classpath via the actuator starter (holds the probes and health properties in Boot 4).
+- Notes: ran in parallel with 3.2 (disjoint files; no Maven in subagents). Correctness
+  reviewer packaged and ran the jar: /actuator/health → 200 {"status":"UP"}; /actuator/env
+  → 404; /actuator _links = self, health, health-path; /actuator/health/liveness → 404
+  (probes off); no startup WARN (no Thymeleaf template-location warning). No findings.
+  review-changes: no blockers or warnings.
+
+## Task 3.2 — Add package-info.java with the design's one-line Javadoc to each of the eight architecture packages
+- Completed: 2026-09-13
+- Files changed: 8 × src/main/java/com/rungs/readiness/**/package-info.java (all new)
+- Tests: none in this task. javac --release 25 and -Xdoclint:all clean; compiled in the
+  Maven build above.
+- Notes: `in` confirmed legal in package names (not a reserved or contextual keyword).
+  Correctness reviewer diffed the Javadoc text against design §6: identical; no trademark
+  terms. No findings. Heads-up for story 015: ArchUnit rules over packages with no classes
+  can fail with "empty should" unless allowed. review-changes: no blockers or warnings.
+
+## Task 4.1 — Add RungsApplicationTests with a @SpringBootTest contextLoads test
+- Completed: 2026-09-13
+- Files changed: src/test/java/com/rungs/readiness/RungsApplicationTests.java (new)
+- Tests: contextLoads (REQ-009). Import checked in spring-boot-test 4.1.1. Written in
+  parallel with 4.2 without running Maven; exercised in the 4.3 reviewer's full test run.
+- Notes: correctness review: no findings (mock web environment, no port clash).
+
+## Task 4.2 — Add ActuatorExposureTests (@SpringBootTest, @AutoConfigureMockMvc, MockMvcTester) asserting /actuator/health returns 200 with body exactly {"status":"UP"}, /actuator/env returns 404, and /actuator _links keys are exactly self, health, and health-path
+- Completed: 2026-09-13
+- Files changed: src/test/java/com/rungs/readiness/ActuatorExposureTests.java (new)
+- Tests: healthEndpointReturnsOnlyUpStatus, envEndpointIsNotExposed,
+  discoveryPageListsOnlyHealthLinks. `./mvnw test -Dtest=ActuatorExposureTests`: 3 run, 0
+  failures. Mutations via -DargLine: probes on → health test fails (body gains groups);
+  exposure health,env → env and discovery tests fail (extra keys env, env-toMatch).
+- Notes: constructor injection with @Autowired (AC-D). Correctness review: no findings;
+  @AutoConfigureMockMvc gives a second cached context (expected). The -DargLine mutation
+  commands would need @{argLine} if the pom later sets argLine (e.g. JaCoCo in story 019).
+
+## Task 4.3 — Add NeutralVocabularyTests, a plain JUnit test that scans every repo file except .git/, target/, IDE folders, prd/, backlog/, and its own source for the PRD §1 trademark terms and owner name (any case; space, hyphen, underscore, or no separator) and fails listing each path:line
+- Completed: 2026-09-13
+- Files changed: src/test/java/com/rungs/readiness/NeutralVocabularyTests.java (new)
+- Tests: 23 (1 repo scan + 16 positive + 6 negative matcher samples). Probe file with a
+  PascalCase term at root failed with `vocab-probe.tmp.md:1: ...`; probe under prd/ not
+  reported; probes deleted. Full suite in reviewer's run: 27 tests, 0 failures.
+- Notes: case-insensitive regex with no word boundaries (catches PascalCase/snake_case);
+  walkFileTree without following links; skips undecodable files; asserts pom.xml in the
+  working directory. Correctness review: no Critical/High. Medium (reported to user, not
+  fixed): singular form of the first term not matched; terms split across wrapped lines or
+  separated by tab/double space/NBSP not matched; walker skip rules and hit collection not
+  pinned by a @TempDir test. Low: `target` skipped at any depth (could hide a future
+  source package named target); file/dir names not scanned; dotted separator not matched.
+
+## Task 4.4 — Run ./mvnw verify and fix any failures, including Enforcer rule misconfiguration and Thymeleaf template-location warnings
+- Completed: 2026-09-13
+- Files changed: none (pom.xml needed no fixes)
+- Tests: `./mvnw -B -ntp verify` (Maven 3.9.16 wrapper, OpenJDK 26): Enforcer 4 rules passed;
+  Tests run: 27, Failures: 0, Errors: 0, Skipped: 0; spring-boot repackage ran; BUILD SUCCESS.
+- Notes: run directly by the orchestrator (single command; nothing to author). No Thymeleaf
+  template-location warning. Low: JDK prints "A Java agent has been loaded dynamically"
+  (Mockito's byte-buddy agent); harmless now, but a future JDK will disallow it by default.
+  Fix later by adding Mockito as a -javaagent in Surefire argLine (natural fit for story 019).
+
+## Post-review fixes — NeutralVocabularyTests and Surefire Mockito agent (2026-09-13)
+- Completed: 2026-09-13
+- Files changed: src/test/java/com/rungs/readiness/NeutralVocabularyTests.java, pom.xml
+  (maven-dependency-plugin properties goal; Surefire argLine
+  -javaagent:${org.mockito:mockito-core:jar}), requirements.md (REQ-015 wording). Task 5.3
+  then synced design §5 (Mockito agent bullet), §6 (NeutralVocabularyTests bullets), and §13
+  (skip-list row, scan-coverage row, new argLine row).
+- Tests: `./mvnw verify`: 42 run, 0 failures, 0 errors; no dynamic-agent warning.
+  NeutralVocabularyTests now has 38: 1 repo scan, 1 @TempDir walker test, 30 positive and 6
+  negative matcher samples.
+- Notes: the Task 4.3 and 4.4 review items are resolved:
+  - Medium, singular form of the first term not matched → matches singular or plural.
+  - Medium, terms wrapped across lines or separated by tab/double space/NBSP missed →
+    matching runs over whole file contents; separator is any mix of whitespace (incl. line
+    breaks, tabs, NBSP via UNICODE_CHARACTER_CLASS), hyphen, underscore, dot, and comment/
+    quote markers (/ * # >), or nothing. Reported line = line where the match starts.
+  - Medium, walker skip rules and hit collection not pinned → @TempDir test pins skip rules,
+    path:line format, wrapped-line hit, hidden .mvn scanned, nested target package scanned,
+    path-only hit, and binary skip.
+  - Low, target skipped at any depth → target/, prd/, backlog/, and own source skipped only
+    root-relative; .git, .idea, .vscode still skipped at any depth.
+  - Low, file/dir names not scanned → each root-relative path is checked
+    (`path: file path contains a trademarked name`), including undecodable files, whose
+    contents are skipped.
+  - Low, dotted separator not matched → dot is an accepted separator.
+  - Low (4.4), dynamic agent warning → Mockito loaded as a Surefire -javaagent.
+  Consequence: the pom sets argLine, so `-DargLine=...` on the command line is ignored (the
+  Task 4.2 mutation commands no longer work as written); put extra JVM args in the pom, and
+  story 019's JaCoCo must prepend @{argLine}.
+- Commits: 6ea0654 (tests + pom), 3c630c6 (progress log + REQ-015 wording).
+
+
+## Task 5.2 — Add .editorconfig, .gitattributes, append .jqwik-database to .gitignore, renormalize, confirm line endings
+- Completed: 2026-09-13
+- Files changed: .editorconfig (new), .gitattributes (new), .gitignore (appended),
+  mvnw.cmd (index renormalized to LF; working copy stays CRLF; line-endings-only diff)
+- Tests: n/a (config). git ls-files --eol: mvnw 100755 i/lf w/lf; mvnw.cmd i/lf w/crlf.
+  Simulated core.autocrlf=true clone: with .gitattributes mvnw LF + executable and mvnw.cmd
+  CRLF; without it mvnw became CRLF ("#!/bin/sh\r"). Full ./mvnw verify: 42 tests, 0 failures.
+- Notes: renormalize scoped to wrapper and supporting files instead of `.` so parallel
+  agents' files were not staged (only mvnw.cmd had non-LF endings, so the result is the
+  same). Spec said mvnw.cmd should be i/crlf; correct is i/lf w/crlf (text eol=crlf stores
+  LF, checks out CRLF). Fixed design §8 and task 5.2 wording. Correctness review: no findings.
+
+## Task 5.3 — Sync docs with the post-review fixes
+- Completed: 2026-09-13
+- Files changed: design.md §5 (Mockito agent), §6 (NeutralVocabularyTests), §13 (scan,
+  skip-list, new argLine row); claude-progress.txt (Post-review fixes section);
+  requirements.md REQ-015 now says the root `target/` (orchestrator).
+- Tests: n/a (docs). Vocabulary scan passes over the edited docs.
+- Notes: correctness review checked §6 line by line against the test: no findings.
+
+## Task 5.1 — README (pending human review)
+- Drafted README.md with the six design §7 sections; ten deferred features each once;
+  "JDK 25 or newer" (matches Enforcer); non-affiliation line adds "or endorsed by".
+  Correctness review Low: Windows command changed to `.\mvnw.cmd verify` (PowerShell
+  rejects bare mvnw.cmd). Awaiting user review of wording before marking complete.
+
+## Task 5.1 — Write README.md with the six sections from design §7 (summary, nothing is stored, prerequisites, build and run, deliberately not included, project documents) using neutral vocabulary only
+- Completed: 2026-09-13 (user reviewed and approved the wording)
+- Files changed: README.md (new); backlog/001-project-scaffold-and-package-layout.md
+  (deferred list now includes save-in-place, matching requirements, design, and README: ten items)
+- Tests: NeutralVocabularyTests scans README.md; full ./mvnw verify 42 tests, 0 failures.
+- Notes: see the pending-review entry above for wording decisions; all approved as drafted.
+
+## Task 6.1 — Start the app with ./mvnw spring-boot:run and confirm curl localhost:8080/actuator/health returns {"status":"UP"}
+- Completed: 2026-09-13
+- Files changed: none
+- Tests: manual. `./mvnw spring-boot:run`: started in 0.474 s, no WARN/ERROR.
+  `curl localhost:8080/actuator/health` → HTTP 200 {"status":"UP"}; /actuator/env → 404.
+  App stopped; port 8080 free.
+
+## Task 6.2 — Confirm the Enforcer fails with the "requires Java 25" message on an older JDK, or by temporarily raising the required version, then revert
+- Completed: 2026-09-13
+- Files changed: none (repo pom.xml never edited)
+- Tests: manual. No older JDK installed, so a scratchpad copy of pom.xml with [99,) ran
+  `./mvnw -f <copy> validate` → BUILD FAILURE, "Rule 0: RequireJavaVersion failed with
+  message: Rungs requires Java 25 or newer." `git diff -- pom.xml` empty.
+- Notes: used a scratch copy instead of edit-and-revert so the repo stayed untouched.
+
+## Task 6.3 — Rerun ./mvnw verify so NeutralVocabularyTests covers the README and supporting files, and search the repo for package.json, lockfiles, node_modules, and second modules, confirming none exist
+- Completed: 2026-09-13
+- Files changed: none
+- Tests: `./mvnw verify` → 42 tests, 0 failures, BUILD SUCCESS, no warnings. No
+  package.json, lockfiles (npm/yarn/pnpm/bun), node_modules, or .nvmrc; one pom.xml; no
+  <modules>, frontend, exec, npm, or node references in pom.xml.
+- Notes: phase 6 changed no code, so no correctness review or phase security review
+  (nothing to review). All 15 tasks complete.

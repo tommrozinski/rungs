@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rungs — Snapshot</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/rungs.css">
+</head>
+<body>
+
+  <div class="appbar">
+    <div class="wordmark"><span class="glyph">R</span> Rungs</div>
+    <nav><a href="/" class="on">Snapshot</a><span>Results</span></nav>
+  </div>
+
+  <div class="screen">
+    <h1 class="h1">Where do you stand today?</h1>
+    <p class="body">Nothing here is saved. Fill it in, get your answer, close the tab.</p>
+
+    <form id="snapshot-form" method="post" action="/assess" autocomplete="off">
+
+      <div class="card">
+        <h2 class="h2 mb-14">Money in and out</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="monthlyTakeHomeIncome">Monthly take-home pay</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyTakeHomeIncome"
+                   name="monthlyTakeHomeIncome" th:value="${form.monthlyTakeHomeIncome}" required>
+          </div>
+          <div class="field">
+            <label for="monthlyEssentialExpenses">Essential monthly expenses</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyEssentialExpenses"
+                   name="monthlyEssentialExpenses" th:value="${form.monthlyEssentialExpenses}" required>
+            <div class="hint">Everything except housing and debt payments.</div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="starterEmergencyFund">Starter emergency fund</label>
+            <input class="input" type="number" step="0.01" min="0" id="starterEmergencyFund"
+                   name="starterEmergencyFund" th:value="${form.starterEmergencyFund}" required>
+          </div>
+          <div class="field">
+            <label for="fullEmergencyFund">Full emergency fund saved</label>
+            <input class="input" type="number" step="0.01" min="0" id="fullEmergencyFund"
+                   name="fullEmergencyFund" th:value="${form.fullEmergencyFund}" required>
+          </div>
+        </div>
+        <div class="field mb-0">
+          <label for="retirementContributionPercent">Retirement contribution</label>
+          <input class="input max-w-140" type="number" step="0.01" min="0" max="100"
+                 id="retirementContributionPercent"
+                 name="retirementContributionPercent" th:value="${form.retirementContributionPercent}" required>
+          <div class="hint">Percent of household income going into retirement accounts.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row-between mb-12">
+          <h2 class="h2">Debts you owe</h2>
+          <button type="submit" formaction="/debts/add" formnovalidate class="btn btn-secondary btn-sm">Add a debt</button>
+        </div>
+        <table class="debts" id="debt-table">
+          <thead>
+            <tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Balance</th><th scope="col">Rate %</th><th scope="col">Minimum</th><th scope="col"></th></tr>
+          </thead>
+          <tbody id="debt-rows">
+            <tr th:each="row, iter : ${form.debts}">
+              <td><input class="input" type="text" th:maxlength="${debtLabelMaxLength}" th:name="|debts[${iter.index}].label|" th:value="${row.label}" th:aria-label="|Debt ${iter.count} name|" required></td>
+              <td class="debt-type">
+                <select class="input" th:name="|debts[${iter.index}].type|" th:aria-label="|Debt ${iter.count} type|">
+                  <option th:each="option : ${debtTypeOptions}" th:value="${option.value}" th:selected="${row.type == option.value}" th:text="${option.label}"></option>
+                </select>
+              </td>
+              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].balance|" th:value="${row.balance}" th:aria-label="|Debt ${iter.count} balance|" required></td>
+              <td><input class="input" type="number" step="0.001" min="0" th:name="|debts[${iter.index}].annualInterestRate|" th:value="${row.annualInterestRate}" th:aria-label="|Debt ${iter.count} rate|" required></td>
+              <td><input class="input" type="number" step="0.01" min="0" th:name="|debts[${iter.index}].minimumPayment|" th:value="${row.minimumPayment}" th:aria-label="|Debt ${iter.count} minimum payment|" required></td>
+              <td class="rm"><button type="submit" th:formaction="|/debts/remove/${iter.index}|" formnovalidate class="rm-btn" title="Remove" th:aria-label="|Remove debt ${iter.count}|">✕</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card housing-card">
+        <h2 class="h2 mb-12">About your household</h2>
+
+        <div class="housing-toggle">
+          <input type="radio" class="visually-hidden" id="housing-mortgage" name="housing" value="MORTGAGE" th:checked="${form.housing != 'RENT'}">
+          <label for="housing-mortgage">Mortgage</label>
+          <input type="radio" class="visually-hidden" id="housing-rent" name="housing" value="RENT" th:checked="${form.housing == 'RENT'}">
+          <label for="housing-rent">Rent</label>
+        </div>
+
+        <div class="housing-mortgage">
+          <div class="field-row">
+            <div class="field">
+              <label for="mortgageBalance">Remaining balance</label>
+              <input class="input" type="number" step="0.01" min="0" id="mortgageBalance"
+                     name="mortgageBalance" th:value="${form.mortgageBalance}">
+            </div>
+            <div class="field">
+              <label for="mortgageRate">Interest rate %</label>
+              <input class="input" type="number" step="0.001" min="0" id="mortgageRate"
+                     name="mortgageRate" th:value="${form.mortgageRate}">
+            </div>
+          </div>
+          <div class="field">
+            <label for="mortgagePayment">Monthly payment</label>
+            <input class="input max-w-220" type="number" step="0.01" min="0" id="mortgagePayment"
+                   name="mortgagePayment" th:value="${form.mortgagePayment}">
+            <div class="hint">Your full monthly payment, including taxes and insurance.</div>
+          </div>
+          <p class="small mt-10 mb-16">Paid off? Enter 0 for the remaining balance, and enter your property taxes and insurance as the monthly payment, since those still come out of your take-home pay each month.</p>
+        </div>
+
+        <div class="housing-rent">
+          <div class="field">
+            <label for="monthlyRent">Monthly rent</label>
+            <input class="input" type="number" step="0.01" min="0" id="monthlyRent"
+                   name="monthlyRent" th:value="${form.monthlyRent}">
+          </div>
+        </div>
+
+        <div class="check">
+          <input type="checkbox" id="intendsToFundCollege" name="intendsToFundCollege" th:checked="${form.intendsToFundCollege}">
+          <label for="intendsToFundCollege">We plan to fund college for our kids</label>
+        </div>
+        <div class="check">
+          <input type="checkbox" id="retired" name="retired" th:checked="${form.retired}">
+          <label for="retired">We're retired</label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Check my stage</button>
+        <div class="sample-box">
+          <p class="sample-box-label">Try a sample household: pick one, then load it.</p>
+          <select name="sample" class="input" aria-label="Choose a sample household">
+            <option value="">Choose a sample household</option>
+            <option th:each="sample : ${sampleHouseholds}" th:value="${sample.id()}" th:selected="${form.sample == sample.id()}" th:text="${sample.label()}"></option>
+          </select>
+          <button type="submit" formaction="/sample" formnovalidate class="btn btn-secondary">Load sample data</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</body>
+</html>

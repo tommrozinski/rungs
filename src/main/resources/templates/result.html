@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rungs — Your results</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/rungs.css">
+</head>
+<body>
+
+  <div class="appbar">
+    <div class="wordmark"><span class="glyph">R</span> Rungs</div>
+    <nav><a href="/">Snapshot</a><span class="on">Results</span></nav>
+  </div>
+
+  <div class="screen">
+
+    <div class="verdict">
+      <p class="eyebrow" th:text="${result.eyebrow}"></p>
+      <p class="line" th:text="${result.verdictLine}"></p>
+      <p class="sub" th:text="${result.verdictSub}"></p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat"><div class="k">Monthly surplus</div><div class="v num" th:classappend="${result.surplusPositive} ? 'pos' : null" th:text="${result.monthlySurplus}"></div></div>
+      <div class="stat"><div class="k">Non-mortgage debt</div><div class="v num" th:text="${result.nonMortgageDebt}"></div></div>
+      <div class="stat"><div class="k">Stages complete</div><div class="v num" th:text="${result.stagesComplete}"></div></div>
+    </div>
+
+    <h2 class="h2 mb-14">Your seven stages</h2>
+    <div class="ladder">
+
+      <div class="stage" th:each="s : ${result.stages}">
+        <div class="disc" th:classappend="${s.discClass}" aria-hidden="true" th:text="${s.discContent}"></div>
+        <span class="visually-hidden" th:text="${s.chipLabel}"></span>
+
+        <div class="stage-body" th:unless="${s.open}">
+          <div class="stage-title"><span th:text="${s.title}"></span><span class="chip" th:classappend="${s.chipClass}" th:text="${s.chipLabel}"></span></div>
+          <div class="bar" th:if="${s.showBar}"><i th:style="'width:' + ${s.barWidthPercent} + '%'"></i></div>
+          <div class="small" th:classappend="${s.showBar} ? 'mt-6' : null">[[${s.line}]]<b th:if="${s.lineEmphasis} != null" th:text="${s.lineEmphasis}"></b>[[${s.lineSuffix}]]</div>
+        </div>
+
+        <div class="stage-body pt-0" th:if="${s.open}">
+          <div class="stage-open">
+            <div class="stage-title"><span th:text="${s.title}"></span><span class="chip" th:classappend="${s.chipClass}" th:text="${s.chipLabel}"></span></div>
+            <p class="blocker" th:classappend="${s.showBar} ? null : 'last'">[[${s.line}]]<b th:if="${s.lineEmphasis} != null" th:text="${s.lineEmphasis}"></b>[[${s.lineSuffix}]]</p>
+            <div class="bar" th:if="${s.showBar}"><i th:style="'width:' + ${s.barWidthPercent} + '%'"></i></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <form method="post">
+      <input type="hidden" name="monthlyTakeHomeIncome" th:value="${form.monthlyTakeHomeIncome}">
+      <input type="hidden" name="monthlyEssentialExpenses" th:value="${form.monthlyEssentialExpenses}">
+      <input type="hidden" name="starterEmergencyFund" th:value="${form.starterEmergencyFund}">
+      <input type="hidden" name="fullEmergencyFund" th:value="${form.fullEmergencyFund}">
+      <input type="hidden" name="retirementContributionPercent" th:value="${form.retirementContributionPercent}">
+      <input type="hidden" name="sample" th:value="${form.sample}">
+      <input type="hidden" name="housing" th:value="${form.housing}">
+      <input type="hidden" name="mortgageBalance" th:value="${form.mortgageBalance}">
+      <input type="hidden" name="mortgageRate" th:value="${form.mortgageRate}">
+      <input type="hidden" name="mortgagePayment" th:value="${form.mortgagePayment}">
+      <input type="hidden" name="monthlyRent" th:value="${form.monthlyRent}">
+      <input type="hidden" name="intendsToFundCollege" value="true" th:if="${form.intendsToFundCollege}">
+      <input type="hidden" name="retired" value="true" th:if="${form.retired}">
+      <th:block th:each="row, iter : ${form.debts}">
+        <input type="hidden" th:name="|debts[${iter.index}].label|" th:value="${row.label}">
+        <input type="hidden" th:name="|debts[${iter.index}].type|" th:value="${row.type}">
+        <input type="hidden" th:name="|debts[${iter.index}].balance|" th:value="${row.balance}">
+        <input type="hidden" th:name="|debts[${iter.index}].annualInterestRate|" th:value="${row.annualInterestRate}">
+        <input type="hidden" th:name="|debts[${iter.index}].minimumPayment|" th:value="${row.minimumPayment}">
+      </th:block>
+
+      <div class="actions">
+        <button type="submit" formaction="/edit" class="btn btn-secondary">Change my numbers</button>
+        <button type="submit" formaction="/assess#breakdown" name="breakdown" value="true" class="btn btn-primary">Show payoff schedule</button>
+      </div>
+    </form>
+
+    <section id="breakdown" class="breakdown-wide" th:if="${hasLoans != null}">
+
+      <div th:if="${hasLoans}">
+        <h2 class="h2 mb-14">Your loans</h2>
+        <iframe title="Your loans" class="breakdown-frame" sandbox="allow-same-origin"
+                th:style="'height:' + ${loansIframeHeightPx} + 'px'"
+                th:attr="srcdoc=${loansHtml}"></iframe>
+
+        <h2 class="h2 mb-14 mt-20">Payoff schedule</h2>
+        <p class="small mb-14">Your surplus goes to the smallest debt; each paid-off debt's payment rolls into the
+          next. The mortgage comes last.</p>
+        <iframe title="Payoff schedule" class="breakdown-frame breakdown-frame-schedule" sandbox="allow-same-origin"
+                th:style="'height: min(70vh, ' + ${scheduleIframeHeightPx} + 'px)'"
+                th:attr="srcdoc=${scheduleHtml}"></iframe>
+      </div>
+
+      <div th:unless="${hasLoans}">
+        <h2 class="h2 mb-14">Payoff schedule</h2>
+        <p class="small">No debts or mortgage to pay down.</p>
+      </div>
+
+    </section>
+
+  </div>
+
+</body>
+</html>

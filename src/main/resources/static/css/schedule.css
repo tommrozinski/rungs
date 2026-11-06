@@ -1,0 +1,46 @@
+/* Tokens, the font, and the base reset live in tokens.css, linked before this stylesheet. */
+body { padding: 14px 16px 24px; }
+/* The "Your loans" iframe document: a tight, known vertical padding so SnapshotController's height constants can
+   size the iframe to fit every row without inner scrolling. Higher specificity than the plain "body" rule above
+   overrides it; the schedule document keeps that rule's padding via body.schedule-doc below instead. */
+body.loans-doc { padding: 8px 16px; }
+/* The "Payoff schedule" iframe document: a flex column filling the iframe's full height, so its one child that
+   can grow — the table wrapper — is the only scroll container; the document itself never overflows and never
+   shows an outer scrollbar alongside the wrapper's own. */
+html:has(body.schedule-doc), body.schedule-doc { height: 100%; }
+body.schedule-doc { display: flex; flex-direction: column; padding: 10px 16px; margin: 0; }
+.table-wrap { overflow-x: auto; background: var(--white); border: 1px solid var(--slate-200);
+  border-radius: var(--r-md); }
+/* The schedule table can run to hundreds of rows; its wrapper — not the page/iframe body — is the one scroll
+   container both the frozen header row and frozen first column relate to, so "position: sticky" has a single,
+   unambiguous scrolling ancestor on both axes at once. It fills the remaining flex space in the schedule
+   document exactly, rather than sizing off the viewport, so the document itself never grows taller than the
+   iframe and never causes a second, outer scrollbar. */
+body.schedule-doc .table-wrap { flex: 1; min-height: 0; overflow: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.loans { min-width: 480px; }
+table.schedule { min-width: 1900px; }
+th, td { padding: 6px 9px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--slate-100); }
+th:first-child, td:first-child { text-align: left; }
+thead th { background: #F2F2F2; font-weight: 700; font-size: 11px; color: var(--ink-700);
+  border-bottom: 2px solid var(--slate-200); position: sticky; top: 0; z-index: 2;
+  box-shadow: 0 2px 4px -2px rgba(16, 38, 59, .2); }
+table.schedule th:first-child, table.schedule tbody td:first-child {
+  position: sticky; left: 0; z-index: 1; text-align: right; border-right: 1px solid var(--slate-200);
+}
+/* Every sticky cell (frozen header row, frozen first column, and their one frozen corner cell) gets its own
+   opaque background, so a scrolled-past row's zebra or green paid-off tint never shows through it. The corner
+   cell — the frozen header row's first cell — sits above both the rest of the frozen header (z-index 2) and the
+   rest of the frozen first column (z-index 1). */
+table.schedule tbody td:first-child, table.schedule tbody th:first-child { background: var(--white); }
+table.schedule thead th:first-child { background: #F2F2F2; z-index: 3; }
+td, th { font-variant-numeric: tabular-nums; }
+tbody tr:nth-child(even) td { background: #FBFCFD; }
+tbody tr.closed td { background: var(--green-100); }
+table.schedule tbody tr.closed td:first-child { background: var(--green-100); }
+tr.totals td, tr.totals th, tr.total-row td, tr.total-row th {
+  font-weight: 700; border-top: 2px solid var(--slate-200);
+}
+tr.totals td, tr.totals th { background: var(--white); }
+.foot-note { font-size: 11.5px; color: var(--ink-500); margin-top: 10px; }
+.no-loans { font-size: 13.5px; color: var(--ink-700); }

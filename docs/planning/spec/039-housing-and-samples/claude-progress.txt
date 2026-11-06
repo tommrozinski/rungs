@@ -1,0 +1,185 @@
+Implementation progress: 039 housing and samples
+
+Phase 2 — housing domain
+- Added the `Housing` sealed interface (domain.model) with `Rent(Money monthlyRent)` and a rewritten `Mortgage`
+  (balance, annualInterestRate, monthlyPayment, annualPropertyTaxes, nullable maturity), replacing the old
+  home-value `Mortgage`. `Mortgage.monthlyPropertyTaxes()` gives annual taxes / 12, rounded half-even to the cent.
+- `HouseholdFlags` dropped `rents` (now just `retired`, `intendsToFundCollege`).
+- `FinancialSnapshot` gained `Housing housing` (non-null) and `YearMonth asOf` (non-null), and adds
+  `monthlyHousingCost()`, `monthlyEssentialCosts()`; `monthlySurplus()` now subtracts housing cost too.
+  `hasMortgage()` removed (housing is always present). Constructor argument order: ...debts, housing,
+  householdFlags, asOf.
+- `FullEmergencyFundEvaluator` (stage 3) targets `months * monthlyEssentialCosts()` (was essential expenses only).
+- Added `MortgagePayoff` (record) and `MortgagePayoffCalculator.payoff(Mortgage, YearMonth asOf)`: computes
+  principal & interest, first-month interest, coverage, month-by-month cent amortization capped at 600 months,
+  and a `MaturityComparison` (UNKNOWN/MATCHES/AHEAD/BEHIND ± monthsDifference) against the loan's maturity.
+- Rewrote `MortgageEvaluator` (stage 6): Rent -> skipped; $0 balance -> satisfied; otherwise always Not started
+  with remaining = balance and a blocker built from the payoff calculator (not-covered sentence, the payoff +
+  maturity-comparison sentence, or the 600-month cap sentence). The old home-equity/in-progress behavior is gone.
+
+Web stopgaps (phase 3 replaces these properly)
+- `SnapshotFormMapper`: the v0 form still only has the old `rents` checkbox (no new housing fields yet), so it
+  maps `rents=true` -> `Rent($0)` and `rents=false` -> `Mortgage` with every amount $0 and unknown maturity;
+  housing cost is $0 either way, matching prior v0 behavior. `asOf` is a fixed placeholder
+  (`YearMonth.of(2026, 9)`), not the real clock-backed value.
+- `ResultViews`: stage 3's line now targets `monthlyEssentialCosts()` (was essential expenses only, matching the
+  evaluator change); stage 6's Done line changed from "No mortgage to pay down." to "Your house is paid off."
+  (the only housing semantics change visible in existing web copy, since a $0 mortgage balance is now the only
+  way to reach Done — "no mortgage" no longer exists as a concept).
+
+Design ambiguity resolved
+- Housing modeled as three separate top-level files (Housing.java marker interface + permits clause, Rent.java,
+  Mortgage.java) rather than nested records, matching the codebase's one-type-per-file convention.
+- `MortgagePayoff.monthsDifference` stores the absolute month gap between payoff and maturity (0 when
+  UNKNOWN/no maturity); `MaturityComparison` and the gap live together on the one calculator result record, which
+  both `MortgageEvaluator` and (later) the result-page view model can read.
+- `MortgagePayoffCalculator` lives in domain.model (alongside `Mortgage`) since it is a pure function of a
+  `Mortgage` and a `YearMonth`, with no dependency on `domain.stage`.
+- `FinancialSnapshotBuilder`'s default housing is `Rent(Money.ZERO)` and default `asOf` is a fixed
+  `YearMonth.of(2024, 1)`; this changed several existing tests that relied on "no mortgage" (`HouseholdFlags`
+  first boolean `true`) to mean "renter" — those now rely on the builder's renter-by-default housing instead.
+
+Verify: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B -ntp clean verify`
+-> BUILD SUCCESS, Tests run: 781, Failures: 0, Errors: 0, Skipped: 0.
+
+Phase 3 — web housing and samples
+- `SnapshotForm` replaces `rents` with `housing` (default `"MORTGAGE"`), `mortgageBalance`, `mortgageRate`,
+  `mortgagePayment`, `annualPropertyTaxes`, `maturityMonth`, `maturityYear`, `monthlyRent`, and a `sample` field
+  (bound from the select's `name="sample"`, so the select can be redisplayed with the loaded household selected).
+- `SnapshotFormMapper.toSnapshot(SnapshotForm, YearMonth asOf)` now takes `asOf` from the caller (no more fixed
+  placeholder) and maps housing leniently per design.md 039 section 3: `housing == "RENT"` (exact match) maps to
+  `Rent(monthlyRent)` and ignores the mortgage fields; anything else (blank, unrecognized, or the default
+  `"MORTGAGE"`) maps to `Mortgage` from the mortgage fields and ignores `monthlyRent`. A maturity month outside
+  1-12, a year outside 1900-2200, or either field blank/unparseable, all resolve to a null (unknown) maturity.
+- Added `ClockConfig` (`web` package): a `@Configuration` supplying `Clock.systemDefaultZone()` as a bean.
+  `SnapshotController` now takes a `Clock` constructor argument and derives `asOf = YearMonth.now(clock)` in
+  `/assess`. `SnapshotControllerTests` overrides it with a nested `@TestConfiguration` (`FixedClockConfig`, bean
+  name `fixedClock`, `@Primary`) fixed to 2026-09-15T12:00:00Z/UTC, so every controller test resolves `asOf` to
+  September 2026 regardless of the real clock. (The bean method could not be named `clock()` like the production
+  bean — Spring rejected it as a duplicate bean definition even with `@Primary`, since `allow-bean-definition-
+  overriding` is off by default; a distinct method name sidesteps that.)
+- Added `SampleHouseholds` (`web` package, package-private): the five households from design.md 039 section 4 as
+  `SnapshotForm` instances keyed by id, each with `sample` pre-set to its own id so the reloaded form's select
+  shows it selected. `SnapshotController.loadSample` (`POST /sample`) looks up the id from the `sample` request
+  param; when found, it overrides the model's bound `form` attribute with the sample (Spring's `Model.addAttribute`
+  after the `@ModelAttribute`-bound one takes precedence); when not found (blank or unknown id), the already-bound
+  form — whatever the browser posted — passes through unchanged, so a bad id never 500s and never loses the rest
+  of the user's in-progress entries.
+- Sample mortgage payments, computed with `MortgagePayoffCalculator` against `asOf = 2026-09` (see the throwaway
+  `SampleCalc*.java` programs run against `target/classes` during this phase, not checked in):
+  - **debt-free**: balance $285,000 @ 6.5%, taxes $4,800/yr. Standard 27-year (324-month) amortization gives a P&I
+    of $1,868.33; rounded up to $1,869 and added to $400 (taxes/12, exact) gives a $2,269 payment. At that payment
+    the calculator's own amortization (interest first, then payment, in cents) pays the loan off in exactly 324
+    months — September 2053 — so setting the sample's maturity to September 2053 makes the stage-6 line read
+    "That matches your loan's September 2053 maturity."
+  - **homestretch**: balance $198,000 @ 3.25%, taxes $6,000/yr, maturity fixed at September 2042 (16 years out).
+    The schedule-matching P&I for 192 months is $1,323.87; a $1,900 payment ($1,400 P&I + $500 taxes/12) is "a
+    little above schedule" and the calculator pays the loan off in 179 months (August 2041) — 13 months (1 year 1
+    month) ahead of the September 2042 maturity, so the stage-6 line reads "...ahead of your September 2042
+    maturity."
+  - **paid-off**: balance $0, payment $0, taxes $6,300/yr ($525/mo exactly). A $0 balance always satisfies stage 6
+    regardless of payment or taxes, so no maturity is set.
+  - **buried** and **board** carry forward the renter figures from design.md 039 section 4 directly (no mortgage
+    math): buried is take-home $3,800 / essentials $2,100 / rent $1,250 / starter $150 / four debts; board is
+    take-home $6,200 / essentials $2,100 / rent $1,400 / starter $1,000 / retirement 6% / the three original board
+    debts (so `monthlyEssentialCosts` = $3,500 and the stage 3 target is $10,500, matching the pre-existing board
+    checkpoint numbers exactly).
+- `ResultViews`: `stage6Line` is now reachable with a real payoff blocker (previously unreachable behind the
+  phase-2 stopgap) — no behavior change, just an updated comment. The stage 6 verdict's sub line is new:
+  `stage6VerdictSub` calls `MortgagePayoffCalculator.payoff` directly and formats "At this payment it's paid off
+  in {Month YYYY}. Every extra dollar gets you there sooner." when the payment covers the interest and the loan
+  amortizes within 600 months; otherwise it returns the current stage's `blocker()` verbatim, which is exactly the
+  evaluator's not-covered or 600-month-cap sentence (neither of those branches appends a maturity follow-up, so
+  reusing the blocker string is safe).
+- `form.html`: carried the whole updated "About your household" card forward from `prd/snapshot-form.html`
+  (housing toggle radios, the `.housing-mortgage` and `.housing-rent` blocks, the maturity month `<select>` +
+  year field, the paid-off note, the essentials hint) verbatim, adding only `th:value`/`th:checked`/`th:selected`
+  attributes in place of the mock's static `value`/`checked`/`selected` — same structure, same class names, same
+  CSS-only `:has()` toggle, no JavaScript. The old `rents` checkbox is gone. The actions row gained the sample
+  `<select>` (five hardcoded `<option>`s, `th:selected` against `form.sample`) and the "Load sample data" button
+  (`formaction="/sample" formnovalidate`), copied from the mock as-is.
+- `static/css/rungs.css`: added the mock's new rules verbatim — `.visually-hidden`, `.housing-toggle` and its
+  `input:checked + label` / `input:focus-visible + label` states, `.housing-mortgage .field-row.maturity-row`,
+  and the two `.housing-card:has(...)` toggle rules — plus `flex-wrap: wrap` folded into the existing `.actions`
+  rule and a new `.actions select.input { width: auto; flex: 1 1 220px; }` rule (not duplicated; the pre-existing
+  `.actions` rule was extended in place rather than redeclared).
+- Rewrote `SnapshotFormMapperTests`' housing cases for the new lenient rules (blank/unrecognized housing, rent
+  mode ignoring mortgage fields, mortgage mode ignoring rent, each maturity edge case) and added the `ASOF`
+  constant every `toSnapshot` call now takes. Updated `ResultViewsTests.currentStageSixVerdict` to the real
+  computed payoff sentence (verified independently: balance $100,000 @ 6.125%, $1,200 payment, $0 taxes, asOf
+  2024-01 pays off in exactly 109 months, February 2033) and added a sibling test for the not-covered fallback
+  sentence. `SnapshotControllerTests` gained the `FixedClockConfig` fixed to September 2026, replaced every
+  `rents=true` posting with `housing=RENT` (and updated the board checkpoint test to `housing=RENT` /
+  `monthlyRent=1400` / `monthlyEssentialExpenses=2100`, still reproducing the $2,243 surplus, $10,500 target, and
+  "You rent, so there's no mortgage to pay down." line), rewrote the form-markup assertions for the new fields, and
+  added: re-render keeps housing mode and mortgage/rent values across `/debts/add` and `/debts/remove`; `/sample`
+  for each of the five ids plus an unknown id and a blank id (never 500); and one `/assess` test per sample
+  household pinning it to its design.md stage (buried -> 1, debt-free -> 3 with "That matches your loan's",
+  homestretch -> 6 with "ahead of your", paid-off -> 7 with "Your house is paid off.").
+- Manual smoke check (not an automated screenshot check — out of scope for this pass): ran the app locally,
+  confirmed `GET /` renders the mortgage radio checked with empty mortgage fields, `POST /sample` with
+  `sample=homestretch` fills the form and marks that option selected, and `POST /assess` with the homestretch
+  figures renders "You're on stage 6 of 7" / "Pay off the house." / "At this payment it's paid off in August
+  2041..." and the blocker "...That's 1 year 1 month ahead of your September 2042 maturity."
+
+Verify: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B -ntp clean verify`
+-> BUILD SUCCESS, Tests run: 802, Failures: 0, Errors: 0, Skipped: 0.
+
+## Review fixes
+
+- **HIGH — sample maturity drift.** `SampleHouseholds.byId` now takes `(String id, YearMonth asOf)`; the debt-free
+  and homestretch households compute their maturity relative to `asOf` instead of a maturity hard-coded for
+  September 2026. A new private `matchingMaturity` helper builds a probe `Mortgage` with `maturity = null` from
+  the form's already-set balance/rate/payment/taxes, calls `MortgagePayoffCalculator.payoff(probe, asOf)` to get
+  the real `monthsToPayoff` for that mortgage, and sets the maturity to `asOf.plusMonths(monthsToPayoff)` for
+  debt-free (an exact match) or `asOf.plusMonths(monthsToPayoff + 13)` for homestretch (13 months, i.e. "1 year 1
+  month", ahead) via the new `HOMESTRETCH_AHEAD_MONTHS` constant — computed at build time, not hand-calculated, so
+  the samples can't go stale if the payment or rate ever changes. Both loans' month counts (324 and 179+13=192)
+  happen to be whole multiples of 12, so the maturity month always equals `asOf`'s own month and only the year
+  moves — confirmed by the new cross-clock tests below. `SnapshotController.loadSample` now passes
+  `YearMonth.now(clock)` into `byId` instead of no `asOf` at all.
+  - Added `SampleHouseholdsTests` (new file): for `asOf` in {September 2026, February 2031}, builds each sample
+    via `byId`, maps it with `SnapshotFormMapper`, and asserts `MortgagePayoffCalculator.payoff` reports
+    `MaturityComparison.MATCHES` for debt-free and `AHEAD` with `monthsDifference() == 13` for homestretch at both
+    dates; also runs the same seven-evaluator `StageLadder` the controller builds and asserts debt-free lands on
+    stage 3 with the stage-6 blocker containing "That matches your loan's" and homestretch lands on stage 6 with
+    "1 year 1 month ahead of your".
+  - Added `SampleHouseholdMaturityAcrossClocksTests` (new file, its own `@SpringBootTest` with a `FixedClockConfig`
+    pinned to February 2031, deliberately unlike `SnapshotControllerTests`'s September 2026): `POST /sample` for
+    `debt-free` and `homestretch` renders `maturityYear` 2058 and 2047 respectively (27 and 16 years ahead of
+    2031), proving the controller wiring — not just the math — uses the injected clock.
+  - `SnapshotControllerTests`'s existing `/sample` and `/assess` sample-household tests (fixed at September 2026)
+    needed no changes: 2026-09 plus 324 months is exactly September 2053 and plus 192 months is exactly September
+    2042, matching the old hard-coded values exactly.
+
+- **MEDIUM — overflow 500.** Two layers, per the review:
+  - `MortgagePayoffCalculator.monthsToPayoff`: the amortization loop is now wrapped in a `try/catch
+    (ArithmeticException)` that returns `null` (the same "capped" result the 600-month-cap path already returns),
+    so a balance/payment pair close enough to `Long.MAX_VALUE` cents to overflow `Money.plus` during amortization
+    is treated as capped rather than throwing. Added `overflowDuringAmortizationIsTreatedAsTheSixHundredMonthCap`
+    to `MortgagePayoffCalculatorTests`: a mortgage with balance and payment both
+    `Money.ofCents(Long.MAX_VALUE - 1000)` at 100% annual interest (so the first month's interest alone overflows
+    `remaining.plus(interest)`) doesn't throw and returns `covered=true`, `monthsToPayoff=null`,
+    `maturityComparison=UNKNOWN` — confirmed red (uncaught `ArithmeticException`) before the fix.
+  - `SnapshotFormMapper`: every parsed money amount is now capped at a new `MAX_MONEY` constant
+    (`Money.ofDollars(1_000_000_000)`, i.e. $1,000,000,000.00); amounts above it are capped, not rejected. Applied
+    in both the `Money.parse` success path (`parsed.min(MAX_MONEY)`) and the lenient-decimal fallback path, which
+    now compares the parsed `BigDecimal` against `MAX_MONEY_DOLLARS` and returns `MAX_MONEY` directly before ever
+    calling `longValueExact()` (so a 20+-digit amount, which used to overflow `longValueExact()` and fall back to
+    `Money.ZERO`, is capped instead). Added `moneyFieldAboveTheBillionDollarCapIsCappedRatherThanOverflowing`
+    (a `$92,233,720,368,547,748.07`-ish amount, which fits a `long` as parsed cents but blows way past the cap) and
+    `twentyDigitMoneyFieldIsCappedRatherThanBecomingZero` (`99999999999999999999`, which overflows `Money.parse`
+    itself) to `SnapshotFormMapperTests`; both were red against `Money[cents=0]`/the uncapped value before the fix.
+  - Added `assessWithANearOverflowMortgageBalanceAndPaymentDoesNotFail` to `SnapshotControllerTests`: `POST
+    /assess` with `mortgageBalance=92233720368547748.07` and `mortgagePayment=92233720368547748.07` returns 200
+    (the mapper's cap keeps the near-`Long.MAX_VALUE` value out of `MortgagePayoffCalculator` entirely, so this
+    exercises the boundary end to end).
+
+- **LOW — hostile numeric coverage.** Extended `SnapshotFormMapperTests.hostileNumericTextNeverThrowsForAnyNumericField`
+  to also set `mortgageBalance`, `mortgageRate`, `mortgagePayment`, `annualPropertyTaxes`, `monthlyRent`,
+  `maturityMonth`, and `maturityYear` to each hostile string, and to call `toSnapshot` once with
+  `housing=MORTGAGE` and once with `housing=RENT` so both branches of `SnapshotFormMapper.housing` are exercised
+  for every hostile value, not just the money/percent fields already covered.
+
+Verify: `export JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home && ./mvnw -B -ntp clean verify`
+-> BUILD SUCCESS, Tests run: 812, Failures: 0, Errors: 0, Skipped: 0.

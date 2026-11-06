@@ -1,0 +1,26 @@
+/* Design tokens and base reset shared by every page: the snapshot form and result page (rungs.css) and the
+   standalone/inline payoff schedule (schedule.css). Both stylesheets link this with an absolute href so it
+   resolves the same way whether the page is requested directly or rendered into the result page's iframe
+   srcdoc. */
+:root {
+  --blue-700: #08467F; --blue-600: #0B5CAB; --blue-100: #D6E7F5; --blue-50: #EFF6FC;
+  --navy-900: #10263B; --ink-700: #3C4A57; --ink-500: #6B7A88;
+  --gold-600: #C98600; --gold-500: #F2A900; --gold-100: #FDF0D2;
+  --green-700: #146842; --green-600: #1E8E5A; --green-100: #DCF2E7;
+  --red-600: #C4312B; --red-100: #FBE3E2;
+  --slate-200: #DDE3E9; --slate-100: #EDF1F4; --surface: #F6F8FA; --white: #FFFFFF;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(16,38,59,.06), 0 4px 12px rgba(16,38,59,.06);
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font); color: var(--navy-900); background: var(--surface); }

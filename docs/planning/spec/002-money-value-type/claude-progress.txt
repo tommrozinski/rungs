@@ -1,0 +1,146 @@
+# Implementation progress: 002-money-value-type
+
+Mode: TDD (src/test exists); config/infra tasks skip tests per the TDD rules
+Started: 2026-09-13
+Local JDK: OpenJDK 26 via JAVA_HOME=/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home
+
+## Task 1.1 — Change the Surefire argLine in pom.xml to @{argLine} -javaagent:${org.mockito:mockito-core:jar} with an empty argLine property default, and confirm ./mvnw verify passes with no dynamic-agent warning
+- Completed: 2026-09-13
+- Files changed: pom.xml (empty <argLine></argLine> property with a comment; Surefire argLine
+  now `@{argLine} -javaagent:${org.mockito:mockito-core:jar}`)
+- Tests: config task, no new tests. `./mvnw -B -ntp verify`: 42 tests, 0 failures, BUILD
+  SUCCESS, no WARNING lines.
+- Notes: done directly by the orchestrator (two-line config change).
+
+## Task 1.2 — Run JaCoCo 0.8.15 (officially supports Java 26) prepare-agent, test, and report from the command line, confirm a report is produced for the existing classes, and record the command in claude-progress.txt
+- Completed: 2026-09-13
+- Files changed: none in the repo (report under target/, git-ignored)
+- Command (with JAVA_HOME set as above):
+    ./mvnw -B -ntp org.jacoco:jacoco-maven-plugin:0.8.15:prepare-agent test \
+           org.jacoco:jacoco-maven-plugin:0.8.15:report
+  Output: "argLine set to -javaagent:.../org.jacoco.agent-0.8.15-runtime.jar=destfile=
+  target/jacoco.exec"; 42 tests, 0 failures; "Analyzed bundle 'rungs' with 1 classes";
+  target/site/jacoco/index.html and jacoco.csv produced. No dynamic-agent warning.
+  Coverage per class: target/site/jacoco/jacoco.csv (LINE_MISSED/BRANCH_MISSED columns).
+- Notes: only RungsApplication is instrumented today; Money and MoneyFormatException will
+  appear once phases 2–4 add them (task 5.2 uses the same command).
+
+## Task 2.1 — Add the Money record (long cents) with ZERO, ofCents, ofDollars (multiplyExact), and plus, minus, negate using Math.*Exact, with MoneyArithmeticTests for zero, ±1 cent, mixed signs, and overflow including negate of Long.MIN_VALUE
+- Completed: 2026-09-13
+- Files changed: src/main/java/com/rungs/readiness/domain/model/Money.java (new),
+  src/test/java/com/rungs/readiness/domain/model/MoneyArithmeticTests.java (new)
+- Tests: 45 in MoneyArithmeticTests (factories, plus/minus/negate incl. exact-limit results,
+  overflow both directions, negate of Long.MIN_VALUE, null operands, immutability). Red→green
+  per slice. `./mvnw clean verify`: 87 tests, 0 failures, no WARN/ERROR.
+- Notes: implementation-engineer (TDD). Use `clean` builds: the IDE compiler can leave broken
+  classes in target/. Correctness review: no Critical/High/Medium; hand mutations (plain
+  +/-/*, swapped operands) all caught. Low (folded into task 2.2): ofDollars exact-limit
+  cases; minus with Long.MIN_VALUE as right operand. review-changes warning (folded into
+  2.2): extract the literal 100 into a CENTS_PER_DOLLAR constant.
+
+## Task 2.2 — Add Comparable compareTo, instance min and max returning this on ties, isZero/isNegative/isPositive, and static sum(Collection) returning ZERO when empty, with tests for ties, signs, and empty, single, mixed, and overflowing collections
+- Completed: 2026-09-13
+- Files changed: Money.java (implements Comparable; compareTo, min, max, isZero, isNegative,
+  isPositive, sum; CENTS_PER_DOLLAR constant), MoneyArithmeticTests.java
+- Tests: MoneyArithmeticTests 45 → 83 (compareTo incl. MIN vs MAX, min/max both orders and
+  tie identity, sign tests, sum empty/single/mixed/exact-MAX/overflow/nulls; plus the 2.1
+  follow-ups: ofDollars exact limits, minus with Long.MIN_VALUE right operand).
+  `./mvnw clean verify`: 125 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD; the eight sum tests went red→green together).
+  Correctness review: no Critical/High/Medium. Low (accepted, documented in design §4): sum
+  adds in iteration order and throws on intermediate overflow even if later elements would
+  cancel it ([MAX, 1, -1] throws); story 005 sums only non-negative amounts, so no caller is
+  affected. review-changes: no blockers or warnings.
+
+## Task 2.3 — Add times(BigDecimal) per design §6.2 (64-digit factor cap, exact multiply, exponent guards, HALF_EVEN setScale, longValueExact) with half-even, guard-edge, extreme-exponent, and overflow tests
+- Completed: 2026-09-13
+- Files changed: Money.java (times; constants MAX_FACTOR_PRECISION=64,
+  MIN_ROUNDED_EXPONENT=-1, MAX_FITTING_EXPONENT=18; java.math imports),
+  MoneyArithmeticTests.java
+- Tests: MoneyArithmeticTests 83 → 120 (+37): half-even .005/.015/.025 both signs, .0051,
+  zero/negative/trailing-zero factors, guard edges (0.1, 0.6, 0.09, 1E18, 1E19, 10×9.3E17),
+  64/65-digit factors, extreme exponents with 1 s preemptive timeouts (all ran in ≤3 ms),
+  overflow, null factor. `./mvnw clean verify`: 162 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD). Beyond the design: the exponent is computed in long,
+  because precision - scale - 1 overflows int for scales near Integer.MIN_VALUE and would
+  silently return ZERO; pinned by tests. Mutation checks (int exponent, tightened guards)
+  caught. Correctness review: no Critical/High/Medium. Low: no test for rounding at the long
+  limits (MAX + 0.4999… cent returns MAX; MAX + 0.5 rounds to MAX+1 and throws; MIN × a
+  factor just above 1 returns MIN) — added by the orchestrator as a follow-up. Loosening a
+  guard constant is result-invisible (setScale/longValueExact give the same outcome), so
+  those mutations can't be caught by result tests; accepted. review-changes: no blockers.
+
+## Task 3.1 — Add toBareString and toDisplayString built from Long.toString(cents) with manual comma grouping, with MoneyFormattingTests under the default, de-DE, fr-FR, and ar-EG-u-nu-arab locales
+- Completed: 2026-09-13
+- Files changed: Money.java (toBareString, toDisplayString; private signPrefix, paddedDigits,
+  groupThousands; constants FRACTION_DIGITS, MIN_DIGITS, GROUP_SIZE),
+  MoneyFormattingTests.java (new)
+- Tests: 61 (15-row table incl. Long.MAX_VALUE/MIN_VALUE and grouping boundaries 99999,
+  100000, 99999999, 100000000000 under the JVM default; the same table under de-DE, fr-FR,
+  ar-EG-u-nu-arab with the default locale restored in @AfterEach; zero never negative).
+  `./mvnw clean verify`: 226 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD). Mutation: String.format("%,d") in groupThousands →
+  31 failures (de-DE/fr-FR grouping, every ar-EG row via digit substitution); restored.
+  Correctness review: no findings; confirmed every output is accepted by the §6.4 parse rules
+  (longest 27 chars). Low notes: zero-sign test duplicates the 0 row (negative zero matters
+  for parse in 4.2); JVM-default rows alone would miss String.format on an en-US machine,
+  the non-US rows cover it. review-changes: no blockers.
+
+## Task 4.1 — Add MoneyFormatException extending IllegalArgumentException with a Reason enum, a reason() accessor, and one fixed message per reason that never includes the input, with tests in MoneyParsingTests
+- Completed: 2026-09-13
+- Files changed: src/main/java/com/rungs/readiness/domain/model/MoneyFormatException.java (new;
+  final, only constructor takes a Reason, messages stored on the enum, requireNonNull,
+  serialVersionUID), src/test/java/com/rungs/readiness/domain/model/MoneyParsingTests.java (new;
+  @Nested FormatException)
+- Tests: 23 (reason round trip, IAE subtype, fixed non-blank sentence per reason, distinct
+  messages, null reason rejected). `./mvnw clean verify`: 249 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD). Correctness review: no Critical/High/Medium. Low (folded
+  into 4.2): pin the exact message per reason (a swap of two sentences passes today); assert
+  parse failures' message and cause never contain the input. review-changes: no blockers.
+
+## Task 4.2 — Add Money.parse as the single left-to-right scan in design §6.4, with MoneyParsingTests for every accepted example, at least one rejected input per Reason, and pinned precedence cases
+- Completed: 2026-09-13
+- Files changed: Money.java (parse; private trim, checkWholeDollars, checkCents, isAsciiDigit,
+  isSpace; constants RADIX, MAX_TEXT_LENGTH), MoneyParsingTests.java (@Nested Parse with an
+  assertRejected helper; FormatException gains an exact-message table),
+  design.md §6.4 (step 3 trim amended, see notes)
+- Tests: Parse 63 cases + 7 exact-message rows (accepted amounts incl. both long extremes, -0,
+  -$0.00, leading zeros; Unicode/NBSP trim at ends, NBSP inside rejected; BLANK incl. null;
+  32 accepted / 33 and 40 spaces TOO_LONG; every design §4 reason example; all pinned
+  precedence cases; OUT_OF_RANGE both sides). Every rejection asserts reason, message omits
+  input, cause null. `./mvnw clean verify`: 319 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer (TDD). Design contradiction found: String.strip() keeps
+  U+00A0/U+2007/U+202F, so the "NBSP tolerated at the ends" bullet was false. User decided:
+  tolerate at the ends — trim chars where Character.isWhitespace || isSpaceChar; design
+  updated. Mutations (comma skip, sign, fraction padding) each caught. Correctness review:
+  one Medium — the per-character comma-placement loop in checkWholeDollars was unreached by
+  any test ("1,,23" and "1,2,3" would parse to 12300 without it); orchestrator added both
+  rows. No other findings. review-changes: no blockers. Low (not acted on):
+  messageIsAFixedSentence is now subsumed by the exact-message table.
+
+## Task 4.3 — Add round-trip tests that parse(m.toBareString()) and parse(m.toDisplayString()) equal m for 0, ±1, ±50, ±123456, Long.MAX_VALUE, Long.MIN_VALUE, and Long.MIN_VALUE + 1
+- Completed: 2026-09-13
+- Files changed: MoneyParsingTests.java (@Nested RoundTrip with edgeCents() method source)
+- Tests: 20 (10 values × bare and display); passed on first run, as expected for a pinning
+  task. `./mvnw clean verify`: 339 tests, 0 failures, no WARNING.
+- Notes: implementation-engineer. Mutations caught: parse ignoring the sign (8 failures, 2
+  errors), formatters dropping the sign (same), wrong display grouping (3 errors, extremes
+  only); Money.java restored and confirmed identical with cmp. Correctness review: no findings
+  (the 20 cases confirmed in the surefire report). review-changes: no blockers.
+
+## Task 5.1 — Run ./mvnw verify and search Money.java, MoneyFormatException.java, and the three test classes for double, float, Double, and Float, confirming none appear
+- Completed: 2026-09-13
+- Files changed: none
+- Tests: `./mvnw -B -ntp clean verify`: 339 tests, 0 failures, BUILD SUCCESS, no WARNING.
+  `grep -E 'double|float|Double|Float'` over the five files: no matches (exit 1).
+- Notes: done directly by the orchestrator (check task).
+
+## Task 5.2 — Measure JaCoCo line and branch coverage for Money and MoneyFormatException and add tests for any uncovered line or branch until both reach 100%
+- Completed: 2026-09-13
+- Files changed: none (report under target/site/jacoco, git-ignored)
+- Tests: JaCoCo 0.8.15 command from task 1.2 (with clean): 339 tests, 0 failures.
+  jacoco.csv: Money 0/113 lines missed, 0/100 branches missed, 0/26 methods missed;
+  MoneyFormatException 0/4 lines (no branches); MoneyFormatException.Reason 0/11 lines
+  (no branches). Both classes at 100% line and branch coverage; no tests needed.
+- Notes: done directly by the orchestrator. The 4.2 review's added "1,,23"/"1,2,3" rows
+  are what cover the last comma-placement branch.
