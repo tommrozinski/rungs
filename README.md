@@ -82,6 +82,13 @@ JUnit 5 and MockMvc cover the web layer; domain rules are tested at their bounda
 (the exact dollar and percentage thresholds each stage evaluates). CI runs the full
 suite on every push to `main` and on every pull request.
 
+## How it was built
+
+Rungs was built with a spec-driven, AI-assisted workflow. I wrote and approved the
+requirements, design, and task plan for each story, AI agents (Claude Code)
+implemented them test-first, and I reviewed every change before it was merged. The
+stories and specs are in [`docs/planning/`](docs/planning/).
+
 ## Project history
 
 An earlier, larger version of this project scoped out JSON APIs, CSV import/export, a
